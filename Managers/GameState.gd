@@ -1,16 +1,16 @@
 extends Node
 
-enum INDUSTRY { NOTHING = 0, FACTORY = 1, PORT = 2 }
+enum IndustryType { DEFAULT = 0, FACTORY = 1, PORT = 2 }
 
 var current_world: World
 
 var choosing_deploy_city := false
-var industry_building := INDUSTRY.NOTHING
+var industry_building := IndustryType.DEFAULT
 
 var game_ui: GameUI
 var game_log: CountryLog
 
 
 func reset_industry_building():
-	industry_building = INDUSTRY.NOTHING
+	industry_building = IndustryType.DEFAULT
 	MapManager.show_countries_map()

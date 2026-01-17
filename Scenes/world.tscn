@@ -3,12 +3,11 @@
 [ext_resource type="Script" uid="uid://pcq6svrgye6v" path="res://Scripts/world.gd" id="1_go701"]
 [ext_resource type="Script" uid="uid://bjvlgraecimcy" path="res://Scenes/main.gd" id="1_o06y3"]
 [ext_resource type="PackedScene" uid="uid://dgfixe44dvfny" path="res://Scenes/ui_game.tscn" id="2_fo5ed"]
+[ext_resource type="Shader" uid="uid://bnmv2hv80mfw5" path="res://shaders/map_shader.gdshader" id="3_k7acu"]
 [ext_resource type="Script" uid="uid://cvkc8n0kgyk3c" path="res://Scripts/camera_controller.gd" id="4_8j60k"]
 [ext_resource type="Script" uid="uid://bko55up7cjg3g" path="res://Scripts/custom_renderer.gd" id="5_o06y3"]
 [ext_resource type="Script" uid="uid://dx8iwvng5oypc" path="res://Scripts/troop_selection.gd" id="6_5ukr8"]
 [ext_resource type="Script" uid="uid://cnm2s5owh7ec3" path="res://Scripts/game_clock.gd" id="6_o06y3"]
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_8j60k"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_fo5ed"]
 load_path = "res://.godot/imported/cultures.png-f9255a05eddadc8a9aa0dedbe091def9.ctex"
@@ -25,8 +24,11 @@ mesh = SubResource("QuadMesh_o06y3")
 [node name="Main" type="Node2D"]
 script = ExtResource("1_o06y3")
 
+[node name="ui_game" parent="." instance=ExtResource("2_fo5ed")]
+
 [node name="World" type="Node2D" parent="." node_paths=PackedStringArray("clock")]
 script = ExtResource("1_go701")
+map_shader = ExtResource("3_k7acu")
 clock = NodePath("Clock")
 
 [node name="Clock" type="Node" parent="World"]
@@ -35,7 +37,6 @@ script = ExtResource("6_o06y3")
 [node name="MapContainer" type="Node2D" parent="World"]
 
 [node name="CultureSprite" type="Sprite2D" parent="World/MapContainer"]
-material = SubResource("ShaderMaterial_8j60k")
 texture = SubResource("CompressedTexture2D_fo5ed")
 centered = false
 
@@ -59,5 +60,3 @@ camera = NodePath("..")
 
 [node name="TroopSelection" type="Node2D" parent="World"]
 script = ExtResource("6_5ukr8")
-
-[node name="ui_game" parent="." instance=ExtResource("2_fo5ed")]

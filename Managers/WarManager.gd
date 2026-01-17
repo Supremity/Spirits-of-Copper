@@ -114,10 +114,10 @@ class Battle:
 
 			# Wipe out small units, chance to wipe out large ones
 			var retreat_pid = _find_retreat_province(defender_pid, defender_country)
-			if t.divisions <= 1 or retreat_pid == -1 or randf() < 0.5:
+			if t.divisions_count <= 1 or retreat_pid == -1 or randf() < 0.5:
 				TroopManager.remove_troop(t)
 			else:
-				t.divisions = max(1, int(t.divisions * 0.5))
+				t.divisions_count = max(1, int(t.divisions_count * 0.5))
 				TroopManager.teleport_troop_to_province(t, retreat_pid)
 
 		MapManager.transfer_ownership(defender_pid, attacker_country)
@@ -187,12 +187,12 @@ func apply_casualties(pid: int, country: String, damage_divisions: float):
 	var total_divisions = float(TroopManager.get_province_strength(pid, country))
 
 	for t in troops_list:
-		var troop_proportion = t.divisions / total_divisions if total_divisions > 0 else 0
+		var troop_proportion = t.divisions_count / total_divisions if total_divisions > 0 else 0
 		var damage = damage_divisions * troop_proportion
-		t.divisions -= damage
+		t.divisions_count -= damage
 
-		if t.divisions <= 0:
-			t.divisions = 0
+		if t.divisions_count <= 0:
+			t.divisions_count = 0
 			TroopManager.remove_troop(t)
 
 

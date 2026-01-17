@@ -2,7 +2,7 @@ extends Node
 var DEBUG_MODE = false
 
 signal province_hovered(province_id: int, country_name: String)
-signal province_clicked(province_id: int, country_name: String)
+signal country_clicked(country_name: String)
 
 # Emitted when a click couldn't be processed (so likely sea or border)
 signal close_sidemenu
@@ -17,7 +17,7 @@ var state_color_image: Image
 var state_color_texture: ImageTexture
 var max_province_id: int = 0
 
-var COUNTRY_COLORS: Dictionary = {}
+var country_colors: Dictionary = {}
 
 var color_to_pop_map: Dictionary = {}  # Stores {"(0, 10, 255)": 764}
 var color_to_city_map: Dictionary = {}
@@ -25,7 +25,7 @@ var gdp_map: Dictionary = {}
 
 var province_to_country: Dictionary = {}
 var country_to_provinces: Dictionary = {}
-var province_objects: Dictionary = {}
+var province_objects: Dictionary[int, Province] = {}
 
 var adjacency_list: Dictionary = {}  # Stores {ID: [Neighbor_ID_1, Neighbor_ID_2, ...]}
 var current_hovered_pid: int = -1
@@ -104,7 +104,7 @@ func _try_load_cached_data() -> bool:
 	country_to_provinces = loaded.country_to_provinces
 	max_province_id = loaded.max_province_id
 	id_map_image = loaded.id_map_image
-	province_objects = loaded.province_objects
+	province_objects.assign(loaded.province_objects)
 
 	_build_lookup_texture()
 	return true
@@ -240,37 +240,26 @@ func _build_lookup_texture() -> void:
 			continue
 		var province = province_objects.get(pid)
 
-		# IGNORE SEA
 		if province == null or province.type == 0:  # 0 is province.SEA
 			state_color_image.set_pixel(pid, 0, Color(0, 0, 0, 0))
 			continue
 
 		var country = province.country
-		var col = COUNTRY_COLORS.get(country, Color.GRAY)
+		var col = country_colors.get(country, Color.GRAY)
 		state_color_image.set_pixel(pid, 0, col)
 
 	state_color_texture = ImageTexture.create_from_image(state_color_image)
 
 
 func _is_sea(c: Color) -> bool:
-	return _is_sea_grid(c) or _is_sea_ocean(c)
-
-
-func _is_sea_grid(c: Color) -> bool:
-	# Only checks the raster/grid sea color
-	return _dist_sq(c, SEA_RASTER) < 0.001
-
-
-func _is_sea_ocean(c: Color) -> bool:
-	# Only checks the main ocean sea color
-	return _dist_sq(c, SEA_MAIN) < 0.001
+	return _dist_sq(c, SEA_RASTER) < 0.001 or _dist_sq(c, SEA_MAIN) < 0.001
 
 
 func _identify_country(c: Color) -> String:
 	var best := ""
 	var min_dist := 0.05
-	for country_name in COUNTRY_COLORS.keys():
-		var dist := _dist_sq(c, COUNTRY_COLORS[country_name])
+	for country_name in country_colors.keys():
+		var dist := _dist_sq(c, country_colors[country_name])
 		if dist < min_dist:
 			min_dist = dist
 			best = country_name
@@ -285,7 +274,7 @@ func update_province_color(pid: int, country_name: String) -> void:
 	if pid <= 1 or pid > max_province_id:
 		return
 
-	var new_color = COUNTRY_COLORS.get(country_name, Color.GRAY)
+	var new_color = country_colors.get(country_name, Color.GRAY)
 	_update_lookup(pid, new_color)
 
 	if pid == last_hovered_pid:
@@ -296,7 +285,7 @@ func update_province_color(pid: int, country_name: String) -> void:
 func set_country_color(country_name: String, custom_color: Color = Color.TRANSPARENT) -> void:
 	var new_color = custom_color
 	if new_color == Color.TRANSPARENT:
-		new_color = COUNTRY_COLORS.get(country_name, Color.GRAY)
+		new_color = country_colors.get(country_name, Color.GRAY)
 
 	var provinces = country_to_provinces.get(country_name, [])
 
@@ -389,7 +378,7 @@ func _get_contextual_highlight(pid: int) -> Color:
 	if not is_player_owned:
 		return Color.TRANSPARENT
 
-	if GameState.industry_building == GameState.INDUSTRY.PORT:
+	if GameState.industry_building == GameState.IndustryType.PORT:
 		var coastal_provinces = get_provinces_near_sea(player_name)
 		if pid in coastal_provinces && !province_objects[pid].has_port:
 			return Color.CYAN
@@ -401,7 +390,7 @@ func _get_contextual_highlight(pid: int) -> Color:
 			return Color.CYAN.lightened(0.3)
 		return Color.TRANSPARENT  # Don't highlight non-city provinces during deploy
 
-	elif GameState.industry_building != GameState.INDUSTRY.NOTHING:
+	elif GameState.industry_building != GameState.IndustryType.DEFAULT:
 		return state_color_image.get_pixel(pid, 0).lightened(0.2).blend(Color.GREEN_YELLOW)
 
 	return Color.TRANSPARENT
@@ -415,14 +404,13 @@ func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 
 	# 1. Handle Clicks on Water or Invalid Areas
 	if pid <= 1 or province_objects[pid].type == 0:  # 0 is SEA
-		if GameState.industry_building != GameState.INDUSTRY.NOTHING:
+		if GameState.industry_building != GameState.IndustryType.DEFAULT:
 			GameState.reset_industry_building()
 			show_countries_map()
 		else:
 			close_sidemenu.emit()
 		return
 
-	# 2. Contextual Interaction Logic
 	var player_country_name = CountryManager.player_country.country_name
 	var is_player_owned = province_to_country.get(pid) == player_country_name
 
@@ -432,39 +420,38 @@ func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 		else:
 			print("Action Failed: Province not owned by player.")
 
-	elif GameState.industry_building != GameState.INDUSTRY.NOTHING:
+	elif GameState.industry_building != GameState.IndustryType.DEFAULT:
 		if is_player_owned:
-			_execute_industry_build(pid, player_country_name)
+			_province_build_industry(pid, player_country_name)
 		else:
 			print("Action Failed: Cannot build in foreign territory.")
 			GameState.reset_industry_building()
 			show_countries_map()
 
-	else:
-		# Default behavior: Inspect province or move troops
-		if TroopManager.troop_selection.selected_troops.is_empty():
-			province_clicked.emit(pid, province_to_country.get(pid, ""))
+	country_clicked.emit(province_to_country.get(pid, ""))
 
 
-# --- Helper Execution Functions to keep click logic clean ---
 func _execute_deployment(pid: int, player_name: String) -> void:
-	province_clicked.emit(pid, player_name)
+	country_clicked.emit(player_name)
 	CountryManager.player_country.deploy_pid = pid
 	GameState.choosing_deploy_city = false
 	_cleanup_interaction_state()
 
 
-func _execute_industry_build(pid: int, player_name: String) -> void:
-	var type = GameState.industry_building
+func _province_build_industry(pid: int, player_name: String) -> void:
+	var type := GameState.industry_building
 	var province = province_objects[pid]
 
+	if province.has_factory or province.has_port:
+		return
+
 	match type:
-		GameState.INDUSTRY.FACTORY:
+		GameState.IndustryType.FACTORY:
 			province.has_factory = true
 			_cleanup_interaction_state()
 			show_industry_country(player_name)
 
-		GameState.INDUSTRY.PORT:
+		GameState.IndustryType.PORT:
 			if pid in get_provinces_near_sea(player_name):
 				province.has_port = true
 				_cleanup_interaction_state()
@@ -473,7 +460,7 @@ func _execute_industry_build(pid: int, player_name: String) -> void:
 				print("Action Failed: Port must be on a coast!")
 				return
 
-	province_clicked.emit(pid, player_name)
+	country_clicked.emit(player_name)
 
 
 func _cleanup_interaction_state() -> void:
@@ -636,36 +623,26 @@ func _get_pid_fast(x: int, y: int) -> int:
 
 # --- Pathfinding section kinda. Should be in own file tbh.. ---#
 
-# === CACHED A* PATHFINDING (OPTIMIZED) ===
+# TODO(pol): This lags when moving a lot of troops. Should be made faster with
+# built in AStar2D class.
+
 var path_cache: Dictionary = {}
 
-# Tuning: Approximate size of a province in pixels.
-# Used to balance G-cost (steps) vs H-cost (distance).
-# Higher = Greedy/Fast (less accurate). Lower = Dijkstra/Slow (perfectly accurate).
-const HEURISTIC_SCALE: float = 1.0 / 50.0
+const HEURISTIC_SCALE: float = 1.0 #/ 50.0
 
 
 func find_path(start_pid: int, end_pid: int, allowed_countries: Array[String] = []) -> Array[int]:
 	if start_pid == end_pid:
 		return [start_pid]
 
-	# Quick exit if nodes don't exist
-	if not adjacency_list.has(start_pid) or not adjacency_list.has(end_pid):
-		return []
-
-	# --- CACHE LOGIC ---
-	# Only use cache if NO restrictions apply.
-	# Caching restricted paths is dangerous (permissions change over time).
 	var use_cache = allowed_countries.is_empty()
 	var cache_key := Vector2i(start_pid, end_pid)
 
 	if use_cache and path_cache.has(cache_key):
 		return path_cache[cache_key].duplicate()
 
-	# --- CALCULATE PATH ---
 	var path = _find_path_astar(start_pid, end_pid, allowed_countries)
 
-	# --- STORE IN CACHE ---
 	if use_cache and not path.is_empty():
 		path_cache[cache_key] = path.duplicate()
 
@@ -685,7 +662,7 @@ func _find_path_astar(start_pid: int, end_pid: int, allowed_countries: Array[Str
 	var came_from: Dictionary = {}
 
 	var g_score: Dictionary = {start_pid: 0.0}
-	var f_score: Dictionary = {start_pid: _heuristic(start_pid, end_pid)}
+	var f_score: Dictionary = {start_pid: heuristic(start_pid, end_pid)}
 	var open_set_hash: Dictionary = {start_pid: true}
 
 	# For fallback (closest reached node)
@@ -720,7 +697,7 @@ func _find_path_astar(start_pid: int, end_pid: int, allowed_countries: Array[Str
 		var current_prov: Province = province_objects[current]
 
 		# Fallback tracking
-		var dist_to_target = _heuristic(current, end_pid)
+		var dist_to_target = heuristic(current, end_pid)
 		if dist_to_target < closest_dist_so_far:
 			closest_dist_so_far = dist_to_target
 			closest_pid_so_far = current
@@ -753,7 +730,7 @@ func _find_path_astar(start_pid: int, end_pid: int, allowed_countries: Array[Str
 			if tentative_g < g_score.get(neighbor, INF):
 				came_from[neighbor] = current
 				g_score[neighbor] = tentative_g
-				f_score[neighbor] = tentative_g + _heuristic(neighbor, end_pid)
+				f_score[neighbor] = tentative_g + heuristic(neighbor, end_pid)
 
 				if not open_set_hash.has(neighbor):
 					open_set.append(neighbor)
@@ -766,13 +743,9 @@ func _find_path_astar(start_pid: int, end_pid: int, allowed_countries: Array[Str
 	return []
 
 
-func _heuristic(a: int, b: int) -> float:
-	# Now using province_objects to get the center
+func heuristic(a: int, b: int) -> float:
 	var prov_a = province_objects.get(a)
 	var prov_b = province_objects.get(b)
-
-	if not prov_a or not prov_b:
-		return 0.0
 
 	var dist_pixels = prov_a.center.distance_to(prov_b.center)
 	return dist_pixels * HEURISTIC_SCALE
@@ -932,7 +905,7 @@ func show_countries_map() -> void:
 
 		var province = province_objects[pid]
 		var country_name = province.country
-		var country_color = COUNTRY_COLORS.get(country_name, Color.GRAY)
+		var country_color = country_colors.get(country_name, Color.GRAY)
 		state_color_image.set_pixel(pid, 0, country_color)
 
 	state_color_texture.update(state_color_image)
@@ -986,7 +959,7 @@ func transfer_ownership(pid: int, new_owner_name: String) -> void:
 
 	province_to_country[pid] = new_owner_name
 
-	var new_color = COUNTRY_COLORS.get(new_owner_name, Color.GRAY)
+	var new_color = country_colors.get(new_owner_name, Color.GRAY)
 	_update_lookup(pid, new_color)
 
 
@@ -1001,12 +974,12 @@ func _load_country_colors() -> void:
 		push_error("Invalid JSON format")
 		return
 
-	COUNTRY_COLORS.clear()
+	country_colors.clear()
 	for country_name in data.keys():
 		var rgb = data[country_name].get("color")
 		if rgb == null or rgb.size() != 3:
 			continue
-		COUNTRY_COLORS[country_name] = Color8(rgb[0], rgb[1], rgb[2])
+		country_colors[country_name] = Color8(rgb[0], rgb[1], rgb[2])
 
 
 func _load_population_json() -> void:

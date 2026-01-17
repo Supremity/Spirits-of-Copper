@@ -196,7 +196,7 @@ func _draw_single_troop_detail(troop: TroopData, pos: Vector2) -> void:
 		draw_texture_rect(troop.flag_texture, flag_rect, false)
 
 	# Draw Text (Right side)
-	var label = str(troop.divisions)
+	var label = str(troop.divisions_count)
 	# Use the base font size; the transform handles the zoom-scaling for us!
 	var font_size = LAYOUT.font_size 
 	var text_size = _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)

@@ -23,7 +23,7 @@ func initialize_countries() -> void:
 	var detected_countries = MapManager.country_to_provinces.keys()
 	if detected_countries.is_empty():
 		push_warning("CountryManager: No countries detected in MapManager!")
-		detected_countries = MapManager.COUNTRY_COLORS.keys()
+		detected_countries = MapManager.country_colors.keys()
 
 	for country_name in detected_countries:
 		var new_country := CountryData.new(country_name)
@@ -94,13 +94,12 @@ func get_factories_amount(country_name: String) -> int:
 	)
 
 
-# NOTE(pol): We should keep track of the number of divisions in a variable
-# instead of calculating
+# NOTE(pol): We should keep track of the manpower used instead of recalculating
 func get_country_used_manpower(country_obj: CountryData) -> int:
 	var total_divisions = 0
 	var troop_list = TroopManager.get_troops_for_country(country_obj.country_name)
 	for troop in troop_list:
-		total_divisions += troop.divisions
+		total_divisions += troop.divisions_count
 	for training in country_obj.ongoing_training:
 		total_divisions += training.divisions
 	for ready_troop in country_obj.ready_troops:

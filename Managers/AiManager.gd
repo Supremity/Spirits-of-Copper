@@ -30,7 +30,7 @@ func ai_consider_recruitment(country: CountryData) -> void:
 	var army_cost := 0.0
 
 	for troop in TroopManager.get_troops_for_country(country.country_name):
-		army_cost += troop.divisions * (army_base_cost)
+		army_cost += troop.divisions_count * army_base_cost
 
 	var upkeep_buffer := army_cost * 24
 
@@ -87,9 +87,9 @@ func evaluate_frontline_moves(country: CountryData):
 			var targets_for_this_troop = []
 			var split_count = 1
 
-			if troop.divisions >= 10:
+			if troop.divisions_count >= 10:
 				split_count = 3  # Split large stacks into 3 directions
-			elif troop.divisions >= 5:
+			elif troop.divisions_count >= 5:
 				split_count = 2  # Split medium stacks into 2 directions
 
 			for j in range(split_count):

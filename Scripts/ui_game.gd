@@ -59,7 +59,7 @@ func _ready() -> void:
 
 	GameState.game_ui = self
 
-	MapManager.province_clicked.connect(_on_province_clicked)
+	MapManager.country_clicked.connect(_on_province_clicked)
 	MapManager.close_sidemenu.connect(close_menu)
 
 	KeyboardManager.toggle_menu.connect(toggle_menu)
@@ -143,16 +143,16 @@ func _get_menu_actions(context: Context, category: Category) -> Array:
 
 func _on_player_change() -> void:
 	_update_flag()
-	update_bar_player_stats()
+	update_topbar_stats()
 
 
-func _on_province_clicked(_pid: int, country_name: String) -> void:
+func _on_province_clicked(country_name: String) -> void:
 	selected_country = CountryManager.get_country(country_name)
 
 	sidemenu_flag.texture = TroopManager.get_flag(country_name)
 	label_country_sidemenu.text = country_name.capitalize().replace("_", " ")
 
-	if !GameState.choosing_deploy_city || GameState.industry_building == GameState.INDUSTRY.NOTHING:
+	if !GameState.choosing_deploy_city || GameState.industry_building == GameState.IndustryType.DEFAULT:
 		var new_context = Context.DIPLOMACY
 
 		if country_name == CountryManager.player_country.country_name:
@@ -177,7 +177,7 @@ func toggle_menu(context := Context.SELF) -> void:
 
 
 func open_menu(context: Context, category: Category) -> void:
-	if GameState.choosing_deploy_city or GameState.industry_building != GameState.INDUSTRY.NOTHING:
+	if GameState.choosing_deploy_city or GameState.industry_building != GameState.IndustryType.DEFAULT:
 		return
 	current_context = context
 	current_category = category
@@ -199,10 +199,9 @@ func _on_menu_button_button_up(_menu_index: int) -> void:
 	current_category = _menu_index as Category
 	if _menu_index == Category.ECONOMY:
 		MapManager.show_industry_country(CountryManager.player_country.country_name)
-		pass
 	else:
 		MapManager.set_country_color(CountryManager.player_country.country_name, Color.TRANSPARENT)
-		GameState.industry_building = GameState.INDUSTRY.NOTHING
+		GameState.industry_building = GameState.IndustryType.DEFAULT
 		MapManager.show_countries_map()
 	_build_action_list()
 
@@ -246,7 +245,7 @@ func _build_action_list() -> void:
 			btn.setup_ready(troop, deploy_call)
 
 
-func update_bar_player_stats() -> void:
+func update_topbar_stats() -> void:
 	if !CountryManager.player_country:
 		return
 	stats_labels.pp.text = str(floori(CountryManager.player_country.political_power))
@@ -257,7 +256,7 @@ func update_bar_player_stats() -> void:
 
 
 func _on_hour_passed() -> void:
-	update_bar_player_stats()
+	update_topbar_stats()
 
 
 func format_number(value: float) -> String:
@@ -340,7 +339,7 @@ func _conscript(data: Dictionary):
 	if data.has("manpower"):
 		var manpower = data.manpower / 10000  # Example math
 		CountryManager.player_country.train_troops(manpower, 10, 1000)
-	update_bar_player_stats()
+	update_topbar_stats()
 	_build_action_list()
 
 
@@ -355,19 +354,19 @@ func deploy_troop(troop):
 
 func improve_stability(_data: Dictionary):
 	CountryManager.player_country.stability += 0.02
-	update_bar_player_stats()
+	update_topbar_stats()
 
 
 # These must accept _data to prevent crashing
 func _build_factory(_data: Dictionary):
-	GameState.industry_building = GameState.INDUSTRY.FACTORY
+	GameState.industry_building = GameState.IndustryType.FACTORY
 	#MapManager.show_industry_country(player.country_name)
 
 	pass
 
 
 func _build_port(_data: Dictionary):
-	GameState.industry_building = GameState.INDUSTRY.PORT
+	GameState.industry_building = GameState.IndustryType.PORT
 	#MapManager.show_industry_country(player.country_name)
 	pass
 

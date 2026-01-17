@@ -8,21 +8,21 @@ uniform sampler2D state_colors : filter_nearest;
 // NOISE TEXTURE (Generated in World.gd)
 uniform sampler2D ocean_noise : filter_nearest, repeat_enable;
 // ORIGINAL TEXTURE (To show the grid)
-uniform sampler2D original_texture : filter_linear_mipmap; 
+uniform sampler2D original_texture : filter_linear_mipmap;
 uniform vec2 tex_size;
 
 // --- COLORS ---
 // Shallow/deep don't exist just named that way
-uniform vec4 water_color_deep : source_color = vec4(0.10, 0.25, 0.45, 1.0);  
-uniform vec4 water_color_shallow : source_color = vec4(0.25, 0.45, 0.65, 1.0); 
-uniform vec4 sun_glint_color : source_color = vec4(0.9, 0.95, 1.0, 0.3); 
+uniform vec4 water_color_deep : source_color = vec4(0.10, 0.25, 0.45, 1.0);
+uniform vec4 water_color_shallow : source_color = vec4(0.25, 0.45, 0.65, 1.0);
+uniform vec4 sun_glint_color : source_color = vec4(0.9, 0.95, 1.0, 0.3);
 uniform vec4 country_border_color : source_color = vec4(0.1, 0.1, 0.1, 1.0);
 
 // --- WATER SETTINGS ---
-uniform float sea_speed : hint_range(0.0, 0.2) = 0.02; 
-uniform float wave_scale : hint_range(0.1, 5.0) = 1.5; 
-uniform float distortion_strength : hint_range(0.0, 1.0) = 0.15; 
-uniform float grid_opacity : hint_range(0.0, 1.0) = 0.3; 
+uniform float sea_speed : hint_range(0.0, 0.2) = 0.02;
+uniform float wave_scale : hint_range(0.1, 5.0) = 1.5;
+uniform float distortion_strength : hint_range(0.0, 1.0) = 0.15;
+uniform float grid_opacity : hint_range(0.0, 1.0) = 0.3;
 uniform float sea_pixel_size = 2.0;       // 1 = native pixels, 2–4 = chunkier
 uniform float sea_height_steps = 6.0;    // number of discrete wave levels
 uniform vec2 ocean_offset;

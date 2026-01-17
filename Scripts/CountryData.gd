@@ -1,4 +1,4 @@
-extends Node
+extends Resource
 class_name CountryData
 
 #region --- Properties ---
@@ -66,11 +66,11 @@ func _init(p_country_name: String) -> void:
 	allowedCountries.append_array([p_country_name, "sea"])
 
 	total_population = CountryManager.get_country_population(country_name)
+	var manpower_used := CountryManager.get_country_used_manpower(self)
+
 	@warning_ignore("narrowing_conversion")
-	manpower = (
-		(total_population - CountryManager.get_country_used_manpower(self))
-		* military_size
-	)
+	manpower = float(total_population - manpower_used) * military_size
+
 	@warning_ignore("narrowing_conversion")
 	gdp = (CountryManager.get_country_gdp(country_name) * total_population * 0.000001) * 0.5
 	money = 0
@@ -146,7 +146,7 @@ func _process_training() -> void:
 func calculate_army_upkeep() -> float:
 	var total := 0.0
 	for troop in TroopManager.get_troops_for_country(country_name):
-		total += troop.divisions * (army_level * army_base_cost)
+		total += troop.divisions_count * (army_level * army_base_cost)
 	return total
 
 
@@ -191,6 +191,7 @@ func deploy_ready_troop_to_pid(troop: ReadyTroop) -> bool:
 
 
 func reset_manpower() -> void:
+	@warning_ignore("narrowing_conversion")
 	manpower = (
 		(total_population - CountryManager.get_country_used_manpower(self))
 		* military_size

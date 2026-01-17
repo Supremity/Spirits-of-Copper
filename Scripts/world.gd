@@ -1,4 +1,3 @@
-# World.gd
 extends Node2D
 class_name World
 
@@ -6,19 +5,25 @@ class_name World
 @onready var camera: Camera2D = $Camera2D as Camera2D
 @onready var troop_renderer: CustomRenderer = $MapContainer/CustomRenderer as CustomRenderer
 
-const MAP_SHADER = preload("res://shaders/map_shader.gdshader")
-
-var map_width: float = 0.0
-var map_height: float = 0.0
-
+@export var map_shader: Shader
 @export var clock: GameClock
 
-var mat: ShaderMaterial
+var water_offset: Vector2 = Vector2.ZERO
+
+func _process(_delta: float) -> void:
+	var map_width := MapManager.id_map_image.get_width()
+	if camera.position.x > map_sprite.position.x + map_width:
+		camera.position.x -= map_width
+	elif camera.position.x < map_sprite.position.x - map_width:
+		camera.position.x += map_width
+	if map_sprite.material and !clock.paused:
+		var move_amount = clock.time_scale * 0.001 * _delta
+		water_offset.x += move_amount
+		map_sprite.material.set_shader_parameter("ocean_offset", water_offset)
 
 
 func _enter_tree() -> void:
 	GameState.current_world = self
-	set_process_input(false)
 
 
 func _ready() -> void:
@@ -29,13 +34,7 @@ func _ready() -> void:
 	clock.day_passed.connect(CountryManager._on_day_passed)
 
 	MapManager.load_country_data()
-	if MapManager.id_map_image != null:
-		_on_map_ready()
-	
-	set_process_input(true)
 
-
-func _on_map_ready() -> void:
 	print("World: Map is ready -> configuring visuals...")
 	
 	MapManager.all_cities = MapManager.get_all_cities()
@@ -43,18 +42,17 @@ func _on_map_ready() -> void:
 	CountryManager.set_player_country("brazil")
 	MapManager.force_bidirectional_connections()
 
-	map_width = MapManager.id_map_image.get_width()
-	map_height = MapManager.id_map_image.get_height()
-	mat = ShaderMaterial.new()
-	mat.shader = MAP_SHADER
+	var map_width := MapManager.id_map_image.get_width()
+	var map_height := MapManager.id_map_image.get_height()
 
+	var mat := ShaderMaterial.new()
+	mat.shader = map_shader
 	var id_tex := ImageTexture.create_from_image(MapManager.id_map_image)
 	mat.set_shader_parameter("region_id_map", id_tex)
 	mat.set_shader_parameter("state_colors", MapManager.state_color_texture)
 
-	# Inside World.gd -> _on_map_ready()
-	var type_img = Image.create_empty(map_width, map_height, false, Image.FORMAT_L8)
-
+	# @warning_ignore("narrowing_conversion")
+	var type_img := Image.create_empty(map_width, map_height, false, Image.FORMAT_L8)
 
 	for y in range(map_height):
 		for x in range(map_width):
@@ -99,7 +97,6 @@ func _on_map_ready() -> void:
 
 	noise.frequency = 0.005
 
-	# 3. Add detail (ripples)
 	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
 	noise.fractal_octaves = 3
 	noise.fractal_gain = 0.5
@@ -112,7 +109,7 @@ func _on_map_ready() -> void:
 
 	await noise_tex.changed
 	mat.set_shader_parameter("ocean_noise", noise_tex)
-	# ---------------------------------------------
+	
 	mat.set_shader_parameter("original_texture", map_sprite.texture)
 	mat.set_shader_parameter("sea_speed", 0.00)  # Changed by MainClock
 	mat.set_shader_parameter("tex_size", Vector2(map_width, MapManager.id_map_image.get_height()))
@@ -120,8 +117,6 @@ func _on_map_ready() -> void:
 
 	map_sprite.material = mat
 
-	#_create_ghost_map(Vector2(-map_width, 0), mat)
-	#_create_ghost_map(Vector2(map_width, 0), mat)
 	for i in [-2, -1, 1, 2]:
 		_create_ghost_map(Vector2(i * map_width, 0), mat)
 
@@ -139,20 +134,6 @@ func _create_ghost_map(offset: Vector2, p_material: ShaderMaterial) -> void:
 	ghost.material = p_material
 	ghost.position = map_sprite.position + offset
 	$MapContainer.add_child(ghost)
-
-
-var water_offset: Vector2 = Vector2.ZERO
-
-
-func _process(_delta: float) -> void:
-	if camera.position.x > map_sprite.position.x + map_width:
-		camera.position.x -= map_width
-	elif camera.position.x < map_sprite.position.x - map_width:
-		camera.position.x += map_width
-	if mat and !clock.paused:
-		var move_amount = clock.time_scale * 0.001 * _delta
-		water_offset.x += move_amount
-		mat.set_shader_parameter("ocean_offset", water_offset)
 
 
 func _input(event: InputEvent) -> void:

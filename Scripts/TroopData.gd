@@ -6,7 +6,7 @@ class_name TroopData
 var country_name: String
 var country_obj: CountryData
 var province_id: int
-var divisions: int
+var divisions_count: int
 var position: Vector2
 var flag_texture: Texture2D
 
@@ -27,7 +27,7 @@ func _init(
 	country_name = p_country
 	country_obj = CountryManager.get_country(p_country)
 	province_id = p_province_id
-	divisions = p_divisions
+	divisions_count = p_divisions
 	position = p_position
 	flag_texture = p_flag
 
@@ -35,5 +35,5 @@ func _init(
 func _to_string() -> String:
 	return (
 		"TroopData(%s, prov=%d, divs=%d, moving=%s)"
-		% [country_name, province_id, divisions, is_moving]
+		% [country_name, province_id, divisions_count, is_moving]
 	)

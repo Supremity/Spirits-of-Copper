@@ -16,19 +16,11 @@ var troop_selection: TroopSelection
 
 
 func _process(delta: float) -> void:
-	if moving_troops.is_empty():
-		return
-
-	var snapshot := moving_troops.duplicate()  # Shallow copy for safe iteration
-
-	for troop in snapshot:
-		if not troops.has(troop):
-			continue  # Troop was removed (e.g., by combat)
-
-		_update_smooth(troop, delta)
+	for troop in moving_troops:
+		_update_moving_troop(troop, delta)
 
 
-func _update_smooth(troop: TroopData, delta: float) -> void:
+func _update_moving_troop(troop: TroopData, delta: float) -> void:
 	if GameState.current_world.clock.paused:
 		return
 
@@ -245,27 +237,22 @@ func _get_cached_path(start_id: int, target_id: int, allowed_countries: Array[St
 	return path
 
 
-func _split_and_send_troop(original_troop: TroopData, target_pids: Array, paths: Dictionary) -> void:
-	var total_divs = original_troop.divisions
+func _split_and_send_troop(troop: TroopData, target_pids: Array, paths: Dictionary) -> void:
 	var num_targets = target_pids.size()
-	if num_targets == 0 or total_divs < num_targets:
+
+	if num_targets == 0 or troop.divisions_count < num_targets:
 		return
 
-	# 1. Compute distances from troop to each target
-	var origin_pid = original_troop.province_id
 	var target_distances: Array = []
 	for pid in target_pids:
-		var dist = MapManager._heuristic(origin_pid, pid)  # implement Manhattan/graph distance
+		var dist = MapManager.heuristic(troop.province_id, pid)
 		target_distances.append({"pid": pid, "dist": dist})
 
-	# 2. Sort targets by distance (closest first)
-	target_distances.sort_custom(func(a, b):
-		return int(a.dist - b.dist)
-	)
+	target_distances.sort_custom(func(a, b): return a.dist < b.dist)
 
-	# 3. Evenly split divisions
-	var base_divs = total_divs / num_targets
-	var remainder = total_divs % num_targets
+	@warning_ignore("integer_division")
+	var base_divs = troop.divisions_count / num_targets
+	var remainder = troop.divisions_count % num_targets
 
 	var original_used = false
 	for i in range(num_targets):
@@ -276,14 +263,14 @@ func _split_and_send_troop(original_troop: TroopData, target_pids: Array, paths:
 
 		var troop_to_move: TroopData
 		if not original_used:
-			troop_to_move = original_troop
-			troop_to_move.divisions = divs
+			troop_to_move = troop
+			troop_to_move.divisions_count = divs
 			original_used = true
 		else:
-			troop_to_move = _create_new_split_troop(original_troop, divs)
+			troop_to_move = _create_new_split_troop(troop, divs)
 
 		# 4. Assign movement intelligently
-		if pid == original_troop.province_id:
+		if pid == troop.province_id:
 			# Stay put
 			troop_to_move.path.clear()
 			_stop_troop(troop_to_move)
@@ -302,10 +289,10 @@ func _split_and_send_troop(original_troop: TroopData, target_pids: Array, paths:
 				# No path? Stay put
 				_stop_troop(troop_to_move)
 
-	print(
-		"Split %s (%d divs) into %d armies towards nearest targets"
-		% [original_troop.country_name, total_divs, num_targets]
-	)
+	# print(
+	# 	"Split %s (%d divs) into %d armies towards nearest targets"
+	# 	% [original_troop.country_name, total_divs, num_targets]
+	# )
 
 
 
@@ -395,7 +382,7 @@ func _auto_merge_in_province(province_id: int, country: String) -> void:
 			primary = current
 			break
 
-		if current.divisions > primary.divisions:
+		if current.divisions_count > primary.divisions_count:
 			primary = current
 
 	# 3. Merge others into Primary
@@ -404,7 +391,7 @@ func _auto_merge_in_province(province_id: int, country: String) -> void:
 		if t == primary:
 			continue
 
-		primary.divisions += t.divisions
+		primary.divisions_count += t.divisions_count
 		to_remove.append(t)
 
 		# If we are merging the player's selection into the primary,

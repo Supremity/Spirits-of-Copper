@@ -97,7 +97,7 @@ func _perform_selection() -> void:
 		if t.country_name.to_lower() != CountryManager.player_country.country_name:
 			continue
 
-		var label = str(t.divisions)
+		var label = str(t.divisions_count)
 		var font_size := CustomRenderer.LAYOUT.font_size
 		var text_size = (
 			font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size) * inv_zoom
@@ -124,7 +124,7 @@ func _perform_selection() -> void:
 	# Update max_path_length based on current live selection
 	max_path_length = 0
 	for troop in selected_list:
-		max_path_length += troop.divisions
+		max_path_length += troop.divisions_count
 
 
 func _check_rect_intersection(
@@ -222,7 +222,7 @@ func _perform_path_assignment() -> void:
 	# Calculate total divisions available
 	var total_divisions = 0
 	for troop in selected_troops:
-		total_divisions += troop.divisions
+		total_divisions += troop.divisions_count
 
 	if path_pids.size() == 0:
 		print("No provinces in path!")
@@ -236,7 +236,7 @@ func _perform_path_assignment() -> void:
 	# Distribute troops to provinces based on their divisions
 	var troop_index = 0
 	var divisions_remaining_in_current_troop = (
-		selected_troops[0].divisions if selected_troops.size() > 0 else 0
+		selected_troops[0].divisions_count if selected_troops.size() > 0 else 0
 	)
 
 	for province_idx in range(path_pids.size()):
@@ -265,12 +265,12 @@ func _perform_path_assignment() -> void:
 					troop_index += 1
 					if troop_index < selected_troops.size():
 						divisions_remaining_in_current_troop = (
-							selected_troops[troop_index].divisions
+							selected_troops[troop_index].divisions_count
 						)
 			else:
 				troop_index += 1
 				if troop_index < selected_troops.size():
-					divisions_remaining_in_current_troop = selected_troops[troop_index].divisions
+					divisions_remaining_in_current_troop = selected_troops[troop_index].divisions_count
 
 	print(
 		(
