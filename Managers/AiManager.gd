@@ -1,6 +1,5 @@
 extends Node
 
-# --- Constants for AI Tuning ---
 const MIN_MONEY_RESERVE := 25000.0
 const RECRUIT_MANPOWER_THRESHOLD := 15000
 
@@ -8,16 +7,13 @@ const RECRUIT_MANPOWER_THRESHOLD := 15000
 func ai_handle_deployment(country: CountryData) -> void:
 	if country.ready_troops.is_empty():
 		return
-
-	# Attempt to deploy to a border province first if one is set/preferred
-	# Otherwise, use the new MapManager border logic to find a tactical spot
+	
 	var borders = MapManager.get_border_provinces(country.country_name)
 
 	for troop in country.ready_troops.duplicate():
 		if country.deploy_pid != -1:
 			country.deploy_ready_troop_to_pid(troop)
 		elif not borders.is_empty():
-			# Deploy directly to the front lines!
 			var target_id = borders.pick_random()
 			TroopManager.create_troop(country.country_name, troop.divisions, target_id)
 			country.ready_troops.erase(troop)
@@ -52,7 +48,6 @@ func evaluate_frontline_moves(country: CountryData):
 	var enemies = WarManager.get_enemies_of(country.country_name)
 	var move_payload = []
 
-	# Gather troops to a valid city
 	if enemies.is_empty():
 		var home_cities = MapManager.get_cities_province_country(country.country_name)
 		if home_cities.is_empty():
@@ -67,13 +62,11 @@ func evaluate_frontline_moves(country: CountryData):
 		var city_targets = []
 
 		for enemy_name in enemies:
-			# 1. Gather Army Targets
 			var enemy_provinces = MapManager.country_to_provinces.get(enemy_name, [])
 			for p_id in enemy_provinces:
 				if not TroopManager.get_troops_in_province(p_id).is_empty():
 					army_targets.append(p_id)
 
-			# 2. Gather City Targets
 			city_targets.append_array(MapManager.get_cities_province_country(enemy_name))
 
 		# 3. Smart Distribution
@@ -115,8 +108,7 @@ func evaluate_frontline_moves(country: CountryData):
 			for pid in targets_for_this_troop:
 				move_payload.append({"troop": troop, "province_id": pid})
 
-	if not move_payload.is_empty():
-		TroopManager.command_move_assigned(move_payload)
+	TroopManager.command_move_assigned(move_payload)
 
 
 func _find_tactical_targets(ai_country_name: String) -> Array:

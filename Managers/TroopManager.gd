@@ -1,11 +1,9 @@
 extends Node
 
-# --- CONFIGURATION ---
-var AUTO_MERGE = true  # Auto-merge adjacent troops
+var AUTO_MERGE = true
 
-# --- DATA STRUCTURES ---
-var troops: Array = []  # Master list of all troops
-var moving_troops: Array = []  # Subset for _process updates
+var troops: Array = []
+var moving_troops: Array = []
 var troops_by_province: Dictionary = {}  # { province_id: [TroopData, ...] }
 var troops_by_country: Dictionary = {}  # { country_name: [TroopData, ...] }
 
@@ -36,8 +34,7 @@ func _update_moving_troop(troop: TroopData, delta: float) -> void:
 		(GameState.current_world.clock.time_scale * delta / total_dist)
 		* troop.country_obj.troop_speed_modifier
 	)
-	if visual_progress > 1.0:
-		visual_progress = 1.0  # cap at 1
+	visual_progress = min(1.0, visual_progress)
 	troop.set_meta("visual_progress", visual_progress)
 
 	var move_progress = troop.get_meta("progress", 0.0)
@@ -497,7 +494,7 @@ func get_province_division_count(pid: int) -> int:
 	var total = 0
 	var list = troops_by_province.get(pid, [])
 	for troop in list:
-		total += troop.divisions
+		total += troop.divisions_count
 	return total
 
 
@@ -538,7 +535,7 @@ func get_province_strength(pid: int, country: String) -> int:
 	var list = troops_by_province.get(pid, [])
 	for t in list:
 		if t.country_name == country:
-			total += t.divisions
+			total += t.divisions_count
 	return total
 
 

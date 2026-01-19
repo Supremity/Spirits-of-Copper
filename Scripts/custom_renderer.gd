@@ -126,7 +126,6 @@ func _update_multimesh_buffer():
 		var scaled_offset := STACKING_OFFSET_Y * _current_inv_zoom
 		var start_y = (stack.size() - 1) * scaled_offset * 0.5
 
-		
 		for i in range(stack.size()):
 			var troop = stack[i]
 			var pos = base_pos + Vector2(0, start_y - (i * scaled_offset))
@@ -154,11 +153,11 @@ func _draw() -> void:
 	_draw_path_preview()
 	_draw_active_movements()
 	_draw_selection_box()
-	_draw_troop_details_culled()
+	_draw_troops()
 	_draw_cities()
 
 
-func _draw_troop_details_culled() -> void:
+func _draw_troops() -> void:
 	if _current_inv_zoom > 1.5: return # LOD optimization
 
 	# Use the same grouping logic but account for movement
@@ -179,9 +178,10 @@ func _draw_troop_details_culled() -> void:
 			for m in [-1, 0, 1]:
 				var d_pos = vertical_stack_pos + Vector2(map_width * m, 0) + map_sprite.position
 				if _screen_rect.has_point(d_pos):
-					_draw_single_troop_detail(troop, d_pos)
+					_draw_troop(troop, d_pos)
 
-func _draw_single_troop_detail(troop: TroopData, pos: Vector2) -> void:
+
+func _draw_troop(troop: TroopData, pos: Vector2) -> void:
 	var t := Transform2D(0, Vector2(_current_inv_zoom, _current_inv_zoom), 0, pos)
 	draw_set_transform_matrix(t)
 	
@@ -189,22 +189,22 @@ func _draw_single_troop_detail(troop: TroopData, pos: Vector2) -> void:
 	var total_h = LAYOUT.flag_height
 	var top_left = Vector2(-total_w / 2.0, -total_h / 2.0)
 
-	# Draw Flag (Left side)
-	if troop.flag_texture:
-		# Shrink by 1px to stay inside the border
-		var flag_rect = Rect2(top_left, Vector2(LAYOUT.flag_width, total_h)).grow(-1.0)
-		draw_texture_rect(troop.flag_texture, flag_rect, false)
-
 	# Draw Text (Right side)
 	var label = str(troop.divisions_count)
 	# Use the base font size; the transform handles the zoom-scaling for us!
-	var font_size = LAYOUT.font_size 
-	var text_size = _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+	var font_size := LAYOUT.font_size 
+	var text_size := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
 	
 	# Position text relative to the flag's right edge
 	var text_area_x = top_left.x + LAYOUT.flag_width
 	var tx = text_area_x + (LAYOUT.min_text_width - text_size.x) * 0.5
 	var ty = (text_size.y * 0.3) # Vertical center relative to (0,0)
+
+	# Draw Flag (Left side)
+	if troop.flag_texture:
+		# Shrink by 1px to stay inside the border
+		var flag_rect = Rect2(top_left, Vector2(LAYOUT.flag_width, total_h)).grow(-1.0)
+		draw_texture_rect(troop.flag_texture, flag_rect, false)
 
 	draw_string(_font, Vector2(tx, ty), label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, COLORS.text)
 

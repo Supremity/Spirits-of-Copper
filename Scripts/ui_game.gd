@@ -2,7 +2,7 @@ extends CanvasLayer
 class_name GameUI
 
 # ── Enums ─────────────────────────────────────────────
-enum Context { SELF, WAR, DIPLOMACY }
+enum Context { PLAYER_COUNTRY, ENEMY_COUNTRY, NEUTRAL_COUNTRY }
 enum Category { GENERAL, ECONOMY, MILITARY }
 
 # ── Top Bar Nodes ─────────────────────────────────────
@@ -42,10 +42,75 @@ var pos_open := Vector2.ZERO
 var pos_closed := Vector2.ZERO
 
 # Navigation State
-var current_context: Context = Context.SELF
+var current_context: Context = Context.PLAYER_COUNTRY
 var current_category: Category = Category.GENERAL
 
-@export var military_access: Label
+@export var military_access_label: Label
+
+@export var decision_tree: DecisionTree
+
+var menu_actions = {
+	# When clicking on player country
+	Context.PLAYER_COUNTRY:
+	{
+		Category.GENERAL:
+		[
+			{"text": "Decisions", "func": "open_decisions_tree"},
+			{"text": "Improve Stability", "cost": 25, "func": "improve_stability"},
+			{"text": "Releasables", "func": "_improve_relations"}
+		],
+		Category.ECONOMY:
+		[
+			{"text": "Research", "cost": 0, "func": "open_research_tree"},
+			{"text": "Build Factory", "cost": 0, "func": "_build_factory"},
+			{"text": "Build Port", "cost": 0, "func": "_build_port"},
+		],
+		Category.MILITARY:
+		[
+			{"text": "Choose Deployment Province", "func": "_choose_deploy_city"},
+			{
+				"text": "Training (10k)",
+				"func": "_conscript",
+				"type": "training",
+				"manpower": 10000
+			},
+			{
+				"text": "Training (50k)",
+				"func": "_conscript",
+				"type": "training",
+				"manpower": 50000
+			}
+		]
+	},
+	# When clicking on a country the player is at war with
+	Context.ENEMY_COUNTRY:
+	{
+		Category.GENERAL:
+		[
+			{"text": "Propose Ceasefire", "cost": 50, "func": "_propose_peace"},
+		],
+		Category.MILITARY:
+		[
+			{"text": "Launch Nuke", "cost": 500, "func": "_launch_nuke"},
+		]
+	},
+	# When clicking on a country the player isn't at war with
+	Context.NEUTRAL_COUNTRY:
+	{
+		Category.GENERAL:
+		[
+			{"text": "Declare War", "cost": 50, "func": "_declare_war"},
+			{"text": "Request Access", "cost": 25, "func": "_request_access"},
+			{"text": "Improve Relations", "cost": 15, "func": "_improve_relations"},
+			{"text": "Form Alliance", "cost": 80, "func": "_form_alliance"},
+		],
+		Category.ECONOMY:
+		[
+			{"text": "Demand Tribute", "cost": 40, "func": "_demand_tribute"},
+			{"text": "Trade Deal", "cost": 10, "func": "_trade_deal"},
+		]
+	}
+}
 
 
 func _enter_tree() -> void:
@@ -75,72 +140,6 @@ func _ready() -> void:
 	label_date.text = clock.get_datetime_string()
 
 
-func _get_menu_actions(context: Context, category: Category) -> Array:
-	var data = {
-		Context.SELF:
-		{
-			Category.GENERAL:
-			[
-				{"text": "Decisions", "func": "open_decisions_tree"},
-				{"text": "Improve Stability", "cost": 25, "func": "improve_stability"},
-				{"text": "Releasables", "func": "_improve_relations"}
-			],
-			Category.ECONOMY:
-			[
-				{"text": "Research", "cost": 0, "func": "open_research_tree"},
-				{"text": "Build Factory", "cost": 0, "func": "_build_factory"},
-				{"text": "Build Port", "cost": 0, "func": "_build_port"},
-			],
-			Category.MILITARY:
-			[
-				{"text": "Choose Deployment Province", "func": "_choose_deploy_city"},
-				{
-					"text": "Training (10k)",
-					"func": "_conscript",
-					"type": "training",
-					"manpower": 10000
-				},
-				{
-					"text": "Training (50k)",
-					"func": "_conscript",
-					"type": "training",
-					"manpower": 50000
-				}
-			]
-		},
-		Context.WAR:
-		{
-			Category.GENERAL:
-			[
-				{"text": "Propose Ceasefire", "cost": 50, "func": "_propose_peace"},
-			],
-			Category.MILITARY:
-			[
-				{"text": "Launch Nuke", "cost": 500, "func": "_launch_nuke"},
-			]
-		},
-		Context.DIPLOMACY:
-		{
-			Category.GENERAL:
-			[
-				{"text": "Declare War", "cost": 50, "func": "_declare_war"},
-				{"text": "Request Access", "cost": 25, "func": "_request_access"},
-				{"text": "Improve Relations", "cost": 15, "func": "_improve_relations"},
-				{"text": "Form Alliance", "cost": 80, "func": "_form_alliance"},
-			],
-			Category.ECONOMY:
-			[
-				{"text": "Demand Tribute", "cost": 40, "func": "_demand_tribute"},
-				{"text": "Trade Deal", "cost": 10, "func": "_trade_deal"},
-			]
-		}
-	}
-
-	if data.has(context) and data[context].has(category):
-		return data[context][category]
-	return []
-
-
 func _on_player_change() -> void:
 	_update_flag()
 	update_topbar_stats()
@@ -153,20 +152,20 @@ func _on_province_clicked(country_name: String) -> void:
 	label_country_sidemenu.text = country_name.capitalize().replace("_", " ")
 
 	if !GameState.choosing_deploy_city || GameState.industry_building == GameState.IndustryType.DEFAULT:
-		var new_context = Context.DIPLOMACY
+		var new_context = Context.NEUTRAL_COUNTRY
 
 		if country_name == CountryManager.player_country.country_name:
-			new_context = Context.SELF
+			new_context = Context.PLAYER_COUNTRY
 		elif WarManager.is_at_war(CountryManager.player_country, selected_country):
-			new_context = Context.WAR
+			new_context = Context.ENEMY_COUNTRY
 
 		var has_military_access := selected_country.country_name in CountryManager.player_country.allowedCountries
-		self.military_access.text = "Military Access: " + String("Yes" if has_military_access else "No")
+		self.military_access_label.text = "Military Access: " + String("Yes" if has_military_access else "No")
 
 		open_menu(new_context, Category.GENERAL)
 
 
-func toggle_menu(context := Context.SELF) -> void:
+func toggle_menu(context := Context.PLAYER_COUNTRY) -> void:
 	if is_open:
 		close_menu()
 	else:
@@ -207,28 +206,25 @@ func _on_menu_button_button_up(_menu_index: int) -> void:
 
 
 func _build_action_list() -> void:
-	# Clear existing
 	for child in actions_container.get_children():
 		child.queue_free()
 
 	label_category.text = Category.keys()[current_category].capitalize()
 
-	# 1. Standard Actions (from Dictionary)
-	var actions = _get_menu_actions(current_context, current_category)
-	for item in actions:
-		var btn = action_scene.instantiate()
-		actions_container.add_child(btn)
+	for item in (menu_actions[current_context] as Dictionary[int, Array]).get(current_category, []):
+		var new_btn = action_scene.instantiate()
 
-		# CRITICAL FIX: The function called must accept an argument because we use .bind(item)
-		var call_ref = Callable(self, item.func).bind(item)
-		btn.setup(item, call_ref)
+		var call_ref = Callable(self, item.func)
+		if item.func == "_conscript":
+			call_ref = call_ref.bind(item)
 
-	# 2. Dynamic Military Actions (Training / Deploy)
-	if current_context == Context.SELF and current_category == Category.MILITARY:
-		var player_ref = CountryManager.player_country
+		new_btn.setup(item, call_ref)
+		actions_container.add_child(new_btn)
 
-		# Ongoing Training
-		for troop in player_ref.ongoing_training:
+	if current_context == Context.PLAYER_COUNTRY and current_category == Category.MILITARY:
+		var player = CountryManager.player_country
+
+		for troop in player.ongoing_training:
 			var btn = action_scene.instantiate()
 			actions_container.add_child(btn)
 			btn.setup_training(troop)
@@ -237,7 +233,7 @@ func _build_action_list() -> void:
 				btn.training_finished.connect(_build_action_list)
 
 		# Ready to Deploy
-		for troop in player_ref.ready_troops:
+		for troop in player.ready_troops:
 			var btn = action_scene.instantiate()
 			actions_container.add_child(btn)
 			# Callable points to deploy_troop, passing the specific troop object
@@ -318,27 +314,22 @@ func slide_out() -> void:
 	tween.tween_property(sidemenu, "position", pos_closed, slide_duration)
 
 
-# NOTE: All callbacks invoked by ActionRow (Standard) must accept
-# one argument (the data dictionary) because of the .bind(item) in _build_action_list.
-
-
-func _choose_deploy_city(_data: Dictionary):
+func _choose_deploy_city():
 	GameState.choosing_deploy_city = true
 
 
-func _declare_war(_data: Dictionary):
+func _declare_war():
 	WarManager.declare_war(CountryManager.player_country, selected_country)
 
 	var has_military_access := selected_country.country_name in CountryManager.player_country.allowedCountries
-	GameState.game_ui.military_access.text = "Military Access: " + String("Yes" if has_military_access else "No")
+	GameState.game_ui.military_access_label.text = "Military Access: " + String("Yes" if has_military_access else "No")
 
-	open_menu(Context.WAR, Category.GENERAL)
+	open_menu(Context.ENEMY_COUNTRY, Category.GENERAL)
 
 
 func _conscript(data: Dictionary):
-	if data.has("manpower"):
-		var manpower = data.manpower / 10000  # Example math
-		CountryManager.player_country.train_troops(manpower, 10, 1000)
+	var manpower = data.manpower / 10000
+	CountryManager.player_country.train_troops(manpower, 10, 1000)
 	update_topbar_stats()
 	_build_action_list()
 
@@ -352,59 +343,60 @@ func deploy_troop(troop):
 	_build_action_list()
 
 
-func improve_stability(_data: Dictionary):
+func improve_stability():
 	CountryManager.player_country.stability += 0.02
 	update_topbar_stats()
 
 
-# These must accept _data to prevent crashing
-func _build_factory(_data: Dictionary):
+func _build_factory():
 	GameState.industry_building = GameState.IndustryType.FACTORY
 	#MapManager.show_industry_country(player.country_name)
 
-	pass
 
-
-func _build_port(_data: Dictionary):
+func _build_port():
 	GameState.industry_building = GameState.IndustryType.PORT
 	#MapManager.show_industry_country(player.country_name)
+
+
+func _request_access():
 	pass
 
 
-func _request_access(_data: Dictionary):
-	pass
-
-
-func _improve_relations(_data: Dictionary):
+func _improve_relations():
 	print("Improving relations")
 
 
-func _propose_peace(_data: Dictionary):
+func _propose_peace():
 	print("Proposing peace")
 
 
-func _launch_nuke(_data: Dictionary):
+func _launch_nuke():
 	print("NUKE!")
 
 
-func _form_alliance(_data: Dictionary):
+func _form_alliance():
 	print("Alliance formed")
 
 
-func _demand_tribute(_data: Dictionary):
+func _demand_tribute():
 	print("Pay up!")
 
 
-func _trade_deal(_data: Dictionary):
+func _trade_deal():
 	print("Trading...")
 
 
-func open_research_tree(_data: Dictionary):
+func open_research_tree():
 	print("Opening Research")
 
 
-func open_decisions_tree(_data: Dictionary):
-	print("Opening Decisions")
+func open_decisions_tree():
+	decision_tree.show()
+
+	GameState.current_world.set_process(false)
+	GameState.current_world.clock.set_process(false)
+	TroopManager.set_process(false)
+	GameState.current_world.find_child("CameraController").set_process(false)
 
 
 func _on_log_button_up() -> void:

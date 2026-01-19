@@ -61,9 +61,6 @@ func _init_ui():
 	refresh_ui()
 
 
-# ── UI Logic ──────────────────────────────────────────
-
-
 func refresh_ui() -> void:
 	var player = CountryManager.player_country
 	if not player:

@@ -50,10 +50,11 @@ corner_radius_bottom_left = 15
 bg_color = Color(0.20990813, 0.20990813, 0.20990801, 1)
 shadow_color = Color(0, 0, 0, 0.35686275)
 
-[node name="GameUI" type="CanvasLayer" node_paths=PackedStringArray("military_access")]
+[node name="GameUI" type="CanvasLayer" node_paths=PackedStringArray("military_access_label", "decision_tree")]
 script = ExtResource("1_rp7y5")
 action_scene = ExtResource("2_5phox")
-military_access = NodePath("Control/SidemenuBG/Sidemenu/PanelContainer/VBoxContainer/MilitaryAccess")
+military_access_label = NodePath("Control/SidemenuBG/Sidemenu/PanelContainer/VBoxContainer/MilitaryAccess")
+decision_tree = NodePath("Control/DecisionTree")
 
 [node name="Control" type="Control" parent="."]
 layout_mode = 3
@@ -432,6 +433,7 @@ grow_vertical = 2
 layout_mode = 2
 
 [node name="DecisionTreeButton" type="Button" parent="Control" node_paths=PackedStringArray("decision_tree")]
+visible = false
 texture_filter = 2
 layout_mode = 1
 anchors_preset = 3
