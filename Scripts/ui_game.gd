@@ -392,11 +392,12 @@ func open_research_tree():
 
 func open_decisions_tree():
 	decision_tree.show()
+	get_tree().paused = true
 
-	GameState.current_world.set_process(false)
-	GameState.current_world.clock.set_process(false)
-	TroopManager.set_process(false)
-	GameState.current_world.find_child("CameraController").set_process(false)
+	#GameState.current_world.set_process(false)
+	#GameState.current_world.clock.set_process(false)
+	#TroopManager.set_process(false)
+	#GameState.current_world.find_child("CameraController").set_process(false)
 
 
 func _on_log_button_up() -> void:
