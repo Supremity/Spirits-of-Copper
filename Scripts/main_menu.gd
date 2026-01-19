@@ -18,16 +18,16 @@ func _on_new_game_pressed() -> void:
 
 
 func _on_settings_pressed() -> void:
-	$"/root/Main Menu/Settings".visible = true
+	$"/root/MainMenu/Settings".visible = true
 
 
 func _on_exit_settings_pressed() -> void:
-	$"/root/Main Menu/Settings".visible = false
+	$"/root/MainMenu/Settings".visible = false
 
 
 func _on_credits_pressed() -> void:
-	$"/root/Main Menu/Credits".visible = true
+	$"/root/MainMenu/Credits".visible = true
 
 
 func _on_exit_credits_pressed() -> void:
-	$"/root/Main Menu/Credits".visible = false
+	$"/root/MainMenu/Credits".visible = false

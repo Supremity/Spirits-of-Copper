@@ -83,7 +83,7 @@ func _on_button_pressed(btn: Button):
 
 func _execute_action(action: Dictionary):
 	match action.get("type", ""):
-		"hourly_money_income":
+		"increase_hourly_money":
 			CountryManager.player_country.hourly_money_income += action.get("amount", 0)
 
 		"increase_manpower":
@@ -93,7 +93,8 @@ func _execute_action(action: Dictionary):
 			CountryManager.player_country.daily_pp_gain += action.get("amount", 0)
 
 		"unlock_modifier":
-			print(action)
+			#print(action)
+			pass
 		_:
 			push_warning("Unknown action: " + str(action))
 

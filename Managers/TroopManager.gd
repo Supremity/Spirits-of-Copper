@@ -535,7 +535,7 @@ func get_province_strength(pid: int, country: String) -> int:
 	var list = troops_by_province.get(pid, [])
 	for t in list:
 		if t.country_name == country:
-			total += t.divisions_count
+			total += t.divisions_count	
 	return total
 
 

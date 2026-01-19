@@ -22,7 +22,7 @@ content_margin_right = 14.0
 content_margin_bottom = 14.0
 bg_color = Color(0.08627451, 0.08627451, 0.08627451, 1)
 
-[node name="Control" type="Control"]
+[node name="MainMenu" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
