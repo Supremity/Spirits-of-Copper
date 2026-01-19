@@ -73,11 +73,7 @@ func _load_music_folder(path: String, track_enum: int):
 			file_name = dir.get_next()
 
 
-# --- Music Logic ---
-
-
 func play_music(track: int):
-	# 1. Safety check for empty folders
 	if not music_map.has(track) or music_map[track].is_empty():
 		return
 
@@ -103,9 +99,6 @@ func fade_out_music(duration: float = 1.0):
 	await tween.finished
 	music_player.stop()
 	current_track_type = -1
-
-
-# --- SFX Logic ---
 
 
 func play_sfx(sfx: int):

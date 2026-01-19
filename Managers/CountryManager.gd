@@ -38,7 +38,7 @@ func get_country(c_name: String) -> CountryData:
 		return null
 	if countries.has(c_name):
 		return countries[c_name]
-	push_error("CountryManager: Requested non-existent country '%s'" % c_name)
+	push_warning("CountryManager: Requested non-existent country '%s'" % c_name)
 	return null
 
 
