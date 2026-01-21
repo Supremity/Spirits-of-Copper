@@ -100,8 +100,11 @@ func get_country_used_manpower(country_obj: CountryData) -> int:
 	var troop_list = TroopManager.get_troops_for_country(country_obj.country_name)
 	for troop in troop_list:
 		total_divisions += troop.divisions_count
+	
 	for training in country_obj.ongoing_training:
-		total_divisions += training.divisions
+		total_divisions += training.divisions_count
+	
 	for ready_troop in country_obj.ready_troops:
-		total_divisions += ready_troop.divisions
+		total_divisions += ready_troop.stored_divisions.size()
+		
 	return total_divisions * country_obj.manpower_per_division

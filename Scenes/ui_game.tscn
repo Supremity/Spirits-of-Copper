@@ -443,15 +443,29 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -90.0
-offset_top = 164.0
-offset_right = -24.0
-offset_bottom = 227.0
+offset_left = -76.0
+offset_top = 139.0
+offset_right = -10.0
+offset_bottom = 202.0
 grow_horizontal = 0
 focus_mode = 0
 texture_normal = ExtResource("20_85er5")
 ignore_texture_size = true
 stretch_mode = 5
+
+[node name="TroopContainer" type="PanelContainer" parent="Control"]
+visible = false
+layout_mode = 0
+offset_left = 937.0
+offset_top = 238.0
+offset_right = 1149.0
+offset_bottom = 647.0
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Control/TroopContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control/TroopContainer/ScrollContainer"]
+layout_mode = 2
 
 [node name="ColorRect" type="ColorRect" parent="."]
 visible = false

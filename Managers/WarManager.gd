@@ -70,35 +70,40 @@ class Battle:
 			_resolve_round()
 
 	func _resolve_round():
-		var att_divs = _get_divisions(attacker_pid, attacker_country)
+		var att_troops = TroopManager.get_troops_in_province(attacker_pid).filter(func(t): return t.country_name == attacker_country)
+		var def_troops = TroopManager.get_troops_in_province(defender_pid).filter(func(t): return t.country_name == defender_country)
 
-		# Attacker Eliminated?
-		if att_divs <= 0:
+		if att_troops.is_empty():
 			manager.end_battle(self)
 			return
 
-		var def_divs = _get_divisions(defender_pid, defender_country)
+		# 1. Sum up REAL stats from every division object
+		var total_atk_power = 0.0
+		for t in att_troops:
+			for div in t.stored_divisions:
+				# We multiply by (div.hp / 100.0) so damaged units deal less damage!
+				total_atk_power += div.get_attack_power() * (div.hp / 100.0)
 
-		# Modifiers
-		var att_mult = 1.0
-		var def_mult = 1.0
-		if attacker_stats:
-			att_mult = attacker_stats.get_attack_efficiency()
-		if defender_stats:
-			def_mult = defender_stats.get_defense_efficiency()
+		var total_def_power = 0.0
+		for t in def_troops:
+			for div in t.stored_divisions:
+				total_def_power += div.get_defense_power() * (div.hp / 100.0)
 
-		# Effective Combat Power
-		var att_ecp = att_divs * (att_morale / 100.0) * att_mult
-		var def_ecp = def_divs * (def_morale / 100.0) * def_mult * 1.2
+		# 2. Apply Morale and Country Modifiers
+		var att_mult = attacker_stats.get_attack_efficiency() if attacker_stats else 1.0
+		var def_mult = defender_stats.get_defense_efficiency() if defender_stats else 1.0
 
-		# Damage Calculation
-		province_hp = max(0.0, province_hp - (att_ecp * manager.BASE_DAMAGE_DIVISIONS))
-		att_morale = max(0.0, att_morale - (def_ecp * manager.MORALE_DECAY_RATE))
-		def_morale = max(0.0, def_morale - (att_ecp * manager.MORALE_DECAY_RATE))
+		var final_attack = total_atk_power * (att_morale / 100.0) * att_mult
+		var final_defense = total_def_power * (def_morale / 100.0) * def_mult
 
-		# Progress Calculation
-		attack_progress += (att_ecp - def_ecp) / total_initial_strength * 10.0
-		attack_progress = clamp(attack_progress, -manager.PROGRESS_MAX, manager.PROGRESS_MAX)
+		# 3. Damage Calculation
+		# Damage the HP of the divisions (using your apply_casualties fix below)
+		manager.apply_casualties(defender_pid, defender_country, final_attack * 0.5)
+		manager.apply_casualties(attacker_pid, attacker_country, final_defense * 0.2)
+
+		# 4. Morale Decay
+		att_morale -= (final_defense * manager.MORALE_DECAY_RATE)
+		def_morale -= (final_attack * manager.MORALE_DECAY_RATE)
 
 		# Victory Check
 		if province_hp <= 0 or def_morale <= 1.0:
@@ -108,17 +113,24 @@ class Battle:
 
 	func _defender_loses():
 		var troops = TroopManager.get_troops_in_province(defender_pid)
-		for t in troops:
-			if t.country_name != defender_country:
-				continue
+		var retreat_pid = _find_retreat_province(defender_pid, defender_country)
 
-			# Wipe out small units, chance to wipe out large ones
-			var retreat_pid = _find_retreat_province(defender_pid, defender_country)
-			if t.divisions_count <= 1 or retreat_pid == -1 or randf() < 0.5:
+		for t in troops:
+			if t.country_name != defender_country: continue
+
+			if retreat_pid == -1 or randf() < 0.3: # 30% chance to get "Overrun" (destroyed)
 				TroopManager.remove_troop(t)
 			else:
-				t.divisions_count = max(1, int(t.divisions_count * 0.5))
-				TroopManager.teleport_troop_to_province(t, retreat_pid)
+				# RETREAT: They lose 20% of their divisions randomly
+				var shatter_count = ceil(t.stored_divisions.size() * 0.2)
+				for i in range(shatter_count):
+					if not t.stored_divisions.is_empty():
+						t.stored_divisions.remove_at(randi() % t.stored_divisions.size())
+				
+				if t.stored_divisions.is_empty():
+					TroopManager.remove_troop(t)
+				else:
+					TroopManager.teleport_troop_to_province(t, retreat_pid)
 
 		MapManager.transfer_ownership(defender_pid, attacker_country)
 		manager._check_country_collapse(defender_country, attacker_country)
@@ -177,22 +189,35 @@ func end_battle(battle: Battle):
 		active_battles.erase(battle)
 
 
-func apply_casualties(pid: int, country: String, damage_divisions: float):
+func apply_casualties(pid: int, country: String, damage_amount: float):
 	var troops_list = TroopManager.get_troops_in_province(pid).filter(
 		func(t): return t.country_name == country
 	)
-	if troops_list.is_empty() or damage_divisions <= 0:
+	if troops_list.is_empty() or damage_amount <= 0:
 		return
 
-	var total_divisions = float(TroopManager.get_province_strength(pid, country))
+	# Spread damage across all troops in the province
+	var damage_per_troop = damage_amount / troops_list.size()
 
 	for t in troops_list:
-		var troop_proportion = t.divisions_count / total_divisions if total_divisions > 0 else 0
-		var damage = damage_divisions * troop_proportion
-		t.divisions_count -= damage
+		if t.stored_divisions.is_empty(): continue
+		
+		# Spread damage across all divisions in this troop
+		var damage_per_div = damage_per_troop / t.stored_divisions.size()
+		
+		# Loop backwards so we can safely remove dead divisions
+		for i in range(t.stored_divisions.size() - 1, -1, -1):
+			var div = t.stored_divisions[i]
+			div.hp -= damage_per_div
+			
+			# Gain a little experience for fighting!
+			div.experience = min(1.0, div.experience + 0.01)
 
-		if t.divisions_count <= 0:
-			t.divisions_count = 0
+			if div.hp <= 0:
+				t.stored_divisions.remove_at(i)
+		
+		# If all divisions in the troop died, remove the troop from map
+		if t.stored_divisions.is_empty():
 			TroopManager.remove_troop(t)
 
 

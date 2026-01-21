@@ -40,6 +40,8 @@ func _ready() -> void:
 	MapManager.all_cities = MapManager.get_all_cities()
 	CountryManager.initialize_countries()
 	CountryManager.set_player_country("brazil")
+	# For debugging purposes. Create some troops first
+	TroopManager.create_troop("brazil", 10, MapManager.country_to_provinces.get("brazil")[0])
 	MapManager.force_bidirectional_connections()
 
 	var map_width := MapManager.id_map_image.get_width()

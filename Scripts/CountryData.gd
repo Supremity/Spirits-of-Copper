@@ -39,25 +39,23 @@ var deploy_pid = -1
 
 #region --- Inner Classes ---
 class TroopTraining:
-	var divisions: int
+	var divisions_count: int  # Just the number being trained
 	var days_left: int
 	var daily_cost: float
-
+	# Future proofing: You could add 'template_id' here later
+	
 	func _init(_divisions: int, _days: int, _daily_cost: float):
-		divisions = _divisions
+		divisions_count = _divisions
 		days_left = _days
 		daily_cost = _daily_cost
 
-
 class ReadyTroop:
-	var divisions: int
+	# CHANGED: Now holds the actual objects, not just a number
+	var stored_divisions: Array[DivisionData] = []
 
-	func _init(_divisions: int):
-		divisions = _divisions
-
-
+	func _init(_divisions_array: Array[DivisionData]):
+		stored_divisions = _divisions_array
 #endregion
-
 
 #region --- Lifecycle ---
 func _init(p_country_name: String) -> void:
@@ -115,31 +113,49 @@ func get_daily_state_income() -> float:
 	return (gdp * tax_rate * tax_efficiency) / 365.0
 
 
+# In CountryData.gd
+
 #region --- Military Management ---
-func train_troops(divisions: int, days: int, cost_per_day: float) -> bool:
-	var manpower_needed = divisions * manpower_per_division
-	var first_hour_cost := divisions * cost_per_day
+func train_troops(count: int, days: int, cost_per_day: float) -> bool:
+	var manpower_needed = count * manpower_per_division
+	var first_hour_cost := count * cost_per_day
 
 	if manpower < manpower_needed or money < first_hour_cost:
 		return false
 
 	manpower -= manpower_needed
 	money -= first_hour_cost
-	ongoing_training.append(TroopTraining.new(divisions, days, cost_per_day))
+	
+	# Create the training batch
+	ongoing_training.append(TroopTraining.new(count, days, cost_per_day))
 	return true
 
 
 func _process_training() -> void:
+	# 1. Process costs and time
 	for training in ongoing_training:
-		var daily_cost := training.divisions * training.daily_cost
+		var daily_cost := training.divisions_count * training.daily_cost
 		if money >= daily_cost:
 			money -= daily_cost
 			training.days_left -= 1
 
+	# 2. Check for graduation
 	for i in range(ongoing_training.size() - 1, -1, -1):
 		var training = ongoing_training[i]
+		
 		if training.days_left <= 0:
-			ready_troops.append(ReadyTroop.new(training.divisions))
+			# --- THE MAGIC MOMENT: Integer becomes Objects ---
+			var new_divisions_batch: Array[DivisionData] = []
+			
+			for d in range(training.divisions_count):
+				var new_div = DivisionData.new()
+				new_div.name = "Infantry Div %d" % (randi() % 1000) # Placeholder naming
+				new_div.hp = 100.0
+				new_divisions_batch.append(new_div)
+			
+			# Store the objects in the ReadyTroop container
+			ready_troops.append(ReadyTroop.new(new_divisions_batch))
+			
 			ongoing_training.remove_at(i)
 
 
@@ -173,7 +189,9 @@ func deploy_ready_troop_to_random(troop: ReadyTroop) -> bool:
 		return false
 
 	var random_province_id = my_provinces.pick_random()
-	TroopManager.create_troop(country_name, troop.divisions, random_province_id)
+	
+	TroopManager.deploy_specific_divisions(country_name, troop.stored_divisions, random_province_id)
+	
 	ready_troops.remove_at(index)
 	return true
 
@@ -182,11 +200,11 @@ func deploy_ready_troop_to_pid(troop: ReadyTroop) -> bool:
 	var index = ready_troops.find(troop)
 	if index == -1:
 		return false
-	TroopManager.create_troop(country_name, troop.divisions, deploy_pid)
+	
+	TroopManager.deploy_specific_divisions(country_name, troop.stored_divisions, deploy_pid)
+	
 	ready_troops.remove_at(index)
 	return true
-
-
 #endregion
 
 
