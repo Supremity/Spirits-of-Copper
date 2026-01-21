@@ -427,8 +427,9 @@ func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 			print("Action Failed: Cannot build in foreign territory.")
 			GameState.reset_industry_building()
 			show_countries_map()
-
-	country_clicked.emit(province_to_country.get(pid, ""))
+	
+	if TroopManager.troop_selection.selected_troops.is_empty(): # Prevent menu from spawning when selecting troops (annoying)
+		country_clicked.emit(province_to_country.get(pid, ""))
 
 
 func _execute_deployment(pid: int, player_name: String) -> void:

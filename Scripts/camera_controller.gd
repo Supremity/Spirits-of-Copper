@@ -11,9 +11,12 @@ func _process(delta: float) -> void:
 		return
 	_handle_keyboard_movement(delta)
 
+func _is_mouse_over_ui() -> bool:
+	var hovered = get_viewport().gui_get_hovered_control()
+	return hovered != null
 
 func _input(event: InputEvent) -> void:
-	if Console.is_visible():
+	if Console.is_visible() or _is_mouse_over_ui():
 		return
 
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_MIDDLE:
