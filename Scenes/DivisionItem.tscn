@@ -1,0 +1,103 @@
+[gd_scene load_steps=7 format=3 uid="uid://3jqreuwgn3ti"]
+
+[ext_resource type="Script" uid="uid://bmffrhl6hb5bl" path="res://Scenes/division_item.gd" id="1_bl13n"]
+[ext_resource type="Texture2D" uid="uid://une8u7tuv306" path="res://assets/icons/hoi4/infantry.png" id="1_sbw2w"]
+[ext_resource type="FontFile" uid="uid://cfsmiwr5bc70" path="res://font/Google_Sans/static/GoogleSans-Medium.ttf" id="3_1h1m1"]
+[ext_resource type="Texture2D" uid="uid://bi6opsv56phsp" path="res://assets/icons/hoi4/shield.png" id="4_7jmgu"]
+[ext_resource type="Texture2D" uid="uid://d3q0n2n6hid6x" path="res://assets/icons/star_icon.png" id="6_1h1m1"]
+[ext_resource type="Texture2D" uid="uid://t8131h6o02oi" path="res://assets/icons/hoi4/minecraft.png" id="6_bl13n"]
+
+[node name="DivisionItem" type="Panel"]
+custom_minimum_size = Vector2(218, 60)
+offset_right = 218.0
+offset_bottom = 60.0
+script = ExtResource("1_bl13n")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 0
+offset_right = 218.0
+offset_bottom = 59.0
+color = Color(0.0253638, 0.0253638, 0.025363795, 1)
+
+[node name="TextureRect" type="TextureRect" parent="ColorRect"]
+layout_mode = 0
+offset_left = -13.0
+offset_top = -10.0
+offset_right = 45.0
+offset_bottom = 35.0
+texture = ExtResource("1_sbw2w")
+expand_mode = 1
+
+[node name="ProgressBar" type="ProgressBar" parent="ColorRect"]
+layout_mode = 0
+offset_top = 28.0
+offset_right = 42.0
+offset_bottom = 58.0
+theme_override_fonts/font = ExtResource("3_1h1m1")
+
+[node name="label_division" type="Label" parent="ColorRect"]
+layout_mode = 0
+offset_left = 33.0
+offset_top = 5.0
+offset_right = 108.0
+offset_bottom = 28.0
+theme_override_fonts/font = ExtResource("3_1h1m1")
+text = "Division 1"
+
+[node name="TextureRect2" type="TextureRect" parent="ColorRect"]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 35.0
+offset_right = 141.0
+offset_bottom = 55.0
+texture = ExtResource("4_7jmgu")
+expand_mode = 1
+
+[node name="TextureRect3" type="TextureRect" parent="ColorRect"]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 5.0
+offset_right = 145.0
+offset_bottom = 26.0
+texture = ExtResource("6_bl13n")
+expand_mode = 1
+
+[node name="label_attack" type="Label" parent="ColorRect"]
+layout_mode = 0
+offset_left = 152.0
+offset_top = 4.0
+offset_right = 188.0
+offset_bottom = 27.0
+theme_override_fonts/font = ExtResource("3_1h1m1")
+text = "67"
+
+[node name="label_defense" type="Label" parent="ColorRect"]
+layout_mode = 0
+offset_left = 152.0
+offset_top = 34.0
+offset_right = 186.0
+offset_bottom = 57.0
+theme_override_fonts/font = ExtResource("3_1h1m1")
+text = "67"
+
+[node name="TextureRect4" type="TextureRect" parent="ColorRect"]
+layout_mode = 0
+offset_left = 39.0
+offset_top = 26.0
+offset_right = 77.0
+offset_bottom = 58.0
+texture = ExtResource("6_1h1m1")
+expand_mode = 1
+
+[node name="label_experience" type="Label" parent="ColorRect"]
+layout_mode = 0
+offset_left = 76.0
+offset_top = 34.0
+offset_right = 116.0
+offset_bottom = 57.0
+theme_override_fonts/font = ExtResource("3_1h1m1")
+text = "67"
+
+[connection signal="gui_input" from="." to="." method="_gui_input"]
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]

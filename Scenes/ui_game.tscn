@@ -456,8 +456,8 @@ stretch_mode = 5
 [node name="TroopContainer" type="PanelContainer" parent="Control"]
 visible = false
 layout_mode = 0
-offset_left = 937.0
-offset_top = 238.0
+offset_left = 931.0
+offset_top = 235.0
 offset_right = 1149.0
 offset_bottom = 647.0
 

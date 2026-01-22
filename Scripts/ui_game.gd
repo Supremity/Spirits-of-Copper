@@ -416,36 +416,7 @@ func _on_log_button_up() -> void:
 
 # 1. Add this variable at the top with your other @onready variables
 var selected_division_objects: Array[DivisionData] = []
-
-# 2. Add these helper colors (optional, but makes code cleaner)
-const COLOR_NORMAL = Color(0.1, 0.1, 0.1, 0.7)
-const COLOR_HOVER = Color(0.088, 0.153, 0.51, 0.9) # Dark olive highlight
-const COLOR_SELECTED = Color(0.1, 0.4, 0.6, 0.9) # A nice blueprint blue
-
-# ... your make_troop_container and other functions ...
-
-func _on_division_card_clicked(div: DivisionData, panel: PanelContainer):
-	if div in selected_division_objects:
-		selected_division_objects.erase(div)
-	else:
-		selected_division_objects.append(div)
-	
-	# Refresh the look immediately
-	_update_card_visuals(div, panel)
-
-# New helper to centralize the look of the card
-func _update_card_visuals(div: DivisionData, panel: PanelContainer):
-	var style = panel.get_theme_stylebox("panel") as StyleBoxFlat
-	if div in selected_division_objects:
-		style.bg_color = COLOR_SELECTED
-		style.border_width_left = 8
-		style.border_color = Color.CYAN
-	else:
-		style.bg_color = COLOR_NORMAL
-		style.border_width_left = 4
-		style.border_color = Color.DARK_GRAY
-func close_troop_container() -> void:
-	troop_container.visible = false
+const DIVISION_CARD_SCENE = preload("res://Scenes/DivisionItem.tscn") # Path to your card
 
 func make_troop_container(selected_troops: Array[TroopData]) -> void:
 	troop_container.visible = true
@@ -453,122 +424,40 @@ func make_troop_container(selected_troops: Array[TroopData]) -> void:
 		child.queue_free()
 	
 	for troop in selected_troops:
-		# --- Stack Header ---
+		# --- Create a Province Header ---
 		var header_panel = PanelContainer.new()
 		var h_style = StyleBoxFlat.new()
-		h_style.bg_color = Color(0.05, 0.05, 0.05, 0.8)
+		h_style.bg_color = Color(0.15, 0.15, 0.15, 0.9) # Dark grey header
 		h_style.border_width_bottom = 2
 		h_style.border_color = Color.GOLD
 		header_panel.add_theme_stylebox_override("panel", h_style)
 		
 		var header_label = Label.new()
-		header_label.text = " PROVINCE %d " % troop.province_id
-		header_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		header_label.text = "  PROVINCE %d" % troop.province_id
+		header_label.add_theme_color_override("font_color", Color.GOLD)
 		header_panel.add_child(header_label)
+		
 		troop_list_parent.add_child(header_panel)
 
+		# --- Add the Division Cards ---
 		for div in troop.stored_divisions:
-			var div_card = _create_division_card(div, troop)
-			troop_list_parent.add_child(div_card)
+			var card = DIVISION_CARD_SCENE.instantiate()
+			troop_list_parent.add_child(card)
+			
+			var is_selected = (div in selected_division_objects)
+			card.setup(div, is_selected)
+			card.clicked.connect(_on_card_clicked)
 
-func _create_division_card(div: DivisionData, parent_troop: TroopData) -> PanelContainer:
-	var panel = PanelContainer.new()
+func _on_card_clicked(div: DivisionData, card_node: Control):
+	if div in selected_division_objects:
+		selected_division_objects.erase(div)
+		card_node.is_selected = false
+	else:
+		selected_division_objects.append(div)
+		card_node.is_selected = true
 	
-	# 1. Base Styling
-	var style = StyleBoxFlat.new()
-	style.bg_color = COLOR_NORMAL
-	style.set_content_margin_all(5)
-	style.border_width_left = 4
-	style.border_color = Color.DARK_GRAY
-	panel.add_theme_stylebox_override("panel", style)
+	card_node.update_visuals()
+	print("Selected divisions count: ", selected_division_objects.size())
 
-	# 2. Layout
-	var hbox = HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 12)
-	panel.add_child(hbox)
-
-	# 3. Unit Icon with Tooltip
-	var icon = TextureRect.new()
-	var icon_path = "res://assets/icons/hoi4/%s.png" % div.type.to_lower()
-	icon.texture = load(icon_path) if ResourceLoader.exists(icon_path) else null
-	icon.custom_minimum_size = Vector2(40, 40)
-	icon.expand_mode = TextureRect.EXPAND_KEEP_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	
-	# TOOLTIP: Show detailed stats on hover
-	panel.tooltip_text = "%s\nType: %s\nAttack: %.1f\nDefense: %.1f\nExp: %d%%" % [
-		div.name, div.type.capitalize(), div.get_attack_power(), div.get_defense_power(), int(div.experience * 100)
-	]
-	hbox.add_child(icon)
-
-	# 4. Info Vertical Stack (Name + Health Bar)
-	var v_info = VBoxContainer.new()
-	v_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.add_child(v_info)
-
-	var name_label = Label.new()
-	name_label.text = div.name
-	name_label.add_theme_font_size_override("font_size", 14)
-	v_info.add_child(name_label)
-
-	var hp_bar = ProgressBar.new()
-	hp_bar.value = div.hp
-	hp_bar.custom_minimum_size.y = 6
-	hp_bar.show_percentage = false
-	var hp_style = StyleBoxFlat.new()
-	hp_style.bg_color = Color.SPRING_GREEN.lerp(Color.RED, 1.0 - (div.hp/100.0))
-	hp_bar.add_theme_stylebox_override("fill", hp_style)
-	v_info.add_child(hp_bar)
-
-	# 5. Exp Stars
-	var stars = Label.new()
-	stars.text = "★" + str(int(div.experience * 5 + 1))
-	stars.modulate = Color.GOLD
-	hbox.add_child(stars)
-
-	# 6. DISBAND BUTTON
-	var disband_btn = Button.new()
-	disband_btn.text = " ✘ "
-	disband_btn.flat = true
-	disband_btn.modulate = Color.INDIAN_RED
-	disband_btn.tooltip_text = "Disband Division"
-	disband_btn.pressed.connect(func(): _on_disband_pressed(div, parent_troop, panel))
-	hbox.add_child(disband_btn)
-
-	# --- INTERACTIVITY SIGNALS ---
-# --- INTERACTIVITY SIGNALS ---
-	panel.mouse_entered.connect(func(): 
-		style.bg_color = COLOR_HOVER
-		style.border_color = Color.ANTIQUE_WHITE
-	)
-
-	panel.mouse_exited.connect(func(): 
-		# ONLY revert if it's not in our selection list
-		if not div in selected_division_objects:
-			style.bg_color = COLOR_NORMAL
-			style.border_color = Color.DARK_GRAY
-		else:
-			# Keep the selection look if it IS selected
-			style.bg_color = COLOR_SELECTED
-			style.border_color = Color.CYAN
-	)
-	
-	panel.gui_input.connect(func(event):
-		if event is InputEventMouseButton and event.pressed:
-			if event.button_index == MOUSE_BUTTON_LEFT:
-				_on_division_card_clicked(div, panel)
-	)
-	
-	return panel
-
-func _on_disband_pressed(div: DivisionData, troop: TroopData, ui_node: Control):
-	# Remove from data
-	troop.stored_divisions.erase(div)
-	# Remove from UI with a small effect
-	var tween = create_tween()
-	tween.tween_property(ui_node, "modulate:a", 0.0, 0.2)
-	tween.finished.connect(ui_node.queue_free)
-	
-	# If troop is now empty, remove it from map
-	if troop.stored_divisions.is_empty():
-		TroopManager.remove_troop(troop)
+func close_troop_container() -> void:
+	troop_container.visible = false
