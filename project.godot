@@ -42,7 +42,7 @@ enabled=PackedStringArray("res://addons/console/plugin.cfg")
 
 [gui]
 
-theme/custom_font="uid://cee8mbnpx3w3h"
+theme/custom_font="uid://dbgv10is5c4ls"
 
 [input]
 

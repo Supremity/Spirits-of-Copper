@@ -204,6 +204,11 @@ func _on_menu_button_button_up(_menu_index: int) -> void:
 		MapManager.set_country_color(CountryManager.player_country.country_name, Color.TRANSPARENT)
 		GameState.industry_building = GameState.IndustryType.DEFAULT
 		MapManager.show_countries_map()
+		
+	if _menu_index == Category.MILITARY:
+		military_extra_panel.visible = true
+	else:
+		military_extra_panel.visible = false
 	_build_action_list()
 
 
@@ -461,3 +466,10 @@ func _on_card_clicked(div: DivisionData, card_node: Control):
 
 func close_troop_container() -> void:
 	troop_container.visible = false
+	
+	
+##### Military Stuff here 
+@onready var military_extra_panel: ColorRect = $Control/SidemenuBG/Sidemenu/MilitaryExtraPanel
+
+	
+	

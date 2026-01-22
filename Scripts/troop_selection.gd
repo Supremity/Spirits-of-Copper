@@ -130,7 +130,6 @@ func _perform_selection() -> void:
 	for t in selected_list:
 		if not selected_troops.has(t):
 			selected_troops.append(t)
-			_print_troop_details(t)
 
 	# Update max_path_length based on current live selection
 	max_path_length = 0

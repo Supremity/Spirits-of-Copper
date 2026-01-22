@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://dgfixe44dvfny"]
+[gd_scene load_steps=31 format=3 uid="uid://dgfixe44dvfny"]
 
 [ext_resource type="Script" uid="uid://dqvjehbri1br0" path="res://Scripts/ui_game.gd" id="1_rp7y5"]
 [ext_resource type="Texture2D" uid="uid://dpohmal5pe58k" path="res://assets/flags/abkhazia_flag.png" id="1_xar7q"]
@@ -18,7 +18,10 @@
 [ext_resource type="Texture2D" uid="uid://blvp32r1imoh" path="res://assets/ui/inverted_corner.png" id="14_yp111"]
 [ext_resource type="FontFile" uid="uid://cfsmiwr5bc70" path="res://font/Google_Sans/static/GoogleSans-Medium.ttf" id="15_yp111"]
 [ext_resource type="Theme" uid="uid://6wluupp1lmut" path="res://tab_button_theme.tres" id="16_6c76w"]
+[ext_resource type="Texture2D" uid="uid://une8u7tuv306" path="res://assets/icons/hoi4/infantry.png" id="18_ilaaa"]
+[ext_resource type="Texture2D" uid="uid://cmjkbcspwdlst" path="res://assets/icons/hoi4/artillery.png" id="19_lpwmk"]
 [ext_resource type="Texture2D" uid="uid://ut3mrourj5k1" path="res://assets/icons/log.png" id="20_85er5"]
+[ext_resource type="Texture2D" uid="uid://w0sqe5wwsu1g" path="res://assets/icons/hoi4/tank.png" id="20_qum3k"]
 [ext_resource type="Script" uid="uid://b0bru3cp5d7o2" path="res://Scripts/country_log.gd" id="21_ilaaa"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uqxsi"]
@@ -430,6 +433,72 @@ grow_vertical = 2
 
 [node name="ActionsList" type="VBoxContainer" parent="Control/SidemenuBG/Sidemenu/ScrollContainer"]
 layout_mode = 2
+
+[node name="MilitaryExtraPanel" type="ColorRect" parent="Control/SidemenuBG/Sidemenu"]
+visible = false
+layout_mode = 0
+offset_left = 264.0
+offset_top = 301.0
+offset_right = 568.0
+offset_bottom = 542.0
+color = Color(0.09803922, 0.09803922, 0.09803922, 1)
+
+[node name="button_infantry" type="Button" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
+layout_mode = 0
+offset_left = 11.0
+offset_top = 22.0
+offset_right = 95.0
+offset_bottom = 72.0
+icon = ExtResource("18_ilaaa")
+
+[node name="button_artillery" type="Button" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
+layout_mode = 0
+offset_left = 105.0
+offset_top = 22.0
+offset_right = 189.0
+offset_bottom = 72.0
+icon = ExtResource("19_lpwmk")
+
+[node name="button_tank" type="Button" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
+layout_mode = 0
+offset_left = 201.0
+offset_top = 22.0
+offset_right = 285.0
+offset_bottom = 72.0
+icon = ExtResource("20_qum3k")
+
+[node name="Label" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 115.0
+offset_right = 90.0
+offset_bottom = 139.0
+theme_override_fonts/font = ExtResource("4_uqxsi")
+text = "Divisions"
+
+[node name="Button" type="Button" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
+layout_mode = 0
+offset_left = 79.0
+offset_top = 195.0
+offset_right = 241.0
+offset_bottom = 231.0
+text = "TRAIN"
+
+[node name="Label2" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 143.0
+offset_right = 121.0
+offset_bottom = 164.0
+text = "Attack/Defense"
+
+[node name="Label3" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 86.0
+offset_right = 56.0
+offset_bottom = 107.0
+text = "Type"
 
 [node name="DecisionTree" parent="Control" instance=ExtResource("13_364vl")]
 process_mode = 3
