@@ -7,7 +7,9 @@ var current_track_type: int = -1
 
 # --- Enums ---
 enum SFX {
-	TROOP_MOVE, TROOP_SELECTED, BATTLE_START, OPEN_MENU, DECLARE_WAR, HOVERED, CLOSE_MENU, GAME_OVER
+	TROOP_MOVE, 
+	TROOP_SELECTED, 
+	BATTLE_START, OPEN_MENU, DECLARE_WAR, HOVERED, CLOSE_MENU, GAME_OVER, POPUP
 }
 
 enum MUSIC { MAIN_THEME, BATTLE_THEME }
@@ -22,7 +24,9 @@ var sfx_map = {
 	SFX.CLOSE_MENU: preload("res://assets/snd/closeMenuSound.mp3"),
 	SFX.DECLARE_WAR: preload("res://assets/snd/declareWarSound.mp3"),
 	SFX.HOVERED: preload("res://assets/snd/hoveredSound.mp3"),
-	SFX.GAME_OVER: preload("res://assets/snd/endGameSound.mp3")
+	SFX.GAME_OVER: preload("res://assets/snd/endGameSound.mp3"),
+	SFX.POPUP: preload("res://assets/snd/popupSound.mp3")
+
 }
 
 var sfx_volume_map = {
@@ -33,7 +37,8 @@ var sfx_volume_map = {
 	SFX.CLOSE_MENU: 0.5,
 	SFX.DECLARE_WAR: 0.9,
 	SFX.HOVERED: 0.3,
-	SFX.GAME_OVER: 0.5
+	SFX.GAME_OVER: 0.5,
+	SFX.POPUP: 0.5,
 }
 
 var music_map = {MUSIC.MAIN_THEME: [], MUSIC.BATTLE_THEME: []}

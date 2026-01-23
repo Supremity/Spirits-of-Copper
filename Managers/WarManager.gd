@@ -239,8 +239,9 @@ func declare_war(a: CountryData, b: CountryData) -> void:
 
 
 	PopupManager.show_alert("war", a, b)
-	MusicManager.play_sfx(MusicManager.SFX.DECLARE_WAR)
-	MusicManager.play_music(MusicManager.MUSIC.BATTLE_THEME)
+	if (a.is_player):
+		MusicManager.play_music(MusicManager.MUSIC.BATTLE_THEME)
+		MusicManager.play_sfx(MusicManager.SFX.DECLARE_WAR)
 
 
 func add_war_silent(a: CountryData, b: CountryData) -> bool:
@@ -265,6 +266,13 @@ func add_war_silent(a: CountryData, b: CountryData) -> bool:
 func is_at_war(a: CountryData, b: CountryData) -> bool:
 	return wars.has(a) and wars[a].has(b)
 
+
+func is_country_at_war(country_name: String) -> bool:
+	var country_data = CountryManager.get_country(country_name)
+	if not country_data:
+		return false
+
+	return wars.has(country_data) and not wars[country_data].is_empty()
 
 func is_at_war_names(a_name: String, b_name: String) -> bool:
 	if not CountryManager:
@@ -314,7 +322,6 @@ func _check_country_collapse(country_name: String, victor_name: String):
 
 
 func _handle_total_collapse(fallen_country_name: String, victor_country_name: String):
-	print("--- COLLAPSE: ", fallen_country_name, " has fallen to ", victor_country_name, " ---")
 
 	# 1. Get all provinces owned by the fallen country
 	var all_provinces = MapManager.country_to_provinces.get(fallen_country_name, []).duplicate()
@@ -344,3 +351,13 @@ func _handle_total_collapse(fallen_country_name: String, victor_country_name: St
 			"game_over", CountryManager.player_country, CountryManager.player_country
 		)
 		MusicManager.play_music(MusicManager.MUSIC.MAIN_THEME)
+	elif victor_country_name == CountryManager.player_country.country_name:
+		if !is_country_at_war(victor_country_name):
+			MusicManager.play_music(MusicManager.MUSIC.MAIN_THEME)
+			pass
+		pass
+		
+	MusicManager.play_sfx(MusicManager.SFX.POPUP)
+	PopupManager.show_alert(
+		"capitulated", CountryManager.get_country(fallen_country_name), CountryManager.get_country(fallen_country_name)
+	)
