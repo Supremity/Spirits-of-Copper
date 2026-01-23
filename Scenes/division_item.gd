@@ -28,10 +28,7 @@ func _ready():
 	for child in color_rect.get_children():
 		if child is Control:
 			child.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			
-	# 3. Connect signals
-	mouse_entered.connect(_on_mouse_entered)
-	mouse_exited.connect(_on_mouse_exited)
+		
 
 func setup(div: DivisionData, currently_selected: bool) -> void:
 	data = div

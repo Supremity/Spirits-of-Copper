@@ -1,156 +1,197 @@
 extends Node
+class_name AIController
 
-const MIN_MONEY_RESERVE := 25000.0
-const RECRUIT_MANPOWER_THRESHOLD := 15000
-const PEACETIME_TICK_RATE := 120 # Only re-evaluate movement every 120 frames at peace
-const GARRISON_HUB_COUNT := 3    # Keep units in exactly 3 spots during peace
+# --- TUNING ---
+const TICK_RATE_PEACE := 120  # Slower thinking in peace time
+const TICK_RATE_WAR := 20     # Think fast during war
+const SATURATION_IDEAL := 1.0 # Target: At least 1 division equivalent per province
+const SATURATION_MAX := 4.0   # Avoid overstacking; redistribute if exceeding
+const ATTACK_WEIGHT := 2.0    # Multiplier for provinces with enemy troops
+const DEFENSE_WEIGHT := 1.5   # Multiplier for defending own borders under threat
+const CITY_BONUS := 50.0      # Extra score for cities
+const DISTANCE_PENALTY := 0.1 # Reduce score per unit distance to discourage far moves
+const MIN_DIVISIONS_PER_SPLIT := 1  # Smallest split size
+const MAX_SPLITS_PER_TROOP := 10    # Limit splits to prevent micro-management overhead
 
-
-func ai_handle_deployment(country: CountryData) -> void:
-	if country.ready_troops.is_empty():
-		return
-	
-	var hubs = _get_stable_hubs(country)
-	
-	for troop in country.ready_troops.duplicate():
-		# Priority 1: Specifically requested deployment
-		if country.deploy_pid != -1:
-			country.deploy_ready_troop(troop)
-		# Priority 2: Use stable hubs (keeps the map clean)
-		elif not hubs.is_empty():
-			var target_id = hubs.pick_random()
-			TroopManager.deploy_specific_divisions(
-				country.country_name, 
-				troop.stored_divisions, 
-				target_id
-			)
-			country.ready_troops.erase(troop)
-		# Fallback: Default deployment
-		else:
-			country.deploy_ready_troop(troop)
-
-
-func ai_consider_recruitment(country: CountryData) -> void:
-	# 1. Calculate how many "Infantry" we can actually afford right now
-	var template = DivisionData.TEMPLATES["infantry"]
-	var cost_per = template["cost"]
-	var man_per = template["manpower"]
-	
-	# 2. Check Financial/Manpower headroom
-	var army_base_cost := 100.0
-	var total_divs := 0
-	for troop in TroopManager.get_troops_for_country(country.country_name):
-		total_divs += troop.divisions_count
-	
-	var upkeep_buffer := (total_divs * army_base_cost) * 24
-	var available_money = country.money - (MIN_MONEY_RESERVE + upkeep_buffer)
-	var available_manpower = country.manpower - RECRUIT_MANPOWER_THRESHOLD
-	
-	# 3. Determine Batch Size
-	if available_money < cost_per or available_manpower < man_per:
-		return
-		
-	var can_afford_money = floor(available_money / cost_per)
-	var can_afford_manpower = floor(available_manpower / man_per)
-	
-	# We train in batches of up to 5 at a time to keep it "calm"
-	var batch_size = int(min(can_afford_money, can_afford_manpower))
-	batch_size = clamp(batch_size, 1, 5) 
-
-	country.train_troops(batch_size, "infantry")
-
-func evaluate_frontline_moves(country: CountryData):
-	var enemies = WarManager.get_enemies_of(country.country_name)
-	var is_peace = enemies.is_empty()
-
-	if is_peace and Engine.get_frames_drawn() % PEACETIME_TICK_RATE != 0:
+func ai_tick(country: CountryData) -> void:
+	var tick_rate = TICK_RATE_WAR if _is_at_war(country) else TICK_RATE_PEACE
+	if Engine.get_frames_drawn() % tick_rate != 0:
 		return
 
-	var ai_troops = TroopManager.get_troops_for_country(country.country_name)
-	var idle_troops = ai_troops.filter(func(t): return not t.is_moving)
+	_manage_recruitment(country)
+	_handle_deployment(country)
+	_manage_frontline_logic(country)
+
+# --- THE FRONTLINE LOGIC ---
+func _manage_frontline_logic(country: CountryData) -> void:
+	var my_troops = TroopManager.get_troops_for_country(country.country_name)
+	var idle_troops = my_troops.filter(func(t): return not t.is_moving)
 	if idle_troops.is_empty(): return
 
+	var enemies = WarManager.get_enemies_of(country.country_name)
+	if enemies.is_empty(): 
+		_handle_peace_movement(country, idle_troops)
+		return
+
+	# 1. Analyze the front: find cities, enemy units, and empty gaps
+	var frontline_targets = _analyze_frontline_targets(country, enemies)
+	if frontline_targets.is_empty(): return
+
 	var move_payload = []
+	
+	# 2. Assigning logic: spread idle troops across the closest targets
+	for troop in idle_troops:
+		var troop_pos = MapManager.province_centers[troop.province_id]
+		
+		# Sort targets by distance to THIS specific troop
+		frontline_targets.sort_custom(func(a, b):
+			var dist_a = troop_pos.distance_to(MapManager.province_centers[a.id])
+			var dist_b = troop_pos.distance_to(MapManager.province_centers[b.id])
+			return dist_a < dist_b
+		)
 
-	if is_peace:
-		var hubs = _get_stable_hubs(country)
-		for troop in idle_troops:
-			if not hubs.has(troop.province_id):
-				move_payload.append({"troop": troop, "province_id": hubs.pick_random()})
-	else:
-		# --- WARTIME: MULTI-TARGET SPLITTING ---
-		# 1. Get ALL possible targets (Cities, Armies, and Frontline neighbors)
-		var all_targets = _find_tactical_targets(country.country_name)
-		if all_targets.is_empty(): return
+		# How many ways should we split this troop?
+		# A troop with 10 divs can fill up to 5 gaps (2 divs each)
+		var max_splits = clampi(floor(troop.divisions_count / 2.0), 1, 6)
+		var assigned_count = 0
 
-		for troop in idle_troops:
-			# Determine how much this specific troop stack should "fan out"
-			# More divisions = more splitting
-			var max_splits = 1
-			if troop.divisions_count >= 15:
-				max_splits = 4 # Big army? Go 4 directions
-			elif troop.divisions_count >= 6:
-				max_splits = 2 # Medium army? Go 2 directions
+		for target in frontline_targets:
+			if assigned_count >= max_splits: break
 			
-			# Shuffle targets for this specific troop to ensure variety
-			all_targets.shuffle()
-			var chosen_for_this_troop = 0
-			
-			for target_id in all_targets:
-				if chosen_for_this_troop >= max_splits: break
-				
-				# SATURATION CHECK:
-				# Only send a split if the target isn't already heavily occupied by us
-				var our_strength = TroopManager.get_province_strength(target_id, country.country_name)
-				if our_strength < 5.0: # Cap: Don't send more if ~5 divs are already going there
-					move_payload.append({"troop": troop, "province_id": target_id})
-					chosen_for_this_troop += 1
+			# If the target is already being addressed by another troop, skip it
+			if target.virtual_strength >= SATURATION_IDEAL:
+				continue
 
-	# Your command_move_assigned logic handles the actual division splitting
+			# Add to the payload. 
+			# If the same troop appears 3 times here, your command_move_assigned 
+			# logic will handle splitting the divisions into 3 new troops.
+			move_payload.append({
+				"troop": troop, 
+				"province_id": target.id
+			})
+
+			# Mark the province as "covered"
+			target.virtual_strength += (troop.divisions_count / max_splits)
+			assigned_count += 1
+
+	# 3. Fire the move command
 	if not move_payload.is_empty():
 		TroopManager.command_move_assigned(move_payload)
 
+# --- ANALYSIS: OFFENSIVE AND DEFENSIVE GAPS ---
+func _analyze_frontline_targets(country: CountryData, enemies: Array) -> Array:
+	var targets = []
+	var seen = {}
 
-func _find_tactical_targets(ai_country_name: String) -> Array:
-	var targets: Array = []
-	var enemies = WarManager.get_enemies_of(ai_country_name)
+	for enemy_name in enemies:
+		var border_pids = MapManager.get_provinces_bordering_enemy(country.country_name, enemy_name)
+		
+		for my_pid in border_pids:
+			# Defensive targets: My own border provinces under threat
+			if not seen.has(my_pid):
+				seen[my_pid] = true
+				var enemy_threat = 0.0
+				var neighbors = MapManager.adjacency_list.get(my_pid, [])
+				for n_id in neighbors:
+					if MapManager.province_to_country.get(n_id) == enemy_name:
+						enemy_threat += TroopManager.get_province_strength(n_id, enemy_name)
+				
+				if enemy_threat > 0:
+					var current_str = TroopManager.get_province_strength(my_pid, country.country_name)
+					var score = enemy_threat * DEFENSE_WEIGHT
+					if my_pid in MapManager.all_cities: score += CITY_BONUS
+					
+					targets.append({
+						"id": my_pid,
+						"virtual_strength": current_str,
+						"score": score,
+						"is_defensive": true
+					})
+			
+			# Offensive targets: Enemy provinces bordering mine
+			var neighbors = MapManager.adjacency_list.get(my_pid, [])
+			for n_id in neighbors:
+				if MapManager.province_to_country.get(n_id) == enemy_name and not seen.has(n_id):
+					seen[n_id] = true
+					var enemy_str = TroopManager.get_province_strength(n_id, enemy_name)
+					var current_friendly = TroopManager.get_province_strength(n_id, country.country_name)  # Likely 0 if enemy-owned
+					
+					var score = 10.0
+					if enemy_str > 0: score *= ATTACK_WEIGHT
+					if n_id in MapManager.all_cities: score += CITY_BONUS
+					
+					targets.append({
+						"id": n_id,
+						"virtual_strength": current_friendly,
+						"score": score,
+						"is_defensive": false
+					})
 
-	if not enemies.is_empty():
-		for enemy in enemies:
-			# 1. Find our provinces that touch the enemy
-			var our_frontline = MapManager.get_provinces_bordering_enemy(ai_country_name, enemy)
-
-			# 2. For every frontline province we own, find the enemy neighbor to attack
-			for our_pid in our_frontline:
-				var province_data = MapManager.province_objects.get(our_pid)
-				for neighbor_id in province_data.neighbors:
-					# Is this neighbor owned by the enemy?
-					if MapManager.province_to_country.get(neighbor_id) == enemy:
-						if not targets.has(neighbor_id):
-							targets.append(neighbor_id)
-
-	# Fallback to defense if no enemy targets found
-	if targets.is_empty():
-		targets = MapManager.get_border_provinces(ai_country_name)
-
+	# Adjust scores for distance (global adjustment assuming average, or per-troop later)
+	# For now, skip per-distance as we sort globally and then closest troop
+	
 	return targets
 
-func _get_stable_hubs(country: CountryData) -> Array:
-	# Use a static property check to avoid the crash. 
-	# If you haven't added the var to CountryData, it uses a fallback.
+# --- PEACE / DEPLOYMENT HELPERS ---
+func _handle_peace_movement(country: CountryData, idle_troops: Array) -> void:
+	var hubs = _get_peace_hubs(country)
+	var move_payload = []
+	for troop in idle_troops:
+		if not hubs.has(troop.province_id):
+			# Choose closest hub to avoid unnecessary long moves
+			var troop_pos = MapManager.province_centers[troop.province_id]
+			hubs.sort_custom(func(a, b):
+				var dist_a = troop_pos.distance_to(MapManager.province_centers[a])
+				var dist_b = troop_pos.distance_to(MapManager.province_centers[b])
+				return dist_a < dist_b
+			)
+			move_payload.append({"troop": troop, "province_id": hubs[0]})
+	if not move_payload.is_empty(): TroopManager.command_move_assigned(move_payload)
+
+func _get_peace_hubs(country: CountryData) -> Array:
 	if "cached_garrison_hubs" in country and not country.cached_garrison_hubs.is_empty():
 		return country.cached_garrison_hubs
+	var cities = MapManager.get_cities_province_country(country.country_name)
+	if cities.is_empty(): 
+		cities = MapManager.country_to_provinces.get(country.country_name, []).slice(0, 5)  # More hubs for larger countries
+	cities.shuffle()
+	country.cached_garrison_hubs = cities.slice(0, mini(5, cities.size()))
+	return country.cached_garrison_hubs
 
-	var borders = MapManager.get_border_provinces(country.country_name)
-	if borders.is_empty():
-		return MapManager.get_cities_province_country(country.country_name).slice(0, 1)
+func _is_at_war(country: CountryData) -> bool:
+	return not WarManager.get_enemies_of(country.country_name).is_empty()
 
-	# Seed ensures hubs don't change every time we check
-	seed(country.country_name.hash())
-	borders.shuffle()
-	var hubs = borders.slice(0, GARRISON_HUB_COUNT)
-	seed(Time.get_ticks_msec())
+func _manage_recruitment(country: CountryData) -> void:
+	# Improved: Recruit based on current needs (e.g., more if at war)
+	var template = DivisionData.TEMPLATES["infantry"]  # Could vary templates based on tech/manpower
+	var cost_per = template["cost"]
+	var mp_per = template["manpower"]
+	var max_affordable = mini(int(country.money / cost_per), int(country.manpower / mp_per))
+	if max_affordable < 1: return
+	
+	var target_recruit = clampi(max_affordable, 1, 10)
+	if _is_at_war(country): target_recruit *= 2  # Recruit more aggressively in war
+	target_recruit = mini(target_recruit, max_affordable)
+	
+	country.train_troops(target_recruit, "infantry")
 
-	if "cached_garrison_hubs" in country:
-		country.cached_garrison_hubs = hubs
-	return hubs
+func _handle_deployment(country: CountryData) -> void:
+	if country.ready_troops.is_empty(): return
+	
+	var enemies = WarManager.get_enemies_of(country.country_name)
+	var targets = _analyze_frontline_targets(country, enemies)
+	if not targets.is_empty():
+		targets.sort_custom(func(a, b): return a.score > b.score)
+	
+	for troop_data in country.ready_troops.duplicate():
+		var deploy_id
+		if not targets.is_empty():
+			# Deploy to highest-score target
+			deploy_id = targets[0].id
+			# Update virtual to avoid over-deploying (though deployments are instant?)
+			targets[0].virtual_strength += troop_data.stored_divisions.size()
+		else:
+			deploy_id = _get_peace_hubs(country).pick_random()
+		
+		TroopManager.deploy_specific_divisions(country.country_name, troop_data.stored_divisions, deploy_id)
+		country.ready_troops.erase(troop_data)

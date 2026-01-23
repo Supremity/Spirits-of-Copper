@@ -89,8 +89,10 @@ func process_hour() -> void:
 	update_manpower_pool()
 	
 	if not is_player:
-		AiManager.ai_handle_deployment(self)
-		AiManager.ai_consider_recruitment(self)
+		AiManager.ai_tick(self)
+		pass
+		#AiManager.ai_handle_deployment(self)
+		#AiManager.ai_consider_recruitment(self)
 
 func process_day() -> void:
 	# Refresh stats that change daily/weekly
@@ -98,7 +100,7 @@ func process_day() -> void:
 	_process_training()
 	
 	if not is_player:
-		AiManager.evaluate_frontline_moves(self)
+		pass
 	#	AiManager.manage_military_readiness(self)
 
 func _refresh_economic_stats() -> void:

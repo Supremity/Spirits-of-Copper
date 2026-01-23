@@ -119,54 +119,69 @@ func pause_troop(troop: TroopData) -> void:
 
 
 func command_move_assigned(payload: Array) -> void:
-	if payload.is_empty():
+	if payload.is_empty(): return
+
+	# 1. Group the payload by troop to see who needs to split
+	var troop_to_targets = {}
+	for entry in payload:
+		var t = entry.get("troop")
+		if not t: continue
+		if not troop_to_targets.has(t):
+			troop_to_targets[t] = []
+		troop_to_targets[t].append(entry.get("province_id"))
+
+	# 2. Process each troop
+	for troop in troop_to_targets:
+		var targets = troop_to_targets[troop]
+		
+		# If one troop has multiple targets, we must split it
+		if targets.size() > 1 and troop.divisions_count > 1:
+			var div_pool = troop.stored_divisions.duplicate()
+			@warning_ignore("integer_division")
+			var divs_per_target = max(1, div_pool.size() / targets.size())
+			var remainder = div_pool.size() % targets.size()
+
+			for i in range(targets.size()):
+				var count = divs_per_target + (1 if i < remainder else 0)
+				var batch: Array[DivisionData] = []
+				for j in range(count):
+					if not div_pool.is_empty():
+						batch.append(div_pool.pop_front())
+				
+				if batch.is_empty(): continue
+
+				# Create the new troop for this specific target
+				# If it's the very last batch, we can just repurpose the original troop
+				var move_troop = troop
+				if i < targets.size() - 1:
+					move_troop = _create_new_split_troop(troop, batch)
+				else:
+					troop.stored_divisions = batch # Original troop gets the last slice
+				
+				_apply_movement_path(move_troop, targets[i])
+		else:
+			# Single target: just move the troop normally
+			_apply_movement_path(troop, targets[0])
+
+# Helper to keep your code clean
+func _apply_movement_path(troop: TroopData, target_pid: int) -> void:
+	if troop.province_id == target_pid:
+		_stop_troop(troop)
 		return
 
-	# 1. Setup metadata from the first troop
-	var first_entry = payload[0].get("troop")
-	var country_name = first_entry.country_name
-	var country_ref = CountryManager.get_country(country_name)
-	var allowed_countries: Array[String] = country_ref.allowedCountries if country_ref else []
+	var country_ref = CountryManager.get_country(troop.country_name)
+	var allowed = country_ref.allowedCountries if country_ref else []
+	var path = _get_cached_path(troop.province_id, target_pid, allowed)
 
-	var sfx_played = false
-
-	# 2. Process every individual troop/target pair
-	for entry in payload:
-		var troop = entry.get("troop")
-		var target_pid = entry.get("province_id")
-
-		if not troop or target_pid <= 0:
-			continue
-
-		# Play SFX only once for the whole command
-		if not sfx_played and troop.country_name == CountryManager.player_country.country_name:
-			if MusicManager: 
-				MusicManager.play_sfx(MusicManager.SFX.TROOP_MOVE)
-			sfx_played = true
-
-		# Don't move if we are already there
-		if troop.province_id == target_pid:
-			_stop_troop(troop)
-			continue
-
-		# IMPORTANT: Get path from THIS specific troop's current province
-		var path = _get_cached_path(troop.province_id, target_pid, allowed_countries)
-
-		if not path.is_empty():
-			troop.path = path.duplicate()
-			
-			# Clean up path: remove the province the troop is currently standing in
-			if not troop.path.is_empty() and int(troop.path[0]) == int(troop.province_id):
-				troop.path.pop_front()
-			
-			# PREVENT TELEPORT: Anchor the move to the troop's current screen position
-			troop.set_meta("start_pos", troop.position)
-			troop.set_meta("progress", 0.0)
-			
-			_start_next_leg(troop)
-		else:
-			# No path found, make sure they aren't stuck in "moving" state
-			_stop_troop(troop)
+	if not path.is_empty():
+		troop.path = path.duplicate()
+		if int(troop.path[0]) == int(troop.province_id):
+			troop.path.pop_front()
+		
+		troop.set_meta("start_pos", troop.position)
+		_start_next_leg(troop)
+	else:
+		_stop_troop(troop)
 
 
 func _get_cached_path(start_id: int, target_id: int, allowed_countries: Array[String]) -> Array:
@@ -515,7 +530,6 @@ func get_province_strength(pid: int, country: String) -> int:
 	return total
 
 
-# AI created this.. Not using it now
 func deploy_specific_divisions(country: String, divisions_to_deploy: Array, prov_id: int) -> TroopData:
 	if divisions_to_deploy.is_empty():
 		return null
