@@ -155,6 +155,7 @@ func _draw() -> void:
 	_draw_selection_box()
 	_draw_troops()
 	_draw_cities()
+	draw_battles()
 
 
 func _draw_troops() -> void:
@@ -266,6 +267,9 @@ func _update_screen_rect():
 	_screen_rect = _screen_rect.grow(200.0)
 
 
+
+
+
 func _draw_cities() -> void:
 	if not MapManager.id_map_image: return
 
@@ -297,3 +301,59 @@ func _draw_cities() -> void:
 				draw_string(_font, offset, city_name, HORIZONTAL_ALIGNMENT_LEFT, -1, base_font_size, Color.WHITE)
 
 	draw_set_transform_matrix(Transform2D())
+	
+func draw_battles():
+	# Replace this with however you store your current player country name
+	var player_country = CountryManager.player_country.country_name 
+
+	for battle in WarManager.active_battles:
+		if not battle: continue
+
+		var pos: Vector2 = battle.position
+		
+		# 1. Determine "Winningness" (0.0 = Losing badly, 1.0 = Winning)
+		var win_ratio: float = 0.5 # Default for AI vs AI
+		var is_player_involved = false
+
+		if battle.attacker_country == player_country:
+			win_ratio = battle.attack_progress
+			is_player_involved = true
+		elif battle.defender_country == player_country:
+			win_ratio = 1.0 - battle.attack_progress
+			is_player_involved = true
+		else:
+			# AI vs AI: Just show raw progress toward attacker victory
+			win_ratio = battle.attack_progress
+
+		# 2. Refined Visuals (Smaller Sizes)
+		# Pulse effect: makes the dots feel 'alive'
+		var pulse = sin(Time.get_ticks_msec() * 0.01) * 0.5
+		var base_radius = 2
+		var current_radius = base_radius + (battle.attack_progress * 1.5) + pulse
+		
+		# 3. Dynamic Coloring
+		var hue: float
+		var sat: float = 0.85
+		var val: float = 1.0
+
+		if is_player_involved:
+			# Red (0.0) -> Yellow (0.15) -> Green (0.35)
+			# This creates a more natural 'warning' gradient
+			hue = lerp(0.0, 0.35, win_ratio)
+		else:
+			# AI vs AI: Blueish-Purple for neutral
+			hue = lerp(0.65, 0.0, win_ratio)
+			sat = 0.5
+			val = 0.7
+
+		var color = Color.from_hsv(hue, sat, val)
+
+		# 4. Draw Layers
+		# Shadow/Outline
+		draw_circle(pos, current_radius + 1.0, Color(0, 0, 0, 0.6))
+		
+		# Main Pip
+		draw_circle(pos, current_radius, color)
+		
+		# Add a tiny white 'glint' in the center to make it pop
+		draw_circle(pos, 1.2, Color.WHITE)

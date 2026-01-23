@@ -5,29 +5,29 @@ class_name DivisionData extends Resource
 const TEMPLATES = {
 	"infantry": {
 		"hp": 100.0,
-		"manpower": 10000,
-		"cost": 1000,
+		"manpower": 1000,
+		"cost": 500,
 		"days": 9,
-		"attack": 10.0,
-		"defense": 15.0,
+		"attack": 1,
+		"defense": 2,
 		"speed": 1.0
 	},
 	"tank": {
 		"hp": 250.0,       
-		"manpower": 6000,
+		"manpower": 20000,
 		"cost": 5000,
 		"days": 30,
-		"attack": 25.0,
+		"attack": 5,
 		"defense": 10.0,
 		"speed": 2.5
 	},
 	"artillery": {
-		"hp": 60.0,
+		"hp": 50.0,
 		"manpower": 4000,
 		"cost": 2000,
 		"days": 15,
-		"attack": 30.0,
-		"defense": 5.0,
+		"attack": 7,
+		"defense": 1.0,
 		"speed": 0.8
 	}
 }
