@@ -39,6 +39,10 @@ func _input(event) -> void:
 	elif event is InputEventMouseMotion:
 		_handle_mouse_motion()
 
+func deselect_all () -> void:
+	selected_troops.clear()
+	GameState.game_ui.close_troop_container()
+	
 
 func _handle_mouse_motion() -> void:
 	if dragging:

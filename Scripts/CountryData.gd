@@ -1,58 +1,61 @@
 extends Resource
 class_name CountryData
 
+#region --- Configuration & Constants ---
+const MANPOWER_RECOVERY_PER_YEAR := 0.10 
+const MANPOWER_RECOVERY_PER_DAY := MANPOWER_RECOVERY_PER_YEAR / 365.0
+const MILITARY_SIZE_RATIO := 0.005 # 0.5% of population recruitable
+const BASE_ARMY_COST := 100.0      # Multiplied by army level
+#endregion
+
 #region --- Properties ---
 var country_name: String
 var is_player: bool = false
 
-var political_power: float = 50.0
-var money: float = 0
+# Economy
+var money: float = 0.0
 var gdp: int = 0
+var income: float = 0.0
+var factories_amount: int = 0
+var hourly_money_income: float = 0.0 # Calculated value
+
+# Politics
+var political_power: float = 50.0
+var daily_pp_gain: float = 0.04
 var stability: float = 0.5
-var factories_amount = 0
-var income = 0.0
-var province_cost = 500.0
+var war_support: float = 0.5
+
+# Population & Manpower
 var total_population: int = 0
 var manpower: int = 0
-var war_support: float = 0.5
-var troop_speed_modifier = 1.0
 
-var army_level = 1
-var army_cost = 0.0
-var army_base_cost = 100  # This goes times level. Each level makes army stronger and faster
+# Military State
+var army_level: int = 1
+var army_cost: float = 0.0
+var troop_speed_modifier: float = 1.0
 
-var manpower_per_division = 10000
-const MANPOWER_RECOVERY_PER_YEAR := 0.10  # 10%
-const MANPOWER_RECOVERY_PER_DAY := MANPOWER_RECOVERY_PER_YEAR / 365.0
-
-var daily_pp_gain: float = 0.04
-var hourly_money_income: float = 4000
-var military_size = 0.005  # 0.5%
-
-# State Management
+# Deployment & Training State
 var allowedCountries: Array[String] = []
 var ongoing_training: Array[TroopTraining] = []
 var ready_troops: Array[ReadyTroop] = []
-var deploy_pid = -1
+var deploy_pid: int = -1 # ID of province to deploy to
 #endregion
-
 
 #region --- Inner Classes ---
 class TroopTraining:
-	var divisions_count: int  # Just the number being trained
+	var divisions_count: int
+	var division_type: String
 	var days_left: int
 	var daily_cost: float
-	# Future proofing: You could add 'template_id' here later
 	
-	func _init(_divisions: int, _days: int, _daily_cost: float):
-		divisions_count = _divisions
+	func _init(_count: int, _type: String, _days: int, _cost: float):
+		divisions_count = _count
+		division_type = _type
 		days_left = _days
-		daily_cost = _daily_cost
+		daily_cost = _cost
 
 class ReadyTroop:
-	# CHANGED: Now holds the actual objects, not just a number
 	var stored_divisions: Array[DivisionData] = []
-
 	func _init(_divisions_array: Array[DivisionData]):
 		stored_divisions = _divisions_array
 #endregion
@@ -60,205 +63,151 @@ class ReadyTroop:
 #region --- Lifecycle ---
 func _init(p_country_name: String) -> void:
 	country_name = p_country_name
-
 	allowedCountries.append_array([p_country_name, "sea"])
-
-	total_population = CountryManager.get_country_population(country_name)
-	var manpower_used := CountryManager.get_country_used_manpower(self)
-
-	@warning_ignore("narrowing_conversion")
-	manpower = float(total_population - manpower_used) * military_size
-
-	@warning_ignore("narrowing_conversion")
-	gdp = (CountryManager.get_country_gdp(country_name) * total_population * 0.000001) * 0.5
-	money = 0
-	factories_amount = CountryManager.get_factories_amount(country_name)
-
+	_refresh_economic_stats()
+	
+	# Initial Manpower Calculation
+	var manpower_used = CountryManager.get_country_used_manpower(self)
+	manpower = int((total_population * MILITARY_SIZE_RATIO) - manpower_used)
 
 func process_hour() -> void:
-	political_power += 0.04  # daily_pp_gain
-
-	@warning_ignore("integer_division")
-	income = (gdp / 8760) * 0.2
-	income += factories_amount * 1000
+	political_power += daily_pp_gain
+	
+	# Economic Cycle
+	# (GDP / Hours in a year) * Tax Rate + Factory Output
+	var base_income = (gdp / 8760.0) * 0.2 
+	var factory_income = factories_amount * 1000.0
+	
+	hourly_money_income = base_income + factory_income
 	army_cost = calculate_army_upkeep()
-	money += income - army_cost
-	troop_speed_modifier = 1 + army_level * 0.1
+	
+	income = hourly_money_income - army_cost
+	money += income
+	
+	troop_speed_modifier = 1.0 + (army_level * 0.1)
 
 	update_manpower_pool()
+	
 	if not is_player:
 		AiManager.ai_handle_deployment(self)
 		AiManager.ai_consider_recruitment(self)
-	else:
-		#print("income: ", income, " | army_cost: ", army_cost, " | province_cost: ", province_cost)
-		pass
-
 
 func process_day() -> void:
-	total_population = CountryManager.get_country_population(country_name)  # Update it due to war an dstuff
-	@warning_ignore("narrowing_conversion")
-	gdp = CountryManager.get_country_gdp(country_name) * total_population * 0.000001
+	# Refresh stats that change daily/weekly
+	_refresh_economic_stats()
 	_process_training()
-	factories_amount = CountryManager.get_factories_amount(country_name)
+	
 	if not is_player:
 		AiManager.evaluate_frontline_moves(self)
 
-
+func _refresh_economic_stats() -> void:
+	total_population = CountryManager.get_country_population(country_name)
+	factories_amount = CountryManager.get_factories_amount(country_name)
+	# GDP calculation based on population (Simplified for performance)
+	gdp = int(CountryManager.get_country_gdp(country_name) * total_population * 0.000001)
 #endregion
-
-
-func get_daily_state_income() -> float:
-	var tax_rate := 0.15
-	var tax_efficiency := 0.7
-	return (gdp * tax_rate * tax_efficiency) / 365.0
-
-
-# In CountryData.gd
 
 #region --- Military Management ---
-func train_troops(count: int, days: int, cost_per_day: float) -> bool:
-	var manpower_needed = count * manpower_per_division
-	var first_hour_cost := count * cost_per_day
-
-	if manpower < manpower_needed or money < first_hour_cost:
+func train_troops(count: int, type: String = "infantry") -> bool:
+	var template = DivisionData.TEMPLATES.get(type)
+	if not template:
+		push_error("Unknown division type: %s" % type)
 		return false
 
-	manpower -= manpower_needed
-	money -= first_hour_cost
+	var total_manpower_needed = count * template["manpower"]
+	var daily_cost = count * template["cost"]
 	
-	# Create the training batch
-	ongoing_training.append(TroopTraining.new(count, days, cost_per_day))
-	return true
+	# Check affordability (Manpower + First day of cost)
+	if manpower < total_manpower_needed or money < daily_cost:
+		return false
 
+	manpower -= total_manpower_needed
+	
+	# Add to training queue
+	var training_batch = TroopTraining.new(count, type, template["days"], template["cost"])
+	ongoing_training.append(training_batch)
+	return true
 
 func _process_training() -> void:
-	# 1. Process costs and time
-	for training in ongoing_training:
-		var daily_cost := training.divisions_count * training.daily_cost
-		if money >= daily_cost:
-			money -= daily_cost
-			training.days_left -= 1
-
-	# 2. Check for graduation
+	# Loop backwards so we can safely remove finished batches
 	for i in range(ongoing_training.size() - 1, -1, -1):
 		var training = ongoing_training[i]
+		var batch_daily_cost = training.divisions_count * training.daily_cost
+		
+		if money >= batch_daily_cost:
+			money -= batch_daily_cost
+			training.days_left -= 1
 		
 		if training.days_left <= 0:
-			# --- THE MAGIC MOMENT: Integer becomes Objects ---
-			var new_divisions_batch: Array[DivisionData] = []
-			
-			for d in range(training.divisions_count):
-				var new_div = DivisionData.new()
-				new_div.name = "Infantry Div %d" % (randi() % 1000) # Placeholder naming
-				new_div.hp = 100.0
-				new_divisions_batch.append(new_div)
-			
-			# Store the objects in the ReadyTroop container
-			ready_troops.append(ReadyTroop.new(new_divisions_batch))
-			
+			_graduate_troops(training)
 			ongoing_training.remove_at(i)
 
+func _graduate_troops(training: TroopTraining) -> void:
+	var new_divisions: Array[DivisionData] = []
+	for d in range(training.divisions_count):
+		new_divisions.append(DivisionData.create_division(training.division_type))
+	
+	ready_troops.append(ReadyTroop.new(new_divisions))
 
 func calculate_army_upkeep() -> float:
-	var total := 0.0
+	var total_divisions = 0
+	# Count active troops (Optimization: could be cached if sluggish)
 	for troop in TroopManager.get_troops_for_country(country_name):
-		total += troop.divisions_count * (army_level * army_base_cost)
-	return total
-
-
-func get_army_pressure() -> float:
-	var army := 0
-	for troop in TroopManager.get_troops_for_country(country_name):
-		army += troop.divisions
-
-	var capacity = max(1.0, (gdp * 0.03) + factories_amount * 5)
-	return army / capacity
-
-
+		total_divisions += troop.divisions_count
+	
+	return total_divisions * (army_level * BASE_ARMY_COST)
 #endregion
 
-
-#region --- Deployment ---
-func deploy_ready_troop_to_random(troop: ReadyTroop) -> bool:
-	var index = ready_troops.find(troop)
-	if index == -1:
-		return false
-
-	var my_provinces: Array = MapManager.country_to_provinces.get(country_name, [])
-	if my_provinces.is_empty():
-		return false
-
-	var random_province_id = my_provinces.pick_random()
-	
-	TroopManager.deploy_specific_divisions(country_name, troop.stored_divisions, random_province_id)
-	
-	ready_troops.remove_at(index)
-	return true
-
-
-func deploy_ready_troop_to_pid(troop: ReadyTroop) -> bool:
-	var index = ready_troops.find(troop)
-	if index == -1:
-		return false
-	
-	TroopManager.deploy_specific_divisions(country_name, troop.stored_divisions, deploy_pid)
-	
-	ready_troops.remove_at(index)
-	return true
-#endregion
-
-
-func reset_manpower() -> void:
-	@warning_ignore("narrowing_conversion")
-	manpower = (
-		(total_population - CountryManager.get_country_used_manpower(self))
-		* military_size
-	)
-
-
+#region --- Stats & Manpower ---
 func update_manpower_pool() -> void:
-	var base_reservoir := int(total_population * military_size)
-	var max_cap := int(base_reservoir * 1.5)
-	var used := CountryManager.get_country_used_manpower(self)
+	var base_reservoir = int(total_population * MILITARY_SIZE_RATIO)
+	var max_cap = int(base_reservoir * 1.5)
+	var used = CountryManager.get_country_used_manpower(self)
+	var current_total = manpower + used
 
-	if (manpower + used) < max_cap:
-		var daily_gain := int(base_reservoir * MANPOWER_RECOVERY_PER_DAY)
-
-		if daily_gain == 0 and total_population > 0:
-			daily_gain = 1
-
-		manpower += daily_gain
-
-	# Ensure we don't exceed the absolute limit
+	if current_total < max_cap:
+		var gain = max(1, int(base_reservoir * MANPOWER_RECOVERY_PER_DAY))
+		manpower += gain
+	
+	# Hard cap check
 	if (manpower + used) > max_cap:
 		manpower = max(0, max_cap - used)
 
+func get_army_pressure() -> float:
+	var army_size = 0
+	for troop in TroopManager.get_troops_for_country(country_name):
+		army_size += troop.divisions # assuming .divisions property exists on TroopData
+	
+	var capacity = max(1.0, (gdp * 0.03) + factories_amount * 5)
+	return army_size / capacity
 
-#region --- Stats & Getters ---
 func get_max_morale() -> float:
-	var base := 60.0 + (stability * 40.0)
-	base += army_level * 5  # Each army level boosts morale
+	var base = 60.0 + (stability * 40.0) + (army_level * 5.0)
 	return base * 0.5 if money < 0 else base
 
-
 func get_attack_efficiency() -> float:
-	var eff := 0.9 + (war_support * 0.3)
-	eff += army_level * 0.05  # Each army level gives extra attack power
+	var eff = 0.9 + (war_support * 0.3) + (army_level * 0.05)
 	return eff * 0.7 if money < 0 else eff
 
-
 func get_defense_efficiency() -> float:
-	var eff := 1.0 + (stability * 0.15)
-	eff += army_level * 0.05  # Each army level gives extra defense
+	var eff = 1.0 + (stability * 0.15) + (army_level * 0.05)
 	return eff * 0.8 if money < 0 else eff
-
-
 #endregion
 
+#region --- Deployment Helper ---
+func deploy_ready_troop(troop: ReadyTroop, specific_pid: int = -1) -> bool:
+	var index = ready_troops.find(troop)
+	if index == -1: return false
+	
+	var target_pid = specific_pid
+	
+	# If no specific ID provided, pick random
+	if target_pid == -1:
+		var provinces = MapManager.country_to_provinces.get(country_name, [])
+		if provinces.is_empty(): return false
+		target_pid = provinces.pick_random()
 
-func spend_politicalpower(cost: int) -> bool:
-	if floori(political_power) >= cost:
-		political_power -= float(cost)
-		return true
-	return false
+	TroopManager.deploy_specific_divisions(country_name, troop.stored_divisions, target_pid)
+	ready_troops.remove_at(index)
+	return true
 #endregion

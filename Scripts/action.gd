@@ -104,12 +104,8 @@ func _update_standard_text_and_cost(player) -> void:
 
 
 func _on_button_pressed() -> void:
-	# For standard actions, deduct cost here
-	# NOTE: Ensure your callback function doesn't ALSO deduct cost, or you pay twice.
 	var cost = data.get("cost", 0)
-	if cost > 0:
-		if !CountryManager.player_country.spend_politicalpower(cost):
-			return
+
 
 	if _callback.is_valid():
 		_callback.call()

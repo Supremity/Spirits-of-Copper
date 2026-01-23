@@ -95,16 +95,22 @@ func get_factories_amount(country_name: String) -> int:
 
 
 # NOTE(pol): We should keep track of the manpower used instead of recalculating
-func get_country_used_manpower(country_obj: CountryData) -> int:
-	var total_divisions = 0
-	var troop_list = TroopManager.get_troops_for_country(country_obj.country_name)
-	for troop in troop_list:
-		total_divisions += troop.divisions_count
+# In CountryManager.gd (or wherever this static function lives)
+static func get_country_used_manpower(country_obj: CountryData) -> int:
+	var total_used: int = 0
 	
+	var active_troops = TroopManager.get_troops_for_country(country_obj.country_name)
+	for troop in active_troops:
+		for div in troop.stored_divisions:
+			total_used += div.max_manpower
+			
 	for training in country_obj.ongoing_training:
-		total_divisions += training.divisions_count
-	
-	for ready_troop in country_obj.ready_troops:
-		total_divisions += ready_troop.stored_divisions.size()
-		
-	return total_divisions * country_obj.manpower_per_division
+		var stats = DivisionData.TEMPLATES.get(training.division_type)
+		if stats:
+			total_used += (training.divisions_count * stats["manpower"])
+
+	for batch in country_obj.ready_troops:
+		for div in batch.stored_divisions:
+			total_used += div.max_manpower
+			
+	return total_used

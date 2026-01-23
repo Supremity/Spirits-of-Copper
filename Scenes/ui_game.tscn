@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=3 uid="uid://dgfixe44dvfny"]
+[gd_scene load_steps=33 format=3 uid="uid://dgfixe44dvfny"]
 
 [ext_resource type="Script" uid="uid://dqvjehbri1br0" path="res://Scripts/ui_game.gd" id="1_rp7y5"]
 [ext_resource type="Texture2D" uid="uid://dpohmal5pe58k" path="res://assets/flags/abkhazia_flag.png" id="1_xar7q"]
@@ -20,9 +20,8 @@
 [ext_resource type="Theme" uid="uid://6wluupp1lmut" path="res://tab_button_theme.tres" id="16_6c76w"]
 [ext_resource type="Texture2D" uid="uid://une8u7tuv306" path="res://assets/icons/hoi4/infantry.png" id="18_ilaaa"]
 [ext_resource type="Texture2D" uid="uid://cmjkbcspwdlst" path="res://assets/icons/hoi4/artillery.png" id="19_lpwmk"]
-[ext_resource type="Texture2D" uid="uid://ut3mrourj5k1" path="res://assets/icons/log.png" id="20_85er5"]
 [ext_resource type="Texture2D" uid="uid://w0sqe5wwsu1g" path="res://assets/icons/hoi4/tank.png" id="20_qum3k"]
-[ext_resource type="Script" uid="uid://b0bru3cp5d7o2" path="res://Scripts/country_log.gd" id="21_ilaaa"]
+[ext_resource type="FontFile" uid="uid://bfw0gn63lgdhq" path="res://font/Google_Sans/static/GoogleSans-Bold.ttf" id="21_qum3k"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uqxsi"]
 bg_color = Color(0, 0, 0, 1)
@@ -51,6 +50,14 @@ corner_radius_bottom_left = 15
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6c76w"]
 bg_color = Color(0.20990813, 0.20990813, 0.20990801, 1)
 shadow_color = Color(0, 0, 0, 0.35686275)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qum3k"]
+bg_color = Color(0.22352941, 0.30980393, 0.22352941, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5hlpc"]
+bg_color = Color(0.6313726, 0.6901961, 0.6313726, 1)
+
+[sub_resource type="GDScript" id="GDScript_lpwmk"]
 
 [node name="GameUI" type="CanvasLayer" node_paths=PackedStringArray("military_access_label", "decision_tree")]
 script = ExtResource("1_rp7y5")
@@ -435,70 +442,141 @@ grow_vertical = 2
 layout_mode = 2
 
 [node name="MilitaryExtraPanel" type="ColorRect" parent="Control/SidemenuBG/Sidemenu"]
-visible = false
 layout_mode = 0
 offset_left = 264.0
-offset_top = 301.0
+offset_top = 304.0
 offset_right = 568.0
-offset_bottom = 542.0
+offset_bottom = 613.0
 color = Color(0.09803922, 0.09803922, 0.09803922, 1)
 
 [node name="button_infantry" type="Button" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
 layout_mode = 0
-offset_left = 11.0
-offset_top = 22.0
-offset_right = 95.0
-offset_bottom = 72.0
+offset_left = 12.0
+offset_top = 14.0
+offset_right = 96.0
+offset_bottom = 64.0
 icon = ExtResource("18_ilaaa")
 
 [node name="button_artillery" type="Button" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
 layout_mode = 0
-offset_left = 105.0
-offset_top = 22.0
-offset_right = 189.0
-offset_bottom = 72.0
+offset_left = 103.0
+offset_top = 15.0
+offset_right = 187.0
+offset_bottom = 65.0
 icon = ExtResource("19_lpwmk")
 
 [node name="button_tank" type="Button" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
 layout_mode = 0
-offset_left = 201.0
-offset_top = 22.0
-offset_right = 285.0
-offset_bottom = 72.0
+offset_left = 203.0
+offset_top = 17.0
+offset_right = 287.0
+offset_bottom = 67.0
 icon = ExtResource("20_qum3k")
 
-[node name="Label" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
+[node name="Button_Train" type="Button" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
+layout_mode = 0
+offset_left = 65.0
+offset_top = 261.0
+offset_right = 236.0
+offset_bottom = 301.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_qum3k")
+text = "TRAIN"
+
+[node name="button_add_division" type="Button" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
+layout_mode = 0
+offset_left = 265.0
+offset_top = 164.0
+offset_right = 323.0
+offset_bottom = 222.0
+scale = Vector2(0.5, 0.5)
+icon = ExtResource("10_lnl2f")
+
+[node name="button_sub_division" type="Button" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
+layout_mode = 0
+offset_left = 266.0
+offset_top = 196.0
+offset_right = 324.0
+offset_bottom = 254.0
+scale = Vector2(0.5, 0.5)
+icon = ExtResource("11_6bnrr")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
+layout_mode = 0
+offset_left = 143.0
+offset_top = 71.0
+offset_right = 230.0
+offset_bottom = 175.0
+
+[node name="label_type" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_uqxsi")
+text = "infantry"
+
+[node name="label_atkdef" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_uqxsi")
+text = "10 : 10 : 100"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="input_division" type="LineEdit" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("21_qum3k")
+theme_override_styles/normal = SubResource("StyleBoxFlat_5hlpc")
+text = "10"
+virtual_keyboard_type = 2
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
 layout_mode = 0
 offset_left = 15.0
-offset_top = 115.0
-offset_right = 90.0
-offset_bottom = 139.0
+offset_top = 73.0
+offset_right = 130.0
+offset_bottom = 169.0
+
+[node name="Label3" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer2"]
+layout_mode = 2
+text = "Type"
+
+[node name="Label2" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer2"]
+layout_mode = 2
+text = "Atk / Def / HP"
+
+[node name="Label" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer2"]
+layout_mode = 2
 theme_override_fonts/font = ExtResource("4_uqxsi")
 text = "Divisions"
 
-[node name="Button" type="Button" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
+[node name="VBoxContainer3" type="VBoxContainer" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
 layout_mode = 0
-offset_left = 79.0
-offset_top = 195.0
-offset_right = 241.0
-offset_bottom = 231.0
-text = "TRAIN"
+offset_left = 15.0
+offset_top = 176.0
+offset_right = 99.0
+offset_bottom = 247.0
 
-[node name="Label2" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 143.0
-offset_right = 121.0
-offset_bottom = 164.0
-text = "Attack/Defense"
+[node name="Label2" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer3"]
+layout_mode = 2
+text = "Costs training/day:"
 
-[node name="Label3" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
+[node name="Label" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer3"]
+layout_mode = 2
+text = "Manpower:"
+
+[node name="VBoxContainer4" type="VBoxContainer" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]
 layout_mode = 0
-offset_left = 16.0
-offset_top = 86.0
-offset_right = 56.0
-offset_bottom = 107.0
-text = "Type"
+offset_left = 161.0
+offset_top = 175.0
+offset_right = 201.0
+offset_bottom = 246.0
+
+[node name="label_costs" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer4"]
+layout_mode = 2
+text = "100"
+
+[node name="label_manpower" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer4"]
+layout_mode = 2
+text = "100"
 
 [node name="DecisionTree" parent="Control" instance=ExtResource("13_364vl")]
 process_mode = 3
@@ -506,21 +584,6 @@ visible = false
 z_index = 1
 layout_mode = 1
 anchors_preset = 15
-
-[node name="CountryLogButton" type="TextureButton" parent="Control"]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -76.0
-offset_top = 139.0
-offset_right = -10.0
-offset_bottom = 202.0
-grow_horizontal = 0
-focus_mode = 0
-texture_normal = ExtResource("20_85er5")
-ignore_texture_size = true
-stretch_mode = 5
 
 [node name="TroopContainer" type="PanelContainer" parent="Control"]
 visible = false
@@ -550,7 +613,7 @@ offset_bottom = 201.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.051970966, 0.05197096, 0.05197095, 1)
-script = ExtResource("21_ilaaa")
+script = SubResource("GDScript_lpwmk")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="ColorRect"]
 layout_mode = 0
@@ -659,6 +722,12 @@ text = "Army Level: "
 [connection signal="button_up" from="Control/SidemenuBG/Sidemenu/PanelContainer/VBoxContainer/SideMenuButtons/DiplomacyMenuButton" to="." method="_on_menu_button_button_up" binds= [0]]
 [connection signal="button_up" from="Control/SidemenuBG/Sidemenu/PanelContainer/VBoxContainer/SideMenuButtons/EconomyMenuButton" to="." method="_on_menu_button_button_up" binds= [1]]
 [connection signal="button_up" from="Control/SidemenuBG/Sidemenu/PanelContainer/VBoxContainer/SideMenuButtons/MilitaryMenuButton" to="." method="_on_menu_button_button_up" binds= [2]]
-[connection signal="button_up" from="Control/CountryLogButton" to="." method="_on_log_button_up"]
+[connection signal="button_up" from="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/button_infantry" to="." method="_on_division_type_button" binds= ["infantry"]]
+[connection signal="button_up" from="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/button_artillery" to="." method="_on_division_type_button" binds= ["artillery"]]
+[connection signal="button_up" from="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/button_tank" to="." method="_on_division_type_button" binds= ["tank"]]
+[connection signal="button_up" from="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/Button_Train" to="." method="_on_button_train_troops"]
+[connection signal="button_up" from="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/button_add_division" to="." method="_on_button_division_change" binds= [1]]
+[connection signal="button_up" from="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/button_sub_division" to="." method="_on_button_division_change" binds= [-1]]
+[connection signal="text_changed" from="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer/HBoxContainer/input_division" to="." method="_on_input_division_text_changed"]
 [connection signal="button_up" from="ColorRect/Button" to="ColorRect" method="_on_button_button_up"]
 [connection signal="button_up" from="ColorRect/Button2" to="ColorRect" method="_on_button_2_button_up"]

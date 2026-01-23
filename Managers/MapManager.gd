@@ -431,7 +431,6 @@ func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 	if TroopManager.troop_selection.selected_troops.is_empty(): # Prevent menu from spawning when selecting troops (annoying)
 		country_clicked.emit(province_to_country.get(pid, ""))
 
-
 func _execute_deployment(pid: int, player_name: String) -> void:
 	country_clicked.emit(player_name)
 	CountryManager.player_country.deploy_pid = pid

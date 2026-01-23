@@ -12,7 +12,7 @@ func ai_handle_deployment(country: CountryData) -> void:
 
 	for troop in country.ready_troops.duplicate():
 		if country.deploy_pid != -1:
-			country.deploy_ready_troop_to_pid(troop)
+			country.deploy_ready_troop(troop)
 			
 		elif not borders.is_empty():
 			var target_id = borders.pick_random()
@@ -25,7 +25,7 @@ func ai_handle_deployment(country: CountryData) -> void:
 			country.ready_troops.erase(troop)
 			
 		else:
-			country.deploy_ready_troop_to_random(troop)
+			country.deploy_ready_troop(troop)
 
 
 func ai_consider_recruitment(country: CountryData) -> void:
@@ -41,8 +41,7 @@ func ai_consider_recruitment(country: CountryData) -> void:
 		return
 	if country.manpower < RECRUIT_MANPOWER_THRESHOLD:
 		return
-
-	country.train_troops(2, 9, army_base_cost)
+	country.train_troops(1, "infantry")
 
 
 func evaluate_frontline_moves(country: CountryData):

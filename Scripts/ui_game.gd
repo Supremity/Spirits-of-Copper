@@ -70,18 +70,6 @@ var menu_actions = {
 		Category.MILITARY:
 		[
 			{"text": "Choose Deployment Province", "func": "_choose_deploy_city"},
-			{
-				"text": "Training (10k)",
-				"func": "_conscript",
-				"type": "training",
-				"manpower": 10000
-			},
-			{
-				"text": "Training (50k)",
-				"func": "_conscript",
-				"type": "training",
-				"manpower": 50000
-			}
 		]
 	},
 	# When clicking on a country the player is at war with
@@ -110,7 +98,8 @@ var menu_actions = {
 		[
 			{"text": "Demand Tribute", "cost": 40, "func": "_demand_tribute"},
 			{"text": "Trade Deal", "cost": 10, "func": "_trade_deal"},
-		]
+		],
+		
 	}
 }
 
@@ -134,7 +123,8 @@ func _ready() -> void:
 	GameState.current_world.clock.hour_passed.connect(_on_hour_passed)
 	CountryManager.player_country_changed.connect(_on_player_change)
 	updateProgressBar()
-
+	update_division_menu()
+	military_extra_panel.visible = false
 	var clock := GameState.current_world.clock
 	clock.hour_passed.connect(_on_time_passed)
 	plus.pressed.connect(clock.increase_speed)
@@ -212,6 +202,7 @@ func _on_menu_button_button_up(_menu_index: int) -> void:
 	_build_action_list()
 
 
+# Note Z21 Some of the things here are outdated and not used and overall bad way to do things ngl
 func _build_action_list() -> void:
 	for child in actions_container.get_children():
 		child.queue_free()
@@ -336,17 +327,13 @@ func _declare_war():
 
 func _conscript(data: Dictionary):
 	var manpower = data.manpower / 10000
-	CountryManager.player_country.train_troops(manpower, 1, 1000)
+	CountryManager.player_country.train_troops(1, "infantry")
 	update_topbar_stats()
 	_build_action_list()
 
 
-# Troop argument comes from .bind(troop)
 func deploy_troop(troop):
-	if CountryManager.player_country.deploy_pid == -1:
-		CountryManager.player_country.deploy_ready_troop_to_random(troop)
-	else:
-		CountryManager.player_country.deploy_ready_troop_to_pid(troop)
+	CountryManager.player_country.deploy_ready_troop(troop, CountryManager.player_country.deploy_pid)
 	_build_action_list()
 
 
@@ -407,11 +394,6 @@ func open_decisions_tree():
 	#GameState.current_world.find_child("CameraController").set_process(false)
 
 
-func _on_log_button_up() -> void:
-	GameState.game_log.visible = !GameState.game_log.visible
-	MusicManager.play_sfx(MusicManager.SFX.OPEN_MENU)
-	
-
 
 # Note (Z21) 
 # Everything below is made by a Clanker. I am way too lazy for UI stuff
@@ -468,8 +450,94 @@ func close_troop_container() -> void:
 	troop_container.visible = false
 	
 	
-##### Military Stuff here 
+# --- References ---
 @onready var military_extra_panel: ColorRect = $Control/SidemenuBG/Sidemenu/MilitaryExtraPanel
+@onready var input_division: LineEdit = $Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer/HBoxContainer/input_division
+@onready var button_train: Button = $Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/Button_Train
 
+# Grouping UI labels makes them easier to manage
+@onready var ui_labels = {
+	"type": $Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer/label_type,
+	"div_stats": $Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer/label_atkdef,
+	"costs": $Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer4/label_costs,
+	"manpower": $Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer4/label_manpower
+}
+
+# --- State ---
+var division_type_selected: String = "infantry"
+
+# --- Main Update Logic ---
+func update_division_menu():
+	# 1. Validate Input (Prevent crashes)
+	if not input_division.text.is_valid_int():
+		ui_labels.costs.text = "-"
+		ui_labels.manpower.text = "-"
+		button_train.disabled = true
+		return
+
+	var count = int(input_division.text)
+	var stats = DivisionData.TEMPLATES.get(division_type_selected)
 	
+	if not stats: return # Safety check
+
+	ui_labels.type.text = division_type_selected.capitalize()
+	ui_labels.div_stats.text = "%s : %s : %s" % [stats.attack, stats.defense, stats.hp]
+
+	var total_cost = stats.cost * count 
+	var total_manpower = stats.manpower * count
 	
+	ui_labels.costs.text = format_number(total_cost)
+	ui_labels.manpower.text = format_number(total_manpower)
+	
+	# 4. Check Affordability
+	var player = CountryManager.player_country
+	var can_afford = false
+	
+	if player:
+		# You can check Money here too if you want: "and player.money >= total_cost"
+		can_afford = player.manpower >= total_manpower
+	
+	# 5. Update Button State & Visuals
+	button_train.disabled = not can_afford
+	_update_train_button_visuals(can_afford)
+
+# --- Button Styling Helper ---
+func _update_train_button_visuals(is_affordable: bool) -> void:
+	# Create a new StyleBoxFlat to override the background color
+	var style = StyleBoxFlat.new()
+	style.set_corner_radius_all(4) # Optional: match your game's rounded corners
+	
+	if is_affordable:
+		style.bg_color = Color("#394f39") # Greenish
+		# Apply to Normal and Hover states
+		button_train.add_theme_stylebox_override("normal", style)
+		button_train.add_theme_stylebox_override("hover", style)
+		button_train.remove_theme_stylebox_override("disabled")
+	else:
+		style.bg_color = Color("#5a3f39") # Reddish
+		# Apply specifically to the Disabled state
+		button_train.add_theme_stylebox_override("disabled", style)
+
+
+func _on_button_train_troops() -> void:
+	if not input_division.text.is_valid_int(): return
+	
+	var divisions = int(input_division.text)
+	var success = CountryManager.player_country.train_troops(divisions, division_type_selected)
+	
+	if success:
+		_build_action_list()
+	update_division_menu()
+
+func _on_division_type_button(type: String) -> void:
+	division_type_selected = type
+	update_division_menu()
+
+func _on_button_division_change(add: int) -> void:
+	var current = int(input_division.text) if input_division.text.is_valid_int() else 0
+	var new_val = clampi(current + add, 1, 999) # Limit between 1 and 999
+	input_division.text = str(new_val)
+	update_division_menu() 
+
+func _on_input_division_text_changed(new_text: String) -> void:
+	update_division_menu()
