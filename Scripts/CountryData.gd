@@ -99,6 +99,7 @@ func process_day() -> void:
 	
 	if not is_player:
 		AiManager.evaluate_frontline_moves(self)
+	#	AiManager.manage_military_readiness(self)
 
 func _refresh_economic_stats() -> void:
 	total_population = CountryManager.get_country_population(country_name)
@@ -149,13 +150,6 @@ func _graduate_troops(training: TroopTraining) -> void:
 	
 	ready_troops.append(ReadyTroop.new(new_divisions))
 
-func calculate_army_upkeep() -> float:
-	var total_divisions = 0
-	# Count active troops (Optimization: could be cached if sluggish)
-	for troop in TroopManager.get_troops_for_country(country_name):
-		total_divisions += troop.divisions_count
-	
-	return total_divisions * (army_level * BASE_ARMY_COST)
 #endregion
 
 #region --- Stats & Manpower ---
@@ -211,3 +205,42 @@ func deploy_ready_troop(troop: ReadyTroop, specific_pid: int = -1) -> bool:
 	ready_troops.remove_at(index)
 	return true
 #endregion
+
+
+var cached_garrison_hubs: Array = []
+func demobilize_troop(troop: TroopData, count: int = -1) -> void:
+	if not troop or troop.country_name != country_name:
+		return
+
+	var divs_to_reserve: Array[DivisionData] = []
+	
+	if count == -1 or count >= troop.divisions_count:
+		# Full Demobilization
+		divs_to_reserve = troop.stored_divisions.duplicate()
+		TroopManager.remove_troop(troop)
+	else:
+		# Partial Demobilization (Peel off the surplus)
+		for i in range(count):
+			divs_to_reserve.append(troop.stored_divisions.pop_back())
+		# Update the TroopManager's view of this troop (re-calculate strength)
+		# No need to remove from map, just update the existing object.
+
+	if not divs_to_reserve.is_empty():
+		var reserve = ReadyTroop.new(divs_to_reserve)
+		ready_troops.append(reserve)
+
+
+## Enhanced upkeep: Reserves cost 25% of active troops
+func calculate_army_upkeep() -> float:
+	var active_divisions = 0
+	for troop in TroopManager.get_troops_for_country(country_name):
+		active_divisions += troop.divisions_count
+	
+	var reserve_divisions = 0
+	for rt in ready_troops:
+		reserve_divisions += rt.stored_divisions.size()
+	
+	var active_cost = active_divisions * (army_level * BASE_ARMY_COST)
+	var reserve_cost = reserve_divisions * (army_level * BASE_ARMY_COST * 0.25)
+	
+	return active_cost + reserve_cost

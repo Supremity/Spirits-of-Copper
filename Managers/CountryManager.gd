@@ -114,3 +114,4 @@ static func get_country_used_manpower(country_obj: CountryData) -> int:
 			total_used += div.max_manpower
 			
 	return total_used
+	
