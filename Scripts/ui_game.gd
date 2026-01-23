@@ -293,6 +293,7 @@ func close_menu() -> void:
 	if is_open:
 		MusicManager.play_sfx(MusicManager.SFX.CLOSE_MENU)
 	GameState.reset_industry_building()
+	military_extra_panel.visible = false # just to be sure
 	slide_out()
 
 

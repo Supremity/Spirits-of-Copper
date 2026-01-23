@@ -273,6 +273,8 @@ func _draw_cities() -> void:
 	var base_dot_radius = 4.0
 	var base_font_size = 24 
 
+	var s = _current_inv_zoom 
+
 	for city_data in MapManager.all_cities:
 		var pid = city_data[0]
 		var city_name = city_data[1]
@@ -284,7 +286,7 @@ func _draw_cities() -> void:
 			var world_pos = base_pos + map_sprite.position + Vector2(map_width * j, 0)
 			if not _screen_rect.has_point(world_pos): continue
 
-			var t := Transform2D(0, Vector2(_current_inv_zoom, _current_inv_zoom), 0, world_pos)
+			var t := Transform2D(0, Vector2(s, s), 0, world_pos)
 			draw_set_transform_matrix(t)
 
 			draw_circle(Vector2.ZERO, base_dot_radius, Color.WHITE)
@@ -294,5 +296,4 @@ func _draw_cities() -> void:
 				draw_string_outline(_font, offset, city_name, HORIZONTAL_ALIGNMENT_LEFT, -1, base_font_size, 4, Color(0,0,0,0.8))
 				draw_string(_font, offset, city_name, HORIZONTAL_ALIGNMENT_LEFT, -1, base_font_size, Color.WHITE)
 
-		# Reset once per province instead of once per wrap-iteration
-		draw_set_transform_matrix(Transform2D())
+	draw_set_transform_matrix(Transform2D())
