@@ -39,7 +39,6 @@ const TEMPLATES = {
 @export var max_hp: float = 100.0   # Max HP (for UI bars)
 @export var experience: float = 0.0
 @export var max_manpower: int = 10000 
-
 # --- Helper to get stats safely ---
 func get_attack_power() -> float:
 	var base = TEMPLATES.get(type, TEMPLATES["infantry"])["attack"]

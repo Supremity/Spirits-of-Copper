@@ -20,7 +20,7 @@ const LAYOUT = {
 	"font_size": 16
 }	
 
-const ZOOM_LIMITS = {"min_scale": 0.1, "max_scale": 2.0}
+const ZOOM_LIMITS = {"min_scale": 0.05, "max_scale": 0.5}
 const STACKING_OFFSET_Y := 20.0
 
 # --- Variables ---

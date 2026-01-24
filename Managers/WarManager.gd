@@ -69,54 +69,86 @@ class Battle:
 	func _resolve_round():
 		var att_troops = TroopManager.get_troops_in_province(attacker_pid).filter(func(t): return t.country_name == attacker_country)
 		var def_troops = TroopManager.get_troops_in_province(defender_pid).filter(func(t): return t.country_name == defender_country)
-
 		if att_troops.is_empty():
 			manager.end_battle(self)
 			return
 
-		# 1. Calculate Power using dynamic division stats
+		# --- NEW: SUPPLY & MONEY CHECK ---
+		# Calculate how much it costs to keep these divisions fighting this round
+		# We'll use 1% of their recruitment cost as a "per-round" supply cost
+		var att_supply_cost = 0.0
+		for t in att_troops:
+			for div in t.stored_divisions:
+				var template = div.TEMPLATES.get(div.type, div.TEMPLATES["infantry"])
+				att_supply_cost += template["cost"] * 0.5
+				if attacker_country == CountryManager.player_country.country_name:
+					print(att_supply_cost)
+		attacker_stats.money -= att_supply_cost
+
+		var def_supply_cost = 0.0
+		for t in def_troops:
+			for div in t.stored_divisions:
+				var template = div.TEMPLATES.get(div.type, div.TEMPLATES["infantry"])
+				def_supply_cost += template["cost"] * 0.1
+		
+		defender_stats.money -= def_supply_cost
+		# Apply costs and determine penalties
+		var att_supply_mult = 1.0
+		var def_supply_mult = 1.0
+
+		if attacker_stats:
+			if attacker_stats.money >= att_supply_cost:
+				attacker_stats.money -= att_supply_cost
+			else:
+				# Out of money! Attack power drops by 50%
+				att_supply_mult = 0.5 
+				att_morale -= 2.0 # Extra morale penalty for hungry troops
+
+		if defender_stats:
+			if defender_stats.money >= def_supply_cost:
+				defender_stats.money -= def_supply_cost
+			else:
+				def_supply_mult = 0.5
+				def_morale -= 2.0
+
+		# --- 1. Calculate Power (Now including Supply Penalty) ---
 		var total_atk_power = 0.0
 		for t in att_troops:
 			for div in t.stored_divisions:
-				# Power scales with HP percentage (Damage units fight worse)
-				total_atk_power += div.get_attack_power() * (div.hp / div.max_hp)
+				total_atk_power += div.get_attack_power() * (div.hp / div.max_hp) * att_supply_mult
 
 		var total_def_power = 0.0
 		for t in def_troops:
 			for div in t.stored_divisions:
-				total_def_power += div.get_defense_power() * (div.hp / div.max_hp)
+				total_def_power += div.get_defense_power() * (div.hp / div.max_hp) * def_supply_mult
 
-		# 2. Modifiers
+		# --- 2. Modifiers (Morale and Efficiency) ---
 		var att_eff = attacker_stats.get_attack_efficiency() if attacker_stats else 1.0
 		var def_eff = defender_stats.get_defense_efficiency() if defender_stats else 1.0
 
 		var final_attack = total_atk_power * (att_morale / 100.0) * att_eff
 		var final_defense = total_def_power * (def_morale / 100.0) * def_eff
 
-		# 3. Apply Damage directly to Divisions
-		# Attacker hits Defender
+		# --- 3. Apply Damage ---
 		manager.apply_casualties(defender_pid, defender_country, final_attack)
-		# Defender hits Attacker (Retaliation)
 		manager.apply_casualties(attacker_pid, attacker_country, final_defense * 0.5)
 		
-		# 4. Update Morale Decay
+		# --- 4. Update Morale Decay ---
 		att_morale -= (final_defense * manager.MORALE_DECAY_RATE)
 		def_morale -= (final_attack * manager.MORALE_DECAY_RATE)
 
-		# 5. Calculate Progress
+		# --- 5. Wrap up Round ---
 		_update_hp_totals()
 		
-		# If defender has no HP left or morale broke
 		if current_def_hp <= 0 or def_morale <= 5.0:
 			_defender_loses()
 			return
 		
-		# If attacker morale broke
 		if att_morale <= 5.0:
 			manager.end_battle(self)
 			return
 
-		# Progress bar calculation
+		# Progress Calculation
 		var hp_ratio = 1.0 - (current_def_hp / total_starting_hp) if total_starting_hp > 0 else 1.0
 		var morale_ratio = 1.0 - (def_morale / initial_def_morale)
 		attack_progress = clamp(max(hp_ratio, morale_ratio), 0.0, 1.0)

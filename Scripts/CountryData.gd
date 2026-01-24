@@ -88,7 +88,7 @@ func process_hour() -> void:
 	troop_speed_modifier = 1.0 + (army_level * 0.1)
 
 	update_manpower_pool()
-	
+	_process_reinforcements()
 	if not is_player:
 		AiManager.ai_tick(self)
 		pass
@@ -305,3 +305,22 @@ func _deploy_initial_force(divisions: Array[DivisionData]) -> void:
 			var target_pid = deploy_targets.pick_random()
 			TroopManager.deploy_specific_divisions(country_name, current_batch, target_pid)
 			current_batch = [] # Reset for next stack
+	
+func _process_reinforcements():
+	var all_my_troops = TroopManager.get_troops_for_country(country_name)
+	
+	for troop in all_my_troops:
+		# Don't reinforce if moving or in battle (optional rule)
+		if troop.is_moving: continue 
+		
+		for div in troop.stored_divisions:
+			if div.hp < div.max_hp:
+				# Cost to repair: 5% of original cost per 10% HP restored
+				var repair_amount = 5.0 # Restore 5 HP
+				var template = div.TEMPLATES[div.type]
+				var repair_cost = template["cost"] * 0.05
+				
+				if money >= repair_cost and manpower >= template["manpower"] * 0.05:
+					money -= repair_cost
+					manpower -= template["manpower"] * 0.05
+					div.hp = min(div.max_hp, div.hp + repair_amount)
