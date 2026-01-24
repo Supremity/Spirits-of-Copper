@@ -249,11 +249,11 @@ func declare_war(a: CountryData, b: CountryData) -> void:
 	if not ok:
 		return
 
-
-	PopupManager.show_alert("war", a, b)
-	if (a.is_player):
+	if a.is_player or b.is_player:
+		PopupManager.show_alert("war", a, b)
 		MusicManager.play_music(MusicManager.MUSIC.BATTLE_THEME)
 		MusicManager.play_sfx(MusicManager.SFX.DECLARE_WAR)
+
 
 
 func add_war_silent(a: CountryData, b: CountryData) -> bool:
@@ -348,14 +348,15 @@ func _handle_total_collapse(fallen_country_name: String, victor_country_name: St
 		TroopManager.remove_troop(t)
 
 	# 4. Remove the country from all active wars
-	var fallen_data = CountryManager.get_country(fallen_country_name)
-	if wars.has(fallen_data):
-		wars.erase(fallen_data)
+	var winner_country = CountryManager.get_country(victor_country_name)
+	var loser_country = CountryManager.get_country(fallen_country_name)
+	if wars.has(loser_country):
+		wars.erase(loser_country)
 
 	# Clean up other countries' war lists
 	for country_obj in wars:
-		if wars[country_obj].has(fallen_data):
-			wars[country_obj].erase(fallen_data)
+		if wars[country_obj].has(loser_country):
+			wars[country_obj].erase(loser_country)
 
 	if fallen_country_name == CountryManager.player_country.country_name:
 		MusicManager.play_sfx(MusicManager.SFX.GAME_OVER)
@@ -369,7 +370,11 @@ func _handle_total_collapse(fallen_country_name: String, victor_country_name: St
 			pass
 		pass
 		
-	MusicManager.play_sfx(MusicManager.SFX.POPUP)
-	PopupManager.show_alert(
-		"capitulated", CountryManager.get_country(fallen_country_name), CountryManager.get_country(fallen_country_name)
-	)
+	if winner_country.is_player or loser_country.is_player:
+		MusicManager.play_sfx(MusicManager.SFX.POPUP)
+
+		PopupManager.show_alert(
+			"capitulated", 
+			CountryManager.get_country(fallen_country_name), 
+			CountryManager.get_country(fallen_country_name)
+		)

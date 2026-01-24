@@ -4,7 +4,7 @@ class_name CountryData
 #region --- Configuration & Constants ---
 const MANPOWER_RECOVERY_PER_YEAR := 0.10 
 const MANPOWER_RECOVERY_PER_DAY := MANPOWER_RECOVERY_PER_YEAR / 365.0
-const MILITARY_SIZE_RATIO := 0.005 # 0.5% of population recruitable
+const MILITARY_SIZE_RATIO := 0.001 
 const BASE_ARMY_COST := 100.0      # Multiplied by army level
 #endregion
 
@@ -69,6 +69,7 @@ func _init(p_country_name: String) -> void:
 	# Initial Manpower Calculation
 	var manpower_used = CountryManager.get_country_used_manpower(self)
 	manpower = int((total_population * MILITARY_SIZE_RATIO) - manpower_used)
+	_setup_starting_army()
 
 func process_hour() -> void:
 	political_power += daily_pp_gain
@@ -246,3 +247,61 @@ func calculate_army_upkeep() -> float:
 	var reserve_cost = reserve_divisions * (army_level * BASE_ARMY_COST * 0.25)
 	
 	return active_cost + reserve_cost
+
+func _setup_starting_army() -> void:
+	# 1. Economic Safety: Calculate what we can actually afford
+	# We use the same math as process_hour to see our projected income
+	var base_income = (gdp / 8760.0) * 0.2 
+	var factory_income = factories_amount * 1000.0
+	var total_hourly_income = base_income + factory_income
+	
+	# Don't spend more than 25% of hourly income on starting upkeep
+	var upkeep_budget = total_hourly_income * 0.25
+	var individual_cost = army_level * BASE_ARMY_COST
+	
+	# 2. Determine count (Strictly capped to prevent icon spam)
+	var affordable_count = int(upkeep_budget / max(1.0, individual_cost))
+	var final_count = clampi(affordable_count, 1, 6) # Start very small (1-6 divs)
+
+	# 3. Manpower Check
+	var template = DivisionData.TEMPLATES.get("infantry")
+	var needed_manpower = final_count * template["manpower"]
+	
+	if manpower < needed_manpower:
+		final_count = int(manpower / max(1, template["manpower"]))
+	
+	if final_count <= 0: return
+
+	# 4. Create the DivisionData objects
+	var starting_divisions: Array[DivisionData] = []
+	for i in range(final_count):
+		starting_divisions.append(DivisionData.create_division("infantry"))
+	
+	# 5. Safety: Deduct manpower now
+	manpower -= (final_count * template["manpower"])
+
+	# 6. Deploy via a safe call
+	# Using 'call_deferred' ensures that MapManager/TroopManager are fully loaded
+	# before we try to place troops in provinces.
+	_deploy_initial_force.call_deferred(starting_divisions)
+
+func _deploy_initial_force(divisions: Array[DivisionData]) -> void:
+	var provinces = MapManager.country_to_provinces.get(country_name, [])
+	if provinces.is_empty(): return
+
+	# Get cities specifically to look more "organized"
+	var cities = MapManager.get_cities_province_country(country_name)
+	var deploy_targets = cities if not cities.is_empty() else provinces
+	
+	# If we have a lot of divisions, split them into small stacks (e.g., 5 per stack)
+	var stack_size = 5
+	var current_batch: Array[DivisionData] = []
+	
+	for i in range(divisions.size()):
+		current_batch.append(divisions[i])
+		
+		# Once batch is full OR it's the last division
+		if current_batch.size() >= stack_size or i == divisions.size() - 1:
+			var target_pid = deploy_targets.pick_random()
+			TroopManager.deploy_specific_divisions(country_name, current_batch, target_pid)
+			current_batch = [] # Reset for next stack
