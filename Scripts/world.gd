@@ -54,39 +54,49 @@ func _ready() -> void:
 
 	# @warning_ignore("narrowing_conversion")
 	var type_img := Image.create_empty(map_width, map_height, false, Image.FORMAT_L8)
-
+	var uncertain_pixels := []
+# --- PASS 1: Direct Mapping ---
 	for y in range(map_height):
 		for x in range(map_width):
 			var pid = MapManager._get_pid_fast(x, y)
 			var province = MapManager.province_objects.get(pid)
 
 			if province:
-				if province.type == 0:  # SEA
+				if province.type == 0: # SEA
 					type_img.set_pixel(x, y, Color(0, 0, 0))
-				else:  # LAND
+				else: # LAND
 					type_img.set_pixel(x, y, Color(1, 1, 1))
+			else:
+				# It's a border (PID 1 or null). Mark as uncertain for now.
+				uncertain_pixels.append(Vector2i(x, y))
 
-			elif pid == 1:
-				# IT'S A BORDER/GRID LINE: Check neighbors to decide if Land or Sea
-				var is_neighbor_land = false
+	# --- PASS 2: Intelligent Flood-Check ---
+	for pos in uncertain_pixels:
+		var touches_land = false
+		var touches_sea = false
+		
+		# Check 8-way neighbors (Radius 1 ONLY - very important)
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				if dx == 0 and dy == 0: continue
+				
+				var nx = pos.x + dx
+				var ny = pos.y + dy
+				
+				if nx >= 0 and nx < map_width and ny >= 0 and ny < map_height:
+					var nid = MapManager._get_pid_fast(nx, ny)
+					if nid > 1:
+						var n_prov = MapManager.province_objects.get(nid)
+						if n_prov:
+							if n_prov.type != 0: touches_land = true
+							else: touches_sea = true
+		
 
-				# Check 4 cardinal neighbors (staying inside image bounds)
-				var checks = [
-					Vector2i(x + 1, y), Vector2i(x - 1, y), Vector2i(x, y + 1), Vector2i(x, y - 1)
-				]
-				for pos in checks:
-					if pos.x >= 0 and pos.x < map_width and pos.y >= 0 and pos.y < map_height:
-						var n_id = MapManager._get_pid_fast(pos.x, pos.y)
-						var n_province = MapManager.province_objects.get(n_id)
-						# If any neighbor is a Land Province, this border belongs to the Land
-						if n_province and n_province.type != 0:
-							is_neighbor_land = true
-							break
-
-				if is_neighbor_land:
-					type_img.set_pixel(x, y, Color(1, 1, 1))  # Treat as Land Border
-				else:
-					type_img.set_pixel(x, y, Color(0, 0, 0))  # Treat as Sea Grid
+		if touches_land:
+			type_img.set_pixel(pos.x, pos.y, Color(1, 1, 1)) 
+		else:
+			# If it only touches sea (or nothing), it's a Sea Grid/Open Water
+			type_img.set_pixel(pos.x, pos.y, Color(0, 0, 0))
 
 	var type_tex = ImageTexture.create_from_image(type_img)
 	mat.set_shader_parameter("type_map", type_tex)
