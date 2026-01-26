@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://bonl378c51366"]
+[gd_scene load_steps=14 format=3 uid="uid://bonl378c51366"]
 
 [ext_resource type="Script" uid="uid://pcq6svrgye6v" path="res://Scripts/world.gd" id="1_go701"]
 [ext_resource type="Script" uid="uid://bjvlgraecimcy" path="res://Scenes/main.gd" id="1_o06y3"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" uid="uid://bko55up7cjg3g" path="res://Scripts/custom_renderer.gd" id="5_o06y3"]
 [ext_resource type="Script" uid="uid://dx8iwvng5oypc" path="res://Scripts/troop_selection.gd" id="6_5ukr8"]
 [ext_resource type="Script" uid="uid://cnm2s5owh7ec3" path="res://Scripts/game_clock.gd" id="6_o06y3"]
+[ext_resource type="Script" uid="uid://cdspipsa2vbk5" path="res://Scenes/decision_tree_ui.gd" id="9_5v1tr"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_fo5ed"]
 load_path = "res://.godot/imported/cultures.png-f9255a05eddadc8a9aa0dedbe091def9.ctex"
@@ -60,3 +61,6 @@ camera = NodePath("..")
 
 [node name="TroopSelection" type="Node2D" parent="World"]
 script = ExtResource("6_5ukr8")
+
+[node name="DecisionTreeUI" type="CanvasLayer" parent="."]
+script = ExtResource("9_5v1tr")

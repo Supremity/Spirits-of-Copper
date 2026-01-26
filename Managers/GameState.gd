@@ -9,6 +9,7 @@ var industry_building := IndustryType.DEFAULT
 
 var game_ui: GameUI
 
+var decision_menu_open: bool = false
 
 func reset_industry_building():
 	industry_building = IndustryType.DEFAULT

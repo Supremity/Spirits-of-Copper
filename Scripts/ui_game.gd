@@ -386,8 +386,7 @@ func open_research_tree():
 
 
 func open_decisions_tree():
-	decision_tree.show()
-	get_tree().paused = true
+	get_tree().root.find_child("DecisionTreeUI", true, false).open_menu()
 
 	#GameState.current_world.set_process(false)
 	#GameState.current_world.clock.set_process(false)

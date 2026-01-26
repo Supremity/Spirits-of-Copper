@@ -99,7 +99,7 @@ func process_day() -> void:
 	# Refresh stats that change daily/weekly
 	_refresh_economic_stats()
 	_process_training()
-	
+	DecisionManager.process_country_day(self)
 	if not is_player:
 		pass
 	#	AiManager.manage_military_readiness(self)

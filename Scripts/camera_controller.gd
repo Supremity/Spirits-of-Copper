@@ -7,7 +7,7 @@ var is_dragging := false
 
 
 func _process(delta: float) -> void:
-	if Console.is_visible():
+	if Console.is_visible() or GameState.decision_menu_open:
 		return
 	_handle_keyboard_movement(delta)
 
