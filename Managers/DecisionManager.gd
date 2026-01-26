@@ -22,7 +22,22 @@ func process_country_day(country: CountryData):
 			finished.append(key)
 			_finalize_decision(country, key)
 	
-	for key in finished: tasks.erase(key)
+	for key in finished: 
+		if country == CountryManager.player_country:
+			# 1. Find the decision data to get the title
+			var decision_title = "Unknown Decision"
+			
+			# Look through all categories to find the matching ID
+			for cat_name in DecisionManager.categories:
+				for decision in DecisionManager.categories[cat_name]:
+					if decision["id"] == key:
+						decision_title = decision["title"]
+						break
+			
+			# 2. Show the alert with the actual title
+			PopupManager.show_alert("event", country, null, "%s completed" % decision_title)
+			
+		tasks.erase(key)
 	
 	if ui_overlay and ui_overlay.visible and country.is_player:
 		ui_overlay.refresh_status_only() # Efficient refresh

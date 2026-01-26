@@ -1,58 +1,67 @@
 extends Control
 
-# UI Nodes
 @onready var flag_left: TextureRect = $Panel/flag_left
 @onready var flag_right: TextureRect = $Panel/flag_right
 @onready var description: Label = $Panel/description
 @onready var button: Button = $Panel/Button
 
-# Internal Data Variables
-var _type: String = ""
-var _c1: CountryData = null
-var _c2: CountryData = null
+var data = {}
 
+func setup_alert(config: Dictionary):
+	data = config
 
-# 1. We call this BEFORE adding to the tree.
-# It just stores data. It does NOT touch the UI.
-func set_data(type, country1, country2):
-	_type = type
-	_c1 = country1
-	_c2 = country2
-
-
-# 2. _ready is called automatically when the node enters the tree.
-# The UI nodes are guaranteed to exist here.
 func _ready():
 	button.pressed.connect(_on_ok)
-	_update_ui()
+	_build_ui()
 
+func _build_ui():
+	var type = data.get("type", "default")
+	var c1 = data.get("c1")
+	var c2 = data.get("c2")
+	var custom_text = data.get("text", "")
+	var params = data.get("params", {})
 
-func _update_ui():
-	# Handle the "Empty String" error you saw earlier
-	if _c1 == null or _c2 == null:
-		push_warning("Popup Alert created with empty country")
-		return
+	# 1. Handle Flags (Hide them if null)
+	if c1:
+		flag_left.texture = _get_flag(c1.country_name)
+		flag_left.show()
+	else:
+		flag_left.hide()
 
-	var flag1 = _get_flag(_c1.country_name)
-	var flag2 = _get_flag(_c2.country_name)
+	if c2:
+		flag_right.texture = _get_flag(c2.country_name)
+		flag_right.show()
+	else:
+		flag_right.hide()
 
-	if flag1:
-		flag_left.texture = flag1
-	if flag2:
-		flag_right.texture = flag2
+	# 2. Set Text logic
+	if custom_text != "":
+		# Use custom text if provided
+		description.text = custom_text
+	else:
+		# Fallback to standard types for backward compatibility
+		match type:
+			"war":
+				description.text = "%s has declared war on %s!" % [c1.country_name, c2.country_name]
+			"capitulated":
+				description.text = "%s has capitulated." % [c1.country_name]
+			"game_over":
+				description.text = "Game Over"
+			_:
+				description.text = "Event: " + type
 
-	if _type == "war":
-		description.text = "%s has declared war on %s" % [_c1.country_name, _c2.country_name]
-	if _type == "game_over":
-		description.text = "Game Over"
-	if _type == "capitulated":
-		description.text = "%s has capitulated" % [_c1.country_name]
-
+	# 3. Custom Styling from Params
+	if params.has("color"):
+		description.add_theme_color_override("font_color", params["color"])
 
 func _on_ok():
+	# If we passed a callback function in params, run it!
+	if data.get("params", {}).has("callback"):
+		data["params"]["callback"].call()
 	queue_free()
-
 
 func _get_flag(country: String):
 	var path = "res://assets/flags/%s_flag.png" % country.to_lower()
-	return ResourceLoader.load(path)
+	if ResourceLoader.exists(path):
+		return ResourceLoader.load(path)
+	return null

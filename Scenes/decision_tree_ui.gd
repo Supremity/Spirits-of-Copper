@@ -13,7 +13,7 @@ const COL_LINE_INACTIVE = Color(0.3, 0.3, 0.3)
 const COL_LINE_ACTIVE = Color(0.2, 0.8, 0.2)
 
 # --- NODES ---
-var tree_canvas: Control      
+var tree_canvas: Node2D      
 var tabs_container: HBoxContainer
 var info_text: RichTextLabel
 var info_panel: Panel
@@ -26,6 +26,7 @@ func _ready():
 	layer = 100
 	hide()
 	DecisionManager.ui_overlay = self
+	tree_canvas = Node2D.new()
 	_create_full_ui()
 
 func _process(delta: float) -> void:
@@ -33,6 +34,7 @@ func _process(delta: float) -> void:
 		var input = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 		if input != Vector2.ZERO:
 			tree_canvas.position -= input * MOVE_SPEED * delta
+			print (tree_canvas.position)
 			tree_canvas.queue_redraw()
 
 func _create_full_ui():
@@ -42,23 +44,30 @@ func _create_full_ui():
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 	
-	# 2. THE MOVABLE CANVAS
-	tree_canvas = Control.new()
-	tree_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tree_canvas.draw.connect(_on_draw_canvas)
-	add_child(tree_canvas)
+	# 2. THE MOVABLE CANVAS WRAPPER (This is the "ui_layer" / Anchor)
+	# This node stays at 0,0 and lets the tree_canvas move inside it
+	var canvas_anchor = Control.new()
+	canvas_anchor.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	canvas_anchor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas_anchor.clip_contents = false # IMPORTANT: This allows negative coordinates to show up
+	add_child(canvas_anchor)
 	
-	# 3. STATIC UI LAYER (Header/Footer)
-	var ui_layer = Control.new()
-	ui_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	ui_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(ui_layer)
+	# Add the Node2D tree_canvas to the anchor
+	tree_canvas.draw.connect(_on_draw_canvas)
+	canvas_anchor.add_child(tree_canvas)
+	
+	# 3. STATIC UI LAYER (Header/Footer/Close Button)
+	# We create a separate container for these so they don't move with the canvas
+	var static_ui = Control.new()
+	static_ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	static_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(static_ui)
 	
 	# --- HEADER ---
 	var header = Panel.new()
 	header.custom_minimum_size.y = 80
 	header.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	ui_layer.add_child(header)
+	static_ui.add_child(header) # Changed from ui_layer to static_ui
 	
 	tabs_container = HBoxContainer.new()
 	tabs_container.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
@@ -66,26 +75,25 @@ func _create_full_ui():
 	tabs_container.add_theme_constant_override("separation", 15)
 	header.add_child(tabs_container)
 	
-	# --- CLOSE BUTTON (Reliable Placement) ---
+	# --- CLOSE BUTTON ---
 	var close_btn = Button.new()
 	close_btn.text = "  CLOSE MENU [X]  "
 	close_btn.custom_minimum_size = Vector2(150, 40)
 	close_btn.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT)
-	close_btn.position.x -= 20 # Offset from right edge
+	close_btn.position.x -= 20
 	close_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	close_btn.pressed.connect(close_menu)
 	header.add_child(close_btn)
 	
-	# --- FOOTER (The Description Box) ---
+	# --- FOOTER (Description Box) ---
 	info_panel = Panel.new()
 	info_panel.custom_minimum_size.y = 160
 	info_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	ui_layer.add_child(info_panel)
+	static_ui.add_child(info_panel) # Changed from ui_layer to static_ui
 	
 	info_text = RichTextLabel.new()
 	info_text.bbcode_enabled = true
 	info_text.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# Add some internal margin
 	info_text.offset_left = 30
 	info_text.offset_top = 20
 	info_text.offset_right = -30
@@ -196,9 +204,19 @@ func _apply_node_style(btn: Button, data: Dictionary, player: CountryData):
 		style.bg_color = Color(0.1, 0.2, 0.5) # Dark Blue
 		btn.disabled = true
 	else:
-		btn.text = data["title"] + "\n%d PP" % data["cost_pp"]
-		style.bg_color = Color(0.2, 0.2, 0.2)
-		btn.disabled = player.political_power < data["cost_pp"]
+		var parent_done = true
+		if data.has("prereq"):
+			parent_done = player.has_meta("finished_" + data["prereq"])
+
+		if not parent_done:
+			btn.text = data["title"]
+			style.bg_color = Color(0.241, 0.102, 0.101, 1.0)
+			btn.disabled = true
+		else:
+			btn.text = data["title"] + "\n%d PP" % data["cost_pp"]
+			style.bg_color = Color(0.2, 0.2, 0.2)
+			# Also check if another decision is already running
+			btn.disabled = player.political_power < data["cost_pp"] or DecisionManager.is_country_busy(player)
 	
 	btn.add_theme_stylebox_override("normal", style)
 	btn.add_theme_stylebox_override("disabled", style)
@@ -206,36 +224,32 @@ func _apply_node_style(btn: Button, data: Dictionary, player: CountryData):
 
 func _on_draw_canvas():
 	var vp_size = get_viewport().size
-	var cam_offset = -tree_canvas.position   
+	# Where is the (0,0) of the screen relative to our moving canvas?
+	var rel_origin = -tree_canvas.position 
+	
+	# Find the first grid line to the left/top of the current view
+	var start_x = floor(rel_origin.x / GRID_SIZE) * GRID_SIZE
+	var start_y = floor(rel_origin.y / GRID_SIZE) * GRID_SIZE
+	
+	# Draw enough lines to fill the screen + 1 extra for safety
+	var end_x = start_x + vp_size.x + GRID_SIZE
+	var end_y = start_y + vp_size.y + GRID_SIZE
 
-	var start_x = int(floor(cam_offset.x / GRID_SIZE)) - 2
-	var end_x   = start_x + int(vp_size.x / GRID_SIZE) + 4
-	var start_y = int(floor(cam_offset.y / GRID_SIZE)) - 2
-	var end_y   = start_y + int(vp_size.y / GRID_SIZE) + 4
+	# Grid logic
+	var x = start_x
+	while x <= end_x:
+		tree_canvas.draw_line(Vector2(x, start_y), Vector2(x, end_y), COL_GRID, 1.0)
+		x += GRID_SIZE
+		
+	var y = start_y
+	while y <= end_y:
+		tree_canvas.draw_line(Vector2(start_x, y), Vector2(end_x, y), COL_GRID, 1.0)
+		y += GRID_SIZE
 
-	# --- GRID ---
-	for x in range(start_x, end_x):
-		var lx = x * GRID_SIZE
-		tree_canvas.draw_line(
-			Vector2(lx, cam_offset.y - 10000),
-			Vector2(lx, cam_offset.y + 10000),
-			COL_GRID,
-			1.0
-		)
-
-	for y in range(start_y, end_y):
-		var ly = y * GRID_SIZE
-		tree_canvas.draw_line(
-			Vector2(cam_offset.x - 10000, ly),
-			Vector2(cam_offset.x + 10000, ly),
-			COL_GRID,
-			1.0
-		)
-
-	# --- CONNECTIONS ---
+	# Connections
 	for line in connection_lines:
 		var col = COL_LINE_ACTIVE if line["active"] else COL_LINE_INACTIVE
-		tree_canvas.draw_line(line["from"], line["to"], col, LINE_WIDTH)
+		tree_canvas.draw_line(line["from"], line["to"], col, LINE_WIDTH, true)
 
 
 func _get_node_center(nodes: Array, id: String) -> Vector2:
