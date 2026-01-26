@@ -29,7 +29,6 @@ var world_tension = 1
 
 func increase_world_tension(amount: float) -> void:
 	world_tension = clamp(world_tension + amount, 0.1, 1.0)
-	print(world_tension)
 
 func ai_tick(country: CountryData) -> void:
 	var tick_rate = TICK_RATE_WAR if _is_at_war(country) else TICK_RATE_PEACE
@@ -42,6 +41,7 @@ func ai_tick(country: CountryData) -> void:
 	_consider_declaring_war(country)
 
 # --- THE FRONTLINE LOGIC ---
+# --- IMPROVED FRONTLINE LOGIC ---
 func _manage_frontline_logic(country: CountryData) -> void:
 	var my_troops = TroopManager.get_troops_for_country(country.country_name)
 	var idle_troops = my_troops.filter(func(t): return not t.is_moving)
@@ -52,48 +52,50 @@ func _manage_frontline_logic(country: CountryData) -> void:
 		_handle_peace_movement(country, idle_troops)
 		return
 
-	# 1. Analyze the front: find cities, enemy units, and empty gaps
-	var frontline_targets = _analyze_frontline_targets(country, enemies)
-	if frontline_targets.is_empty(): return
+	# Get weighted targets (Cities, Troops, and Empty Gaps)
+	var targets = _analyze_frontline_targets(country, enemies)
+	if targets.is_empty(): return
 
 	var move_payload = []
 	
-	# 2. Assigning logic: spread idle troops across the closest targets
 	for troop in idle_troops:
+		# Sort targets by a mix of Score and Distance
+		# Math: score / (distance + 1)
 		var troop_pos = MapManager.province_centers[troop.province_id]
-		
-		# Sort targets by distance to THIS specific troop
-		frontline_targets.sort_custom(func(a, b):
-			var dist_a = troop_pos.distance_to(MapManager.province_centers[a.id])
-			var dist_b = troop_pos.distance_to(MapManager.province_centers[b.id])
-			return dist_a < dist_b
+		targets.sort_custom(func(a, b):
+			var dist_a = troop_pos.distance_to(MapManager.province_centers[a.id]) / 100.0
+			var dist_b = troop_pos.distance_to(MapManager.province_centers[b.id]) / 100.0
+			return (a.score / (dist_a + 1.0)) > (b.score / (dist_b + 1.0))
 		)
 
-		# How many ways should we split this troop?
-		# A troop with 10 divs can fill up to 5 gaps (2 divs each)
-		var max_splits = clampi(floor(troop.divisions_count / 2.0), 1, 6)
-		var assigned_count = 0
+		var divisions_left = troop.divisions_count
+		
+		for target in targets:
+			if divisions_left <= 0: break
+			if target.virtual_strength >= SATURATION_MAX: continue
 
-		for target in frontline_targets:
-			if assigned_count >= max_splits: break
+			# DETERMINISTIC SPLITTING:
+			# If target is empty, only send 1-2 divisions to "capture" it.
+			# If target has enemies, send enough to beat them (or everything left).
+			var needed = SATURATION_IDEAL
+			if target.enemy_strength > 0:
+				needed = target.enemy_strength * 1.2 # Bring 20% more than them
 			
-			# If the target is already being addressed by another troop, skip it
-			if target.virtual_strength >= SATURATION_IDEAL:
-				continue
+			var amount_to_send = clamp(needed, 1, divisions_left)
+			
+			# Only split if it's worth the micro-overhead
+			if amount_to_send < divisions_left and (divisions_left - amount_to_send) < MIN_DIVISIONS_PER_SPLIT:
+				amount_to_send = divisions_left
 
-			# Add to the payload. 
-			# If the same troop appears 3 times here, your command_move_assigned 
-			# logic will handle splitting the divisions into 3 new troops.
 			move_payload.append({
 				"troop": troop, 
-				"province_id": target.id
+				"province_id": target.id,
+				"divisions": amount_to_send # Pass this to your Command Move
 			})
 
-			# Mark the province as "covered"
-			target.virtual_strength += (troop.divisions_count / max_splits)
-			assigned_count += 1
+			target.virtual_strength += amount_to_send
+			divisions_left -= amount_to_send
 
-	# 3. Fire the move command
 	if not move_payload.is_empty():
 		TroopManager.command_move_assigned(move_payload)
 
@@ -106,49 +108,48 @@ func _analyze_frontline_targets(country: CountryData, enemies: Array) -> Array:
 		var border_pids = MapManager.get_provinces_bordering_enemy(country.country_name, enemy_name)
 		
 		for my_pid in border_pids:
-			# Defensive targets: My own border provinces under threat
-			if not seen.has(my_pid):
-				seen[my_pid] = true
-				var enemy_threat = 0.0
-				var neighbors = MapManager.adjacency_list.get(my_pid, [])
-				for n_id in neighbors:
-					if MapManager.province_to_country.get(n_id) == enemy_name:
-						enemy_threat += TroopManager.get_province_strength(n_id, enemy_name)
-				
-				if enemy_threat > 0:
-					var current_str = TroopManager.get_province_strength(my_pid, country.country_name)
-					var score = enemy_threat * DEFENSE_WEIGHT
-					if my_pid in MapManager.all_cities: score += CITY_BONUS
-					
-					targets.append({
-						"id": my_pid,
-						"virtual_strength": current_str,
-						"score": score,
-						"is_defensive": true
-					})
-			
-			# Offensive targets: Enemy provinces bordering mine
 			var neighbors = MapManager.adjacency_list.get(my_pid, [])
 			for n_id in neighbors:
-				if MapManager.province_to_country.get(n_id) == enemy_name and not seen.has(n_id):
+				var owner = MapManager.province_to_country.get(n_id)
+				
+				# Check if it's enemy territory
+				if owner == enemy_name and not seen.has(n_id):
 					seen[n_id] = true
-					var enemy_str = TroopManager.get_province_strength(n_id, enemy_name)
-					var current_friendly = TroopManager.get_province_strength(n_id, country.country_name)  # Likely 0 if enemy-owned
-					
+					var e_str = TroopManager.get_province_strength(n_id, enemy_name)
 					var score = 10.0
-					if enemy_str > 0: score *= ATTACK_WEIGHT
-					if n_id in MapManager.all_cities: score += CITY_BONUS
+					
+					# PRIORITY 1: Enemy Armies (Seek and Destroy)
+					if e_str > 0: 
+						score += (e_str * ATTACK_WEIGHT)
+					
+					# PRIORITY 2: Cities (Victory Points)
+					if n_id in MapManager.all_cities: 
+						score += CITY_BONUS
+					
+					# PRIORITY 3: Opportunity (Unoccupied Provinces)
+					if e_str == 0: 
+						score += 15.0 # High priority to flip "free" land fast
 					
 					targets.append({
 						"id": n_id,
-						"virtual_strength": current_friendly,
-						"score": score,
-						"is_defensive": false
+						"virtual_strength": 0.0,
+						"enemy_strength": e_str,
+						"score": score
 					})
 
-	# Adjust scores for distance (global adjustment assuming average, or per-troop later)
-	# For now, skip per-distance as we sort globally and then closest troop
-	
+					# --- BLITZKRIEG LOGIC ---
+					# Look at the neighbor's neighbors (2 tiles deep)
+					# If an enemy city is just behind the front line and empty, go for it!
+					var deep_neighbors = MapManager.adjacency_list.get(n_id, [])
+					for dn_id in deep_neighbors:
+						if MapManager.province_to_country.get(dn_id) == enemy_name and not seen.has(dn_id):
+							if dn_id in MapManager.all_cities:
+								targets.append({
+									"id": dn_id,
+									"virtual_strength": 0.0,
+									"enemy_strength": TroopManager.get_province_strength(dn_id, enemy_name),
+									"score": CITY_BONUS * 0.8 # Slightly lower priority than immediate targets
+								})
 	return targets
 
 # --- PEACE / DEPLOYMENT HELPERS ---

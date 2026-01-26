@@ -81,8 +81,6 @@ class Battle:
 			for div in t.stored_divisions:
 				var template = div.TEMPLATES.get(div.type, div.TEMPLATES["infantry"])
 				att_supply_cost += template["cost"] * 0.5
-				if attacker_country == CountryManager.player_country.country_name:
-					print(att_supply_cost)
 		attacker_stats.money -= att_supply_cost
 
 		var def_supply_cost = 0.0

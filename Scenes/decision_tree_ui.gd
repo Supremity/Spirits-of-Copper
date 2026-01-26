@@ -34,7 +34,6 @@ func _process(delta: float) -> void:
 		var input = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 		if input != Vector2.ZERO:
 			tree_canvas.position -= input * MOVE_SPEED * delta
-			print (tree_canvas.position)
 			tree_canvas.queue_redraw()
 
 func _create_full_ui():

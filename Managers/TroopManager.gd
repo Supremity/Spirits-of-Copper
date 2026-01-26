@@ -121,47 +121,49 @@ func pause_troop(troop: TroopData) -> void:
 func command_move_assigned(payload: Array) -> void:
 	if payload.is_empty(): return
 
-	# 1. Group the payload by troop to see who needs to split
-	var troop_to_targets = {}
+	# 1. Group the payload by troop
+	# We need this because one source troop might be the "parent" for 5 different moves
+	var troop_to_moves = {}
 	for entry in payload:
 		var t = entry.get("troop")
 		if not t: continue
-		if not troop_to_targets.has(t):
-			troop_to_targets[t] = []
-		troop_to_targets[t].append(entry.get("province_id"))
+		if not troop_to_moves.has(t):
+			troop_to_moves[t] = []
+		troop_to_moves[t].append(entry)
 
-	# 2. Process each troop
-	for troop in troop_to_targets:
-		var targets = troop_to_targets[troop]
+	# 2. Process each source troop
+	for troop in troop_to_moves:
+		var moves = troop_to_moves[troop]
 		
-		# If one troop has multiple targets, we must split it
-		if targets.size() > 1 and troop.divisions_count > 1:
-			var div_pool = troop.stored_divisions.duplicate()
-			@warning_ignore("integer_division")
-			var divs_per_target = max(1, div_pool.size() / targets.size())
-			var remainder = div_pool.size() % targets.size()
+		# Sort moves so that the one requiring the MOST divisions happens last
+		# This allows us to keep the original troop node for the "main" objective
+		moves.sort_custom(func(a, b): return a.get("divisions", 1) < b.get("divisions", 1))
 
-			for i in range(targets.size()):
-				var count = divs_per_target + (1 if i < remainder else 0)
+		for i in range(moves.size()):
+			var move_data = moves[i]
+			var target_pid = move_data["province_id"]
+			var requested_count = int(move_data.get("divisions", 1))
+			
+			# Safety check: Don't try to take more than we have
+			var available = troop.stored_divisions.size()
+			
+			# If this is the last move in the list OR we are requesting everything left
+			if i == moves.size() - 1 or requested_count >= available:
+				# No splitting needed for the final move; just move the original troop
+				_apply_movement_path(troop, target_pid)
+				break 
+			else:
+				# Splitting logic:
 				var batch: Array[DivisionData] = []
-				for j in range(count):
-					if not div_pool.is_empty():
-						batch.append(div_pool.pop_front())
+				for j in range(requested_count):
+					if not troop.stored_divisions.is_empty():
+						batch.append(troop.stored_divisions.pop_back()) # Take from the end
 				
 				if batch.is_empty(): continue
-
-				# Create the new troop for this specific target
-				# If it's the very last batch, we can just repurpose the original troop
-				var move_troop = troop
-				if i < targets.size() - 1:
-					move_troop = _create_new_split_troop(troop, batch)
-				else:
-					troop.stored_divisions = batch # Original troop gets the last slice
 				
-				_apply_movement_path(move_troop, targets[i])
-		else:
-			# Single target: just move the troop normally
-			_apply_movement_path(troop, targets[0])
+				# Create a new troop node for this small "detachment"
+				var split_troop = _create_new_split_troop(troop, batch)
+				_apply_movement_path(split_troop, target_pid)
 
 # Helper to keep your code clean
 func _apply_movement_path(troop: TroopData, target_pid: int) -> void:

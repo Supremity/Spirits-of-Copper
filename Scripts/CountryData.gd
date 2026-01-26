@@ -161,6 +161,7 @@ func update_manpower_pool() -> void:
 	var max_cap = int(base_reservoir * 1.5)
 	var used = CountryManager.get_country_used_manpower(self)
 	var current_total = manpower + used
+	manpower = int((total_population * MILITARY_SIZE_RATIO) - used)
 
 	if current_total < max_cap:
 		var gain = max(1, int(base_reservoir * MANPOWER_RECOVERY_PER_DAY))
