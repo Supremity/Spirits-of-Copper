@@ -58,7 +58,7 @@ func _handle_mouse_motion() -> void:
 
 
 func _handle_left_mouse(event: InputEventMouseButton) -> void:
-	if MapManager._is_mouse_over_ui(): return
+	if !dragging and MapManager._is_mouse_over_ui(): return
 	if event.pressed:
 		dragging = true
 		drag_start = get_global_mouse_position()
