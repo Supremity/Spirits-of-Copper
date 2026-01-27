@@ -1,6 +1,6 @@
 extends Control
 
-signal clicked(div_data, card_node)
+signal clicked(card_node, associated_data) 
 
 @onready var color_rect: ColorRect = $ColorRect
 @onready var texture_rect: TextureRect = $ColorRect/TextureRect
@@ -10,66 +10,62 @@ signal clicked(div_data, card_node)
 @onready var label_defense: Label = $ColorRect/label_defense
 @onready var label_experience: Label = $ColorRect/label_experience
 
-var data: DivisionData
+var data_payload # Can be DivisionData OR Array[DivisionData]
 var is_selected: bool = false
 
-# Colors
 const COLOR_NORMAL = Color(0.1, 0.1, 0.1, 0.7)
 const COLOR_SELECTED = Color(0.1, 0.4, 0.6, 0.9)
-# This creates a color 30% lighter than the normal one
 const COLOR_HOVER = Color(0.2, 0.2, 0.2, 0.8)
 
-
 func _ready():
-	# 1. CRITICAL: Make the root sensitive to mouse
 	mouse_filter = Control.MOUSE_FILTER_STOP
-
-	# 2. CRITICAL: Make children transparent to mouse so they don't block clicks
 	color_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for child in color_rect.get_children():
 		if child is Control:
 			child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-
-func setup(div: DivisionData, currently_selected: bool) -> void:
-	data = div
+## Setup for the new Grouped View
+func setup_grouped(type: String, divisions: Array, currently_selected: bool) -> void:
+	data_payload = divisions
 	is_selected = currently_selected
-
-	label_division.text = data.name
-	label_attack.text = str(data.get_attack_power())
-	label_defense.text = str(data.get_defense_power())
-	label_experience.text = "%d%%" % int(data.experience * 100)
-	progress_bar.value = data.hp
-
-	var icon_path = "res://assets/icons/hoi4/%s.png" % data.type.to_lower()
+	
+	var count = divisions.size()
+	label_division.text = "%dx %s" % [count, type.capitalize()]
+	
+	# Calculate Group Averages
+	var total_atk = 0.0
+	var total_def = 0.0
+	var total_hp = 0.0
+	var total_exp = 0.0
+	
+	for d in divisions:
+		total_atk += d.get_attack_power()
+		total_def += d.get_defense_power()
+		total_hp += d.hp
+		total_exp += d.experience
+		
+	label_attack.text = str(int(total_atk / count))
+	label_defense.text = str(int(total_def / count))
+	label_experience.text = "%d%%" % int((total_exp / count) * 100)
+	progress_bar.value = total_hp / count
+	
+	var icon_path = "res://assets/icons/hoi4/%s.png" % type.to_lower()
 	if ResourceLoader.exists(icon_path):
 		texture_rect.texture = load(icon_path)
-
+	
 	update_visuals()
 
-
 func update_visuals():
-	# Use a border or a distinct color change
-	if is_selected:
-		color_rect.color = COLOR_SELECTED
-	else:
-		color_rect.color = COLOR_NORMAL
-
+	color_rect.color = COLOR_SELECTED if is_selected else COLOR_NORMAL
 
 func _on_mouse_entered():
-	if not is_selected:
-		# Lighten the background on hover
-		color_rect.color = COLOR_HOVER
-
+	if not is_selected: color_rect.color = COLOR_HOVER
 
 func _on_mouse_exited():
 	update_visuals()
 
-
 func _gui_input(event):
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			# Tell the UI we were clicked
-			clicked.emit(data, self)
-			# Consuming the event so it doesn't click things behind the UI
+			clicked.emit(self, data_payload)
 			get_viewport().set_input_as_handled()
