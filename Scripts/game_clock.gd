@@ -66,11 +66,11 @@ func set_speed(scale: float) -> void:
 
 
 func decrease_speed():
-	set_speed(time_scale - 15)
+	set_speed(time_scale - 5)
 
 
 func increase_speed():
-	set_speed(time_scale + 15)
+	set_speed(time_scale + 5)
 	if paused:
 		resume()
 

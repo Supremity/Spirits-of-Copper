@@ -59,8 +59,8 @@ var menu_actions = {
 	{
 		Category.GENERAL:
 		[
+			{"text": "Manage Country", "func": "open_manage_country"},
 			{"text": "Decisions", "func": "open_decisions_tree"},
-			{"text": "Improve Stability", "cost": 25, "func": "improve_stability"},
 			{"text": "Releasables", "func": "_improve_relations"}
 		],
 		Category.ECONOMY:
@@ -406,6 +406,10 @@ func open_research_tree():
 
 func open_decisions_tree():
 	get_tree().root.find_child("DecisionTreeUI", true, false).open_menu()
+
+func open_manage_country():
+	get_tree().root.find_child("CountryManageUI", true, false).open_menu(CountryManager.player_country)
+
 
 	#GameState.current_world.set_process(false)
 	#GameState.current_world.clock.set_process(false)

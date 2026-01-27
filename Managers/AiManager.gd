@@ -2,8 +2,8 @@ extends Node
 class_name AIController
 
 # --- TUNING ---
-const TICK_RATE_PEACE := 120  # Slower thinking in peace time
-const TICK_RATE_WAR := 20  # Think fast during war
+const TICK_RATE_PEACE := 60  # Slower thinking in peace time
+const TICK_RATE_WAR := 10  # Think fast during war
 const SATURATION_IDEAL := 1.0  # Target: At least 1 division equivalent per province
 const SATURATION_MAX := 4.0  # Avoid overstacking; redistribute if exceeding
 const ATTACK_WEIGHT := 2.0  # Multiplier for provinces with enemy troops

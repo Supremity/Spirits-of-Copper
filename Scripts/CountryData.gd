@@ -1,10 +1,12 @@
 extends Resource
 class_name CountryData
 
+var economy_law_penalty: float = 0.0 # 0.10 means 10% income loss
+var army_composition_cache: Dictionary = {"infantry": 0, "tank": 0, "artillery": 0}
 #region --- Configuration & Constants ---
 const MANPOWER_RECOVERY_PER_YEAR := 0.10
 const MANPOWER_RECOVERY_PER_DAY := MANPOWER_RECOVERY_PER_YEAR / 365.0
-const MILITARY_SIZE_RATIO := 0.001
+var military_size_ratio := 0.005
 const BASE_ARMY_COST := 100.0  # Multiplied by army level
 #endregion
 
@@ -20,7 +22,7 @@ var factories_amount: int = 0
 var hourly_money_income: float = 0.0  # Calculated value
 
 # Politics
-var political_power: float = 50.0
+var political_power: float = 5000.0
 var daily_pp_gain: float = 0.04
 var stability: float = 0.5
 var war_support: float = 0.5
@@ -74,7 +76,7 @@ func _init(p_country_name: String) -> void:
 
 	# Initial Manpower Calculation
 	var manpower_used = CountryManager.get_country_used_manpower(self)
-	manpower = int((total_population * MILITARY_SIZE_RATIO) - manpower_used)
+	manpower = int((total_population * military_size_ratio) - manpower_used)
 	_setup_starting_army()
 
 
@@ -85,10 +87,9 @@ func process_hour() -> void:
 	# (GDP / Hours in a year) * Tax Rate + Factory Output
 	var base_income = (gdp / 8760.0) * 0.2
 	var factory_income = factories_amount * 1000.0
-
-	hourly_money_income = base_income + factory_income
+	var gross_income = base_income + factory_income
+	hourly_money_income = gross_income * (1.0 - economy_law_penalty)
 	army_cost = calculate_army_upkeep()
-
 	income = hourly_money_income - army_cost
 	money += income
 
@@ -170,19 +171,21 @@ func _graduate_troops(training: TroopTraining) -> void:
 
 #region --- Stats & Manpower ---
 func update_manpower_pool() -> void:
-	var base_reservoir = int(total_population * MILITARY_SIZE_RATIO)
-	var max_cap = int(base_reservoir * 1.5)
-	var used = CountryManager.get_country_used_manpower(self)
-	var current_total = manpower + used
-	manpower = int((total_population * MILITARY_SIZE_RATIO) - used)
+	var max_allowed_manpower = int(total_population * military_size_ratio)
+	
+	var used_manpower = CountryManager.get_country_used_manpower(self)
+	
+	var total_mobilized = manpower + used_manpower
+	
+	if total_mobilized < max_allowed_manpower:
+		var daily_growth = max(1, int(total_population * 0.0001))
+		manpower += daily_growth
+		
+	if (manpower + used_manpower) > max_allowed_manpower:
+		manpower = max(0, max_allowed_manpower - used_manpower)
 
-	if current_total < max_cap:
-		var gain = max(1, int(base_reservoir * MANPOWER_RECOVERY_PER_DAY))
-		manpower += gain
-
-	# Hard cap check
-	if (manpower + used) > max_cap:
-		manpower = max(0, max_cap - used)
+	# HARD SAFETY: Never let the variable itself be negative
+	manpower = max(0, manpower)
 
 
 func get_army_pressure() -> float:
@@ -341,18 +344,15 @@ func _process_reinforcements():
 	var all_my_troops = TroopManager.get_troops_for_country(country_name)
 
 	for troop in all_my_troops:
-		# Don't reinforce if moving or in battle (optional rule)
-		if troop.is_moving:
-			continue
+		if troop.is_moving: continue
 
 		for div in troop.stored_divisions:
 			if div.hp < div.max_hp:
-				# Cost to repair: 5% of original cost per 10% HP restored
-				var repair_amount = 5.0  # Restore 5 HP
-				var template = div.TEMPLATES[div.type]
-				var repair_cost = template["cost"] * 0.05
-
-				if money >= repair_cost and manpower >= template["manpower"] * 0.05:
-					money -= repair_cost
-					manpower -= template["manpower"] * 0.05
-					div.hp = min(div.max_hp, div.hp + repair_amount)
+				var template = DivisionData.TEMPLATES[div.type]
+				var men_needed = int(template["manpower"] * 0.05) # 5% reinforcement
+				
+				# REINFORCEMENT SAFETY: Stop if it would drop us below zero
+				if manpower >= men_needed and money >= (template["cost"] * 0.05):
+					money -= (template["cost"] * 0.05)
+					manpower -= men_needed
+					div.hp = min(div.max_hp, div.hp + 5.0)

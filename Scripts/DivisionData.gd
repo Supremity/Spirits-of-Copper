@@ -6,7 +6,7 @@ const TEMPLATES = {
 	"infantry":
 	{
 		"hp": 100.0,
-		"manpower": 1000,
+		"manpower": 10000,
 		"cost": 500,
 		"days": 9,
 		"attack": 1,
@@ -27,7 +27,7 @@ const TEMPLATES = {
 	{
 		"hp": 50.0,
 		"manpower": 1000,
-		"cost": 1000,
+		"cost": 10000,
 		"days": 15,
 		"attack": 7,
 		"defense": 1.0,
