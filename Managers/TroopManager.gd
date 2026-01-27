@@ -21,14 +21,14 @@ func _process(delta: float) -> void:
 func _update_moving_troop(troop: TroopData, delta: float) -> void:
 	if GameState.current_world.clock.paused:
 		return
-	
+
 	if troop.country_obj == null:
 		troop.country_obj = CountryManager.get_country(troop.country_name)
 
 	var start = troop.get_meta("start_pos", troop.position)
 	var end = troop.target_position
 	var total_dist = start.distance_to(end)
-	
+
 	# Safety check for instant arrival
 	if total_dist < 0.5:
 		troop.position = end
@@ -37,14 +37,14 @@ func _update_moving_troop(troop: TroopData, delta: float) -> void:
 
 	# Unified progress calculation
 	var move_progress = troop.get_meta("progress", 0.0)
-	
-	var base_speed = 1 
+
+	var base_speed = 1
 	var speed_mod = troop.country_obj.troop_speed_modifier if troop.country_obj else 1.0
 	var time_scale = GameState.current_world.clock.time_scale
-	
+
 	# Increment progress based on real-time and game speed
 	move_progress += (base_speed * speed_mod * time_scale * delta) / total_dist
-	
+
 	if move_progress >= 1.0:
 		troop.position = end
 		troop.set_meta("progress", 0.0)
@@ -64,14 +64,15 @@ func _start_next_leg(troop: TroopData) -> void:
 
 	# Check for Combat (WarManager logic)
 	var local_troops = troops_by_province.get(next_pid, [])
-	var enemies = local_troops.filter(func(t): 
-		return WarManager.is_at_war_names(t.country_name, troop.country_name)
+	var enemies = local_troops.filter(
+		func(t): return WarManager.is_at_war_names(t.country_name, troop.country_name)
 	)
 
 	if not enemies.is_empty():
 		WarManager.start_battle(troop.province_id, next_pid)
 		pause_troop(troop)
-		for enemy in enemies: pause_troop(enemy)
+		for enemy in enemies:
+			pause_troop(enemy)
 		return
 
 	# Update targets and start movement
@@ -83,6 +84,7 @@ func _start_next_leg(troop: TroopData) -> void:
 	if not moving_troops.has(troop):
 		moving_troops.append(troop)
 
+
 func _arrive_at_leg_end(troop: TroopData) -> void:
 	if troop.path.is_empty():
 		_stop_troop(troop)
@@ -91,7 +93,7 @@ func _arrive_at_leg_end(troop: TroopData) -> void:
 	# Logic move: Update which province the troop is 'officially' in
 	var arrived_pid = troop.path.pop_front()
 	_move_troop_to_province_logically(troop, arrived_pid)
-	
+
 	# Trigger occupation/events
 	WarManager.resolve_province_arrival(arrived_pid, troop)
 
@@ -102,6 +104,7 @@ func _arrive_at_leg_end(troop: TroopData) -> void:
 			_auto_merge_in_province(troop.province_id, troop.country_name)
 	else:
 		_start_next_leg(troop)
+
 
 func _stop_troop(troop: TroopData) -> void:
 	moving_troops.erase(troop)
@@ -119,14 +122,16 @@ func pause_troop(troop: TroopData) -> void:
 
 
 func command_move_assigned(payload: Array) -> void:
-	if payload.is_empty(): return
+	if payload.is_empty():
+		return
 
 	# 1. Group the payload by troop
 	# We need this because one source troop might be the "parent" for 5 different moves
 	var troop_to_moves = {}
 	for entry in payload:
 		var t = entry.get("troop")
-		if not t: continue
+		if not t:
+			continue
 		if not troop_to_moves.has(t):
 			troop_to_moves[t] = []
 		troop_to_moves[t].append(entry)
@@ -134,7 +139,7 @@ func command_move_assigned(payload: Array) -> void:
 	# 2. Process each source troop
 	for troop in troop_to_moves:
 		var moves = troop_to_moves[troop]
-		
+
 		# Sort moves so that the one requiring the MOST divisions happens last
 		# This allows us to keep the original troop node for the "main" objective
 		moves.sort_custom(func(a, b): return a.get("divisions", 1) < b.get("divisions", 1))
@@ -143,27 +148,29 @@ func command_move_assigned(payload: Array) -> void:
 			var move_data = moves[i]
 			var target_pid = move_data["province_id"]
 			var requested_count = int(move_data.get("divisions", 1))
-			
+
 			# Safety check: Don't try to take more than we have
 			var available = troop.stored_divisions.size()
-			
+
 			# If this is the last move in the list OR we are requesting everything left
 			if i == moves.size() - 1 or requested_count >= available:
 				# No splitting needed for the final move; just move the original troop
 				_apply_movement_path(troop, target_pid)
-				break 
+				break
 			else:
 				# Splitting logic:
 				var batch: Array[DivisionData] = []
 				for j in range(requested_count):
 					if not troop.stored_divisions.is_empty():
-						batch.append(troop.stored_divisions.pop_back()) # Take from the end
-				
-				if batch.is_empty(): continue
-				
+						batch.append(troop.stored_divisions.pop_back())  # Take from the end
+
+				if batch.is_empty():
+					continue
+
 				# Create a new troop node for this small "detachment"
 				var split_troop = _create_new_split_troop(troop, batch)
 				_apply_movement_path(split_troop, target_pid)
+
 
 # Helper to keep your code clean
 func _apply_movement_path(troop: TroopData, target_pid: int) -> void:
@@ -179,7 +186,7 @@ func _apply_movement_path(troop: TroopData, target_pid: int) -> void:
 		troop.path = path.duplicate()
 		if int(troop.path[0]) == int(troop.province_id):
 			troop.path.pop_front()
-		
+
 		troop.set_meta("start_pos", troop.position)
 		_start_next_leg(troop)
 	else:
@@ -204,16 +211,17 @@ func _get_cached_path(start_id: int, target_id: int, allowed_countries: Array[St
 
 	return path
 
+
 func _split_and_send_troop(troop: TroopData, target_pids: Array, paths: Dictionary) -> void:
 	var num_targets = target_pids.size()
-	var total_divs = troop.divisions_count 
+	var total_divs = troop.divisions_count
 
 	if num_targets == 0 or total_divs < num_targets:
 		return
 
 	# 1. Sort targets by distance to move the "heaviest" part of the stack the shortest distance
 	var target_distances: Array = []
-	for pid in target_pids:	
+	for pid in target_pids:
 		var dist = MapManager.heuristic(troop.province_id, pid)
 		target_distances.append({"pid": pid, "dist": dist})
 	target_distances.sort_custom(func(a, b): return a.dist < b.dist)
@@ -225,18 +233,18 @@ func _split_and_send_troop(troop: TroopData, target_pids: Array, paths: Dictiona
 
 	var original_used = false
 	var current_div_index = 0
-	
+
 	# We duplicate the array reference so we can slice it safely
 	var all_divisions = troop.stored_divisions.duplicate()
-	
+
 	for i in range(num_targets):
 		var pid = target_distances[i].pid
-		
+
 		# Determine how many divisions go to this specific target
 		var count_for_this_leg = base_count
 		if i < remainder:
 			count_for_this_leg += 1
-			
+
 		# SLICE: Take the specific objects for this batch
 		var divisions_for_this_leg: Array[DivisionData] = []
 		for d in range(count_for_this_leg):
@@ -245,7 +253,7 @@ func _split_and_send_troop(troop: TroopData, target_pids: Array, paths: Dictiona
 				current_div_index += 1
 
 		var troop_to_move: TroopData
-		
+
 		if not original_used:
 			# The original troop instance stays alive and takes the first batch
 			troop_to_move = troop
@@ -271,22 +279,23 @@ func _split_and_send_troop(troop: TroopData, target_pids: Array, paths: Dictiona
 				# If the path starts with current province, remove it
 				if new_path[0] == troop_to_move.province_id:
 					new_path.pop_front()
-				
+
 				troop_to_move.path = new_path
 				_start_next_leg(troop_to_move)
 			else:
 				_stop_troop(troop_to_move)
 
+
 func _create_new_split_troop(original: TroopData, specific_divisions: Array) -> TroopData:
 	var pos = original.position
-	
+
 	var new_troop = load("res://Scripts/TroopData.gd").new(
 		original.country_name, original.province_id, 0, pos, original.flag_texture
 	)
-	
+
 	# FIX: Ensure the new split troop knows which country it belongs to
 	new_troop.country_obj = original.country_obj
-	
+
 	# Immediately overwrite the empty array with our specific divisions
 	new_troop.stored_divisions = specific_divisions
 
@@ -313,7 +322,7 @@ func create_troop(country: String, divs: int, prov_id: int) -> TroopData:
 		flag_cache[country] = load(path) if ResourceLoader.exists(path) else null
 
 	var pos = MapManager.province_centers.get(prov_id, Vector2.ZERO)
-	
+
 	var troop = load("res://Scripts/TroopData.gd").new(
 		country, prov_id, divs, pos, flag_cache.get(country)
 	)
@@ -337,6 +346,7 @@ func create_troop(country: String, divs: int, prov_id: int) -> TroopData:
 
 	return troop
 
+
 func _auto_merge_in_province(province_id: int, country: String) -> void:
 	if not AUTO_MERGE:
 		return
@@ -355,19 +365,19 @@ func _auto_merge_in_province(province_id: int, country: String) -> void:
 	# 2. Pick the BEST Primary (The one to keep)
 	var primary = candidates[0]
 	var current_selection = null
-	
+
 	# Check selection safely
 	if troop_selection and "selected_troop" in troop_selection:
 		current_selection = troop_selection.selected_troop
 
 	for i in range(1, candidates.size()):
 		var current = candidates[i]
-		
+
 		# Prioritize keeping the selected unit
 		if current_selection and current_selection == current:
 			primary = current
 			break
-		
+
 		# Keep the one with the most divisions
 		if current.divisions_count > primary.divisions_count:
 			primary = current
@@ -380,10 +390,10 @@ func _auto_merge_in_province(province_id: int, country: String) -> void:
 
 		# MERGE ARRAYS: Transfer divisions from 't' to 'primary'
 		primary.stored_divisions.append_array(t.stored_divisions)
-		
+
 		# Clear 't' divisions so they don't get messy during deletion
 		t.stored_divisions.clear()
-		
+
 		to_remove.append(t)
 
 		# Update selection if we just merged the selected unit into another
@@ -528,11 +538,13 @@ func get_province_strength(pid: int, country: String) -> int:
 	var list = troops_by_province.get(pid, [])
 	for t in list:
 		if t.country_name == country:
-			total += t.divisions_count	
+			total += t.divisions_count
 	return total
 
 
-func deploy_specific_divisions(country: String, divisions_to_deploy: Array, prov_id: int) -> TroopData:
+func deploy_specific_divisions(
+	country: String, divisions_to_deploy: Array, prov_id: int
+) -> TroopData:
 	if divisions_to_deploy.is_empty():
 		return null
 
@@ -541,7 +553,7 @@ func deploy_specific_divisions(country: String, divisions_to_deploy: Array, prov
 		flag_cache[country] = load(path) if ResourceLoader.exists(path) else null
 
 	var pos = MapManager.province_centers.get(prov_id, Vector2.ZERO)
-	
+
 	# 1. Create the container (TroopData) with 0 divisions initially
 	var troop = load("res://Scripts/TroopData.gd").new(
 		country, prov_id, 0, pos, flag_cache.get(country)
@@ -567,6 +579,7 @@ func deploy_specific_divisions(country: String, divisions_to_deploy: Array, prov
 
 	return troop
 
+
 # Used by popup for now
 func get_flag(country: String) -> Texture2D:
 	# Normalize the key
@@ -588,6 +601,7 @@ func get_flag(country: String) -> Texture2D:
 	# Fallback texture (optional)
 	print("Flag not found for country:", country)
 	return null
+
 
 func find_troop_owning_division(div_to_find: DivisionData) -> TroopData:
 	for t in troops:

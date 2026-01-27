@@ -21,8 +21,8 @@ var country_colors: Dictionary = {}
 
 var color_to_pop_map: Dictionary = {}  # Stores {"(0, 10, 255)": 764}
 var color_to_city_map: Dictionary = {}
-var color_to_ethnic_map: Dictionary = {} 
-var ethnic_name_to_color: Dictionary = {} # both used
+var color_to_ethnic_map: Dictionary = {}
+var ethnic_name_to_color: Dictionary = {}  # both used
 var gdp_map: Dictionary = {}
 
 var province_to_country: Dictionary = {}
@@ -47,6 +47,7 @@ const CACHE_FOLDER = "res://map_data/"
 @export var gdp_texture: Texture2D
 @export var ethnicity_texture: Texture2D
 
+
 func load_country_data() -> void:
 	_load_country_colors()
 	_load_population_json()
@@ -69,7 +70,9 @@ func load_country_data() -> void:
 	)
 	var city = city_texture if city_texture else preload("res://maps/city_colors.png")
 	var gdp_data = gdp_texture if gdp_texture else preload("res://maps/gdp_data.png")
-	var ethnicity = ethnicity_texture if ethnicity_texture else preload ("res://maps/ethnicities.png")
+	var ethnicity = (
+		ethnicity_texture if ethnicity_texture else preload("res://maps/ethnicities.png")
+	)
 
 	_generate_and_save(region, culture, population, city, gdp_data, ethnicity)
 
@@ -120,7 +123,8 @@ func initialize_map(
 	culture_tex: Texture2D,
 	population_tex: Texture2D,
 	city_tex: Texture2D,
-	gdp_tex, ethnicity_tex
+	gdp_tex,
+	ethnicity_tex
 ) -> void:
 	var r_img = region_tex.get_image()
 	var c_img = culture_tex.get_image()
@@ -128,7 +132,7 @@ func initialize_map(
 	var city_img = city_tex.get_image()
 	var gdp_img = gdp_tex.get_image()
 	var ethnicity_img = ethnicity_tex.get_image()
-	
+
 	var w = r_img.get_width()
 	var h = r_img.get_height()
 
@@ -402,8 +406,10 @@ func _get_contextual_highlight(pid: int) -> Color:
 
 	return Color.TRANSPARENT
 
-func handle_click_down (global_pos :Vector2, map_sprite: Sprite2D) -> void:
+
+func handle_click_down(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 	TroopManager.troop_selection.deselect_all()
+
 
 func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 	if _is_mouse_over_ui() or Console.is_visible():
@@ -435,9 +441,10 @@ func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 			print("Action Failed: Cannot build in foreign territory.")
 			GameState.reset_industry_building()
 			show_countries_map()
-	
-	if TroopManager.troop_selection.selected_troops.is_empty(): # Prevent menu from spawning when selecting troops (annoying)
+
+	if TroopManager.troop_selection.selected_troops.is_empty():  # Prevent menu from spawning when selecting troops (annoying)
 		country_clicked.emit(province_to_country.get(pid, ""))
+
 
 func _execute_deployment(pid: int, player_name: String) -> void:
 	country_clicked.emit(player_name)
@@ -636,7 +643,7 @@ func _get_pid_fast(x: int, y: int) -> int:
 
 var path_cache: Dictionary = {}
 
-const HEURISTIC_SCALE: float = 1.0 #/ 50.0
+const HEURISTIC_SCALE: float = 1.0  #/ 50.0
 
 
 func find_path(start_pid: int, end_pid: int, allowed_countries: Array[String] = []) -> Array[int]:
@@ -861,6 +868,7 @@ func show_population_map() -> void:
 	state_color_texture.update(state_color_image)
 	print("MapManager: Population View Updated. Max Pop found: ", current_max_pop)
 
+
 func show_ethnic_map() -> void:
 	if province_objects.is_empty():
 		return
@@ -869,21 +877,22 @@ func show_ethnic_map() -> void:
 		# Skip index 0/1 (usually sea or null)
 		if pid <= 1:
 			continue
-			
+
 		var province = province_objects[pid]
-		var eth_name = province.ethnicity # Assuming this is the String name (e.g., "Igbo")
-		
+		var eth_name = province.ethnicity  # Assuming this is the String name (e.g., "Igbo")
+
 		# Default to black or transparent if ethnicity not found
-		var display_color = Color.BLACK 
-		
+		var display_color = Color.BLACK
+
 		if ethnic_name_to_color.has(eth_name):
 			display_color = ethnic_name_to_color[eth_name]
-		
+
 		# Update the lookup texture
 		state_color_image.set_pixel(pid, 0, display_color)
 
 	state_color_texture.update(state_color_image)
 	print("MapManager: Ethnic View Updated.")
+
 
 func _get_gdp_heatmap_color(gdp: int, max_gdp: float) -> Color:
 	if gdp <= 0:
@@ -1128,36 +1137,37 @@ func _load_gdp_json() -> void:
 
 func _load_ethnic_json() -> void:
 	var path = "res://map_data/ethnicities.json"
-	
+
 	if not FileAccess.file_exists(path):
 		push_error("Ethnic JSON missing at: " + path)
 		return
 
 	var file = FileAccess.open(path, FileAccess.READ)
 	var json_data = JSON.parse_string(file.get_as_text())
-	
+
 	if json_data is Dictionary:
 		color_to_ethnic_map = json_data
-		
+
 		# --- BUILD THE REVERSE LOOKUP ---
 		# We do this once here so show_ethnic_map() is super fast
 		ethnic_name_to_color.clear()
 		for color_key in color_to_ethnic_map.keys():
 			var ethnicity_name = color_to_ethnic_map[color_key]
-			
+
 			# Use your existing _parse_color_string to get a Vector3(R, G, B)
 			var rgb_vec = _parse_color_string(color_key)
-			
+
 			# Convert to Godot Color (0.0 to 1.0 range)
 			var final_color = Color(rgb_vec.x / 255.0, rgb_vec.y / 255.0, rgb_vec.z / 255.0)
-			
+
 			# Map the NAME to the COLOR
 			ethnic_name_to_color[ethnicity_name] = final_color
-			
+
 		print("Successfully loaded ", color_to_ethnic_map.size(), " ethnicities.")
 	else:
 		push_error("Ethnic JSON format is invalid (Expected Dictionary)")
-		
+
+
 func _get_name_from_color(c: Color, data_map: Dictionary) -> String:
 	var r = int(round(c.r * 255.0))
 	var g = int(round(c.g * 255.0))
@@ -1265,6 +1275,7 @@ func get_border_provinces(country_name: String) -> Array[int]:
 				break  # Move to next province once we know this one is a border
 
 	return border_provinces
+
 
 func get_all_cities() -> Array:
 	var pids = []

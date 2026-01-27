@@ -28,11 +28,11 @@ func setup(item_data: Dictionary, on_click: Callable) -> void:
 
 
 # 2. Training Setup
-func setup_training(training_obj) -> void: 
+func setup_training(training_obj) -> void:
 	source_object = training_obj
 	data = {"is_status": true}
-	_callback = Callable() 
-	
+	_callback = Callable()
+
 	# CHANGED: Use .divisions_count (the integer)
 	base_text = "Training %d Divs" % training_obj.divisions_count
 
@@ -44,10 +44,10 @@ func setup_training(training_obj) -> void:
 
 
 # 3. Ready Setup
-func setup_ready(ready_troop_obj, on_click: Callable) -> void: 
+func setup_ready(ready_troop_obj, on_click: Callable) -> void:
 	data = {"is_deploy": true}
 	_callback = on_click
-	
+
 	base_text = "Deploy %d Divisions" % ready_troop_obj.stored_divisions.size()
 
 	if not is_node_ready():
@@ -55,6 +55,7 @@ func setup_ready(ready_troop_obj, on_click: Callable) -> void:
 	button.disabled = false
 	button.modulate = Color.SPRING_GREEN
 	refresh_ui()
+
 
 func _init_ui():
 	if not is_node_ready():
@@ -105,7 +106,6 @@ func _update_standard_text_and_cost(player) -> void:
 
 func _on_button_pressed() -> void:
 	var cost = data.get("cost", 0)
-
 
 	if _callback.is_valid():
 		_callback.call()

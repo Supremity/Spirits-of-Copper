@@ -3,7 +3,7 @@ class_name TroopData
 
 # --- Core Properties ---
 var country_name: String
-var country_obj: Resource # Changed to Resource/Object for safety
+var country_obj: Resource  # Changed to Resource/Object for safety
 var province_id: int
 var position: Vector2
 var flag_texture: Texture2D
@@ -17,20 +17,24 @@ var divisions_count: int:
 		_adjust_divisions_to_match_count(value)
 
 var is_moving: bool = false
-var path: Array = [] 
+var path: Array = []
 var target_position: Vector2 = Vector2.ZERO
 var progress: float = 0.0
 
-func _init(p_country: String, p_province_id: int, p_divisions: int, p_position: Vector2, p_flag: Texture2D) -> void:
+
+func _init(
+	p_country: String, p_province_id: int, p_divisions: int, p_position: Vector2, p_flag: Texture2D
+) -> void:
 	country_name = p_country
 	province_id = p_province_id
 	position = p_position
 	flag_texture = p_flag
-	
+
 	for i in range(p_divisions):
 		var div = DivisionData.new()
 		div.name = "Division %d" % (i + 1)
 		stored_divisions.append(div)
+
 
 func _adjust_divisions_to_match_count(target_count: int):
 	var current = stored_divisions.size()

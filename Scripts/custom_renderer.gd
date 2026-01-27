@@ -13,12 +13,7 @@ const COLORS = {
 	"path_inactive": Color(0.5, 0.5, 0.5)
 }
 
-const LAYOUT = {
-	"flag_width": 24.0,
-	"flag_height": 20.0,
-	"min_text_width": 16.0,
-	"font_size": 16
-}	
+const LAYOUT = {"flag_width": 24.0, "flag_height": 20.0, "min_text_width": 16.0, "font_size": 16}
 
 const ZOOM_LIMITS = {"min_scale": 0.05, "max_scale": 0.5}
 const STACKING_OFFSET_Y := 20.0
@@ -31,23 +26,26 @@ var _current_inv_zoom := 1.0
 var _screen_rect: Rect2
 
 # Reference to the GPU node
-var troop_multimesh: MultiMeshInstance2D 
+var troop_multimesh: MultiMeshInstance2D
 
 var _last_cam_pos := Vector2.INF
 var _last_cam_zoom := Vector2.INF
 
+
 # --- Lifecycle ---
 func _ready() -> void:
-	z_index = 20 # Keep renderer high
+	z_index = 20  # Keep renderer high
 	_setup_multimesh()
 
+
 func _process(_delta: float) -> void:
-	if !map_sprite: return
+	if !map_sprite:
+		return
 
 	var cam := get_viewport().get_camera_2d()
 	if not cam:
 		return
-	
+
 	var zoom_changed := cam.zoom != _last_cam_zoom
 	var pos_changed := cam.global_position != _last_cam_pos
 
@@ -61,28 +59,29 @@ func _process(_delta: float) -> void:
 		_last_cam_pos = cam.global_position
 
 	_update_multimesh_buffer()
-	
+
 	queue_redraw()
+
 
 # --- MultiMesh Setup ---
 func _setup_multimesh():
 	if not troop_multimesh:
 		troop_multimesh = MultiMeshInstance2D.new()
 		troop_multimesh.name = "TroopMultiMesh"
-#		troop_multimesh.mouse_filter = Control.MOUSE_FILTER_IGNORE 
+#		troop_multimesh.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		# Crucial: Move the boxes behind the labels
-		troop_multimesh.z_index = -1 
+		troop_multimesh.z_index = -1
 		add_child(troop_multimesh)
-	
+
 	var mm = MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_2D
 	mm.use_colors = true
-	mm.use_custom_data = false # Simplified to avoid data corruption
-	
+	mm.use_custom_data = false  # Simplified to avoid data corruption
+
 	var q_mesh = QuadMesh.new()
 	q_mesh.size = Vector2(LAYOUT.flag_width + LAYOUT.min_text_width, LAYOUT.flag_height)
 	mm.mesh = q_mesh
-	
+
 	# SHADER: Using modern Godot 4.5 canvas_item logic
 	var mat = ShaderMaterial.new()
 	mat.shader = Shader.new()
@@ -106,21 +105,23 @@ func _setup_multimesh():
 	troop_multimesh.material = mat
 	troop_multimesh.multimesh = mm
 
+
 func _update_multimesh_buffer():
-	if not map_sprite or map_width <= 0 or not troop_multimesh: return
-		
+	if not map_sprite or map_width <= 0 or not troop_multimesh:
+		return
+
 	var troops = TroopManager.troops
 	var mm = troop_multimesh.multimesh
 	var needed = troops.size() * 3
-	
+
 	if mm.instance_count != needed:
 		mm.instance_count = needed
-	
+
 	var player_country = CountryManager.player_country.country_name
 	var selected_troops = TroopManager.troop_selection.selected_troops
 	var groups = _group_troops_by_visual_position(troops)
 	var idx = 0
-	
+
 	for base_pos in groups:
 		var stack = groups[base_pos]
 		var scaled_offset := STACKING_OFFSET_Y * _current_inv_zoom
@@ -129,27 +130,28 @@ func _update_multimesh_buffer():
 		for i in range(stack.size()):
 			var troop = stack[i]
 			var pos = base_pos + Vector2(0, start_y - (i * scaled_offset))
-			
+
 			# Logic for colors
 			var col = COLORS.border_other
 			if troop.country_name == player_country:
-				col = COLORS.border_selected if selected_troops.has(troop) else COLORS.border_default
-			
+				col = (
+					COLORS.border_selected if selected_troops.has(troop) else COLORS.border_default
+				)
+
 			for m in [-1, 0, 1]:
-				if idx >= mm.instance_count: break
+				if idx >= mm.instance_count:
+					break
 				var f_pos = pos + Vector2(map_width * m, 0) + map_sprite.position
 				var mm_scale := Vector2(_current_inv_zoom, _current_inv_zoom)
 
-				mm.set_instance_transform_2d(
-					idx,
-					Transform2D(0, mm_scale, 0, f_pos)
-				)
+				mm.set_instance_transform_2d(idx, Transform2D(0, mm_scale, 0, f_pos))
 				mm.set_instance_color(idx, col)
 				idx += 1
 
 
 func _draw() -> void:
-	if !map_sprite or map_width <= 0: return
+	if !map_sprite or map_width <= 0:
+		return
 	_draw_path_preview()
 	_draw_active_movements()
 	_draw_selection_box()
@@ -159,23 +161,24 @@ func _draw() -> void:
 
 
 func _draw_troops() -> void:
-	if _current_inv_zoom > 1.5: return # LOD optimization
+	if _current_inv_zoom > 1.5:
+		return  # LOD optimization
 
 	# Use the same grouping logic but account for movement
 	var troops = TroopManager.troops
 	var groups = _group_troops_by_visual_position(troops)
-	
+
 	for base_pos in groups:
 		var stack = groups[base_pos]
 		# Use scaled offset so text stays aligned with the MultiMesh boxes
 		var scaled_offset := STACKING_OFFSET_Y * _current_inv_zoom
 		var start_y = (stack.size() - 1) * scaled_offset * 0.5
-		
+
 		for i in range(stack.size()):
 			var troop = stack[i]
 			# Calculate position including world-wrapping (m)
 			var vertical_stack_pos = base_pos + Vector2(0, start_y - (i * scaled_offset))
-			
+
 			for m in [-1, 0, 1]:
 				var d_pos = vertical_stack_pos + Vector2(map_width * m, 0) + map_sprite.position
 				if _screen_rect.has_point(d_pos):
@@ -185,7 +188,7 @@ func _draw_troops() -> void:
 func _draw_troop(troop: TroopData, pos: Vector2) -> void:
 	var t := Transform2D(0, Vector2(_current_inv_zoom, _current_inv_zoom), 0, pos)
 	draw_set_transform_matrix(t)
-	
+
 	var total_w = LAYOUT.flag_width + LAYOUT.min_text_width
 	var total_h = LAYOUT.flag_height
 	var top_left = Vector2(-total_w / 2.0, -total_h / 2.0)
@@ -193,13 +196,13 @@ func _draw_troop(troop: TroopData, pos: Vector2) -> void:
 	# Draw Text (Right side)
 	var label = str(troop.divisions_count)
 	# Use the base font size; the transform handles the zoom-scaling for us!
-	var font_size := LAYOUT.font_size 
+	var font_size := LAYOUT.font_size
 	var text_size := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
-	
+
 	# Position text relative to the flag's right edge
 	var text_area_x = top_left.x + LAYOUT.flag_width
 	var tx = text_area_x + (LAYOUT.min_text_width - text_size.x) * 0.5
-	var ty = (text_size.y * 0.3) # Vertical center relative to (0,0)
+	var ty = text_size.y * 0.3  # Vertical center relative to (0,0)
 
 	# Draw Flag (Left side)
 	if troop.flag_texture:
@@ -207,7 +210,9 @@ func _draw_troop(troop: TroopData, pos: Vector2) -> void:
 		var flag_rect = Rect2(top_left, Vector2(LAYOUT.flag_width, total_h)).grow(-1.0)
 		draw_texture_rect(troop.flag_texture, flag_rect, false)
 
-	draw_string(_font, Vector2(tx, ty), label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, COLORS.text)
+	draw_string(
+		_font, Vector2(tx, ty), label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, COLORS.text
+	)
 
 	# 3. Reset transform so other things draw correctly
 	draw_set_transform_matrix(Transform2D())
@@ -221,14 +226,16 @@ func _group_troops_by_visual_position(troops: Array) -> Dictionary:
 		if t.is_moving:
 			var progress = t.get_meta("progress", 0.0)
 			visual_pos = t.position.lerp(t.target_position, progress)
-		
-		if not g.has(visual_pos): g[visual_pos] = []
+
+		if not g.has(visual_pos):
+			g[visual_pos] = []
 		g[visual_pos].append(t)
 	return g
 
 
 func _draw_selection_box() -> void:
-	if not TroopManager.troop_selection.dragging: return
+	if not TroopManager.troop_selection.dragging:
+		return
 	var ts = TroopManager.troop_selection
 	var rect = Rect2(ts.drag_start, ts.drag_end - ts.drag_start).abs()
 	draw_rect(rect, Color(1, 1, 1, 0.3), true)
@@ -236,17 +243,23 @@ func _draw_selection_box() -> void:
 
 
 func _draw_path_preview() -> void:
-	if not TroopManager.troop_selection.right_dragging: return
+	if not TroopManager.troop_selection.right_dragging:
+		return
 	var path = TroopManager.troop_selection.right_path
 	for i in range(path.size()):
 		var p = path[i]["map_pos"] + map_sprite.position
-		var col = COLORS.path_active if i < TroopManager.troop_selection.max_path_length else COLORS.path_inactive
+		var col = (
+			COLORS.path_active
+			if i < TroopManager.troop_selection.max_path_length
+			else COLORS.path_inactive
+		)
 		draw_circle(p, 1.0, col)
 
 
 func _draw_active_movements() -> void:
 	for troop in TroopManager.troops:
-		if !troop.is_moving: continue
+		if !troop.is_moving:
+			continue
 		var start = troop.position + map_sprite.position
 		var end = troop.target_position + map_sprite.position
 		if _screen_rect.has_point(start) or _screen_rect.has_point(end):
@@ -267,28 +280,28 @@ func _update_screen_rect():
 	_screen_rect = _screen_rect.grow(200.0)
 
 
-
-
-
 func _draw_cities() -> void:
-	if not MapManager.id_map_image: return
+	if not MapManager.id_map_image:
+		return
 
 	var hovered_pid = MapManager.current_hovered_pid
 	var base_dot_radius = 4.0
-	var base_font_size = 24 
+	var base_font_size = 24
 
-	var s = _current_inv_zoom 
+	var s = _current_inv_zoom
 
 	for city_data in MapManager.all_cities:
 		var pid = city_data[0]
 		var city_name = city_data[1]
-		
+
 		var base_pos = MapManager.province_centers.get(pid, Vector2.ZERO)
-		if base_pos == Vector2.ZERO: continue
-		
+		if base_pos == Vector2.ZERO:
+			continue
+
 		for j in [-1, 0, 1]:
 			var world_pos = base_pos + map_sprite.position + Vector2(map_width * j, 0)
-			if not _screen_rect.has_point(world_pos): continue
+			if not _screen_rect.has_point(world_pos):
+				continue
 
 			var t := Transform2D(0, Vector2(s, s), 0, world_pos)
 			draw_set_transform_matrix(t)
@@ -296,23 +309,42 @@ func _draw_cities() -> void:
 			draw_circle(Vector2.ZERO, base_dot_radius, Color.WHITE)
 
 			if pid == hovered_pid:
-				var offset = Vector2(10, base_font_size * 0.3) 
-				draw_string_outline(_font, offset, city_name, HORIZONTAL_ALIGNMENT_LEFT, -1, base_font_size, 4, Color(0,0,0,0.8))
-				draw_string(_font, offset, city_name, HORIZONTAL_ALIGNMENT_LEFT, -1, base_font_size, Color.WHITE)
+				var offset = Vector2(10, base_font_size * 0.3)
+				draw_string_outline(
+					_font,
+					offset,
+					city_name,
+					HORIZONTAL_ALIGNMENT_LEFT,
+					-1,
+					base_font_size,
+					4,
+					Color(0, 0, 0, 0.8)
+				)
+				draw_string(
+					_font,
+					offset,
+					city_name,
+					HORIZONTAL_ALIGNMENT_LEFT,
+					-1,
+					base_font_size,
+					Color.WHITE
+				)
 
 	draw_set_transform_matrix(Transform2D())
-	
+
+
 func draw_battles():
 	# Replace this with however you store your current player country name
-	var player_country = CountryManager.player_country.country_name 
+	var player_country = CountryManager.player_country.country_name
 
 	for battle in WarManager.active_battles:
-		if not battle: continue
+		if not battle:
+			continue
 
 		var pos: Vector2 = battle.position
-		
+
 		# 1. Determine "Winningness" (0.0 = Losing badly, 1.0 = Winning)
-		var win_ratio: float = 0.5 # Default for AI vs AI
+		var win_ratio: float = 0.5  # Default for AI vs AI
 		var is_player_involved = false
 
 		if battle.attacker_country == player_country:
@@ -330,7 +362,7 @@ func draw_battles():
 		var pulse = sin(Time.get_ticks_msec() * 0.01) * 0.5
 		var base_radius = 2
 		var current_radius = base_radius + (battle.attack_progress * 1.5) + pulse
-		
+
 		# 3. Dynamic Coloring
 		var hue: float
 		var sat: float = 0.85
@@ -351,9 +383,9 @@ func draw_battles():
 		# 4. Draw Layers
 		# Shadow/Outline
 		draw_circle(pos, current_radius + 1.0, Color(0, 0, 0, 0.6))
-		
+
 		# Main Pip
 		draw_circle(pos, current_radius, color)
-		
+
 		# Add a tiny white 'glint' in the center to make it pop
 		draw_circle(pos, 1.2, Color.WHITE)

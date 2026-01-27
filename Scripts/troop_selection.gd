@@ -39,10 +39,11 @@ func _input(event) -> void:
 	elif event is InputEventMouseMotion:
 		_handle_mouse_motion()
 
-func deselect_all () -> void:
+
+func deselect_all() -> void:
 	selected_troops.clear()
 	GameState.game_ui.close_troop_container()
-	
+
 
 func _handle_mouse_motion() -> void:
 	if dragging:
@@ -58,7 +59,8 @@ func _handle_mouse_motion() -> void:
 
 
 func _handle_left_mouse(event: InputEventMouseButton) -> void:
-	if !dragging and MapManager._is_mouse_over_ui(): return
+	if !dragging and MapManager._is_mouse_over_ui():
+		return
 	if event.pressed:
 		dragging = true
 		drag_start = get_global_mouse_position()
@@ -69,7 +71,7 @@ func _handle_left_mouse(event: InputEventMouseButton) -> void:
 
 		drag_end = get_global_mouse_position()
 		dragging = false
-		
+
 		if selected_troops.size() > 0:
 			MusicManager.play_sfx(MusicManager.SFX.TROOP_SELECTED)
 			# Call your new function
@@ -77,7 +79,7 @@ func _handle_left_mouse(event: InputEventMouseButton) -> void:
 		else:
 			# If we clicked empty ground, hide the container
 			GameState.game_ui.close_troop_container()
-			
+
 
 func _handle_right_mouse(event: InputEventMouseButton) -> void:
 	if event.pressed and not selected_troops.is_empty():
@@ -164,9 +166,6 @@ func _check_rect_intersection(
 	return false
 
 
-
-
-
 func _sample_province_under_mouse() -> void:
 	if not map_sprite:
 		return
@@ -202,22 +201,23 @@ func _perform_path_assignment() -> void:
 	for entry in right_path:
 		if path_pids.is_empty() or path_pids[-1] != entry["pid"]:
 			path_pids.append(entry["pid"])
-	
-	if path_pids.is_empty(): return
+
+	if path_pids.is_empty():
+		return
 
 	# 1. Cast the moving pool correctly
 	var ui_selected = GameState.game_ui.selected_division_objects.duplicate()
 	var moving_pool: Array[DivisionData] = []
-	
+
 	if not ui_selected.is_empty():
-		moving_pool = ui_selected 
+		moving_pool = ui_selected
 	else:
 		for t in selected_troops:
 			moving_pool.append_array(t.stored_divisions)
 
 	# 2. Ensure the Dictionary values are typed arrays
-	var pool_by_origin = {} 
-	
+	var pool_by_origin = {}
+
 	for div in moving_pool:
 		var owner = TroopManager.find_troop_owning_division(div)
 		if owner:
@@ -233,19 +233,20 @@ func _perform_path_assignment() -> void:
 	for origin_id in pool_by_origin:
 		# 3. Cast the origin batch when retrieving it
 		var origin_batch = pool_by_origin[origin_id] as Array[DivisionData]
-		
+
 		var template = null
 		for t in selected_troops:
 			if t.province_id == origin_id:
 				template = t
 				break
-		
+
 		if not template:
 			var troops_at_origin = TroopManager.get_troops_in_province(origin_id)
 			if not troops_at_origin.is_empty():
 				template = troops_at_origin[0]
-		
-		if not template: continue
+
+		if not template:
+			continue
 
 		@warning_ignore("integer_division")
 		var divs_per_target = max(1, origin_batch.size() / path_pids.size())
@@ -255,7 +256,7 @@ func _perform_path_assignment() -> void:
 		for province_idx in range(path_pids.size()):
 			var target_pid = path_pids[province_idx]
 			var count_needed = divs_per_target + (1 if province_idx < remainder else 0)
-			
+
 			# 4. Initialize the specific batch as a typed array
 			var final_divs: Array[DivisionData] = []
 			for i in range(count_needed):
@@ -264,26 +265,26 @@ func _perform_path_assignment() -> void:
 					_remove_division_from_current_owner(div)
 					final_divs.append(div)
 					current_batch_idx += 1
-			
-			if final_divs.is_empty(): continue
+
+			if final_divs.is_empty():
+				continue
 
 			# This will now succeed because final_divs is Array[DivisionData]
 			var new_troop = TroopManager._create_new_split_troop(template, final_divs)
-			
-			all_assignments.append({
-				"troop": new_troop, 
-				"province_id": target_pid
-			})
+
+			all_assignments.append({"troop": new_troop, "province_id": target_pid})
 
 	TroopManager.command_move_assigned(all_assignments)
 	_cleanup_empty_troops()
-	
+
 	GameState.game_ui.selected_division_objects.clear()
 	GameState.game_ui.close_troop_container()
 	selected_troops.clear()
 	right_path.clear()
 
+
 # --- Helper functions for the logic above ---
+
 
 func _remove_division_from_current_owner(div: DivisionData):
 	# Search all our selected troops and remove the div from their stored_divisions
@@ -292,16 +293,19 @@ func _remove_division_from_current_owner(div: DivisionData):
 			t.stored_divisions.erase(div)
 			return
 
+
 func _cleanup_empty_troops():
 	# If a troop gave away all its divisions, delete it from the world
 	for t in selected_troops:
 		if t.stored_divisions.is_empty():
 			TroopManager.remove_troop(t)
 
+
 # --- Helpers to keep logic clean ---
 
+
 func _find_template_troop_for_divs(batch: Array[DivisionData]) -> TroopData:
-	# Find which troop currently owns the first division in this batch 
+	# Find which troop currently owns the first division in this batch
 	# to use as a template (country name, flag, etc)
 	for t in selected_troops:
 		if batch[0] in t.stored_divisions:
@@ -309,32 +313,33 @@ func _find_template_troop_for_divs(batch: Array[DivisionData]) -> TroopData:
 	return selected_troops[0]
 
 
-
 # --- MODE A: Move only the units clicked in the UI ---
 func _handle_selective_ui_move(div_objects: Array[DivisionData], path: Array) -> void:
 	# Group the divisions by their current "parent" troop so we can split them
-	var split_map = {} # { TroopData: Array[DivisionData] }
+	var split_map = {}  # { TroopData: Array[DivisionData] }
 	for div in div_objects:
 		var owner = TroopManager.find_troop_owning_division(div)
 		if owner:
-			if not split_map.has(owner): split_map[owner] = []
+			if not split_map.has(owner):
+				split_map[owner] = []
 			split_map[owner].append(div)
-	
+
 	for original_troop in split_map:
 		var divs_to_move = split_map[original_troop]
-		
+
 		# Remove these objects from the original stack
 		for d in divs_to_move:
 			original_troop.stored_divisions.erase(d)
-		
+
 		# Create the new troop instance for the split-off units
 		var new_troop = TroopManager._create_new_split_troop(original_troop, divs_to_move)
 		new_troop.path = path.duplicate()
 		TroopManager._start_next_leg(new_troop)
-		
+
 		# If the original troop is now empty, delete it from the map
 		if original_troop.stored_divisions.is_empty():
 			TroopManager.remove_troop(original_troop)
+
 
 # --- MODE B: Spread the whole selected army across the path ---
 func _handle_frontline_spread(path: Array) -> void:
@@ -344,45 +349,54 @@ func _handle_frontline_spread(path: Array) -> void:
 		all_divs.append_array(t.stored_divisions)
 		# We will effectively "re-distribute" all these, so clear the originals
 		t.stored_divisions.clear()
-	
+
 	@warning_ignore("integer_division")
 	var divs_per_prov = max(1, all_divs.size() / path.size())
 	var remainder = all_divs.size() % path.size()
-	
+
 	var div_index = 0
 	for i in range(path.size()):
 		var target_pid = path[i]
 		var count = divs_per_prov + (1 if i < remainder else 0)
-		
+
 		var batch: Array[DivisionData] = []
 		for j in range(count):
 			if div_index < all_divs.size():
 				batch.append(all_divs[div_index])
 				div_index += 1
-		
-		if batch.is_empty(): continue
-		
+
+		if batch.is_empty():
+			continue
+
 		# Create a new troop for this province's portion of the frontline
 		# We use the first selected troop as a template for country/flag
 		var template = selected_troops[0]
 		var new_troop = TroopManager._create_new_split_troop(template, batch)
-		
+
 		# Generate a path to that specific point on the frontline
 		# (Assuming you have a pathfinder, otherwise just use the path subset)
-		new_troop.path = path.slice(0, i + 1) 
+		new_troop.path = path.slice(0, i + 1)
 		TroopManager._start_next_leg(new_troop)
 
 	# Clean up the now-empty original troops
 	for t in selected_troops:
 		if t.stored_divisions.is_empty():
 			TroopManager.remove_troop(t)
-	
+
+
 func _print_troop_details(troop: TroopData) -> void:
 	print("--- Selected Troop (Prov: %d) ---" % troop.province_id)
 	for div in troop.stored_divisions:
-		var hp_percent = int(div.hp) 
+		var hp_percent = int(div.hp)
 		var exp_level = "Green"
-		if div.experience > 0.7: exp_level = "Veteran"
-		elif div.experience > 0.3: exp_level = "Trained"
-		
-		print(" > %s [%s] - HP: %d%% - Exp: %s" % [div.name, div.type.to_upper(), hp_percent, exp_level])
+		if div.experience > 0.7:
+			exp_level = "Veteran"
+		elif div.experience > 0.3:
+			exp_level = "Trained"
+
+		print(
+			(
+				" > %s [%s] - HP: %d%% - Exp: %s"
+				% [div.name, div.type.to_upper(), hp_percent, exp_level]
+			)
+		)

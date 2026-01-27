@@ -10,6 +10,7 @@ class_name World
 
 var water_offset: Vector2 = Vector2.ZERO
 
+
 func _process(_delta: float) -> void:
 	var map_width := MapManager.id_map_image.get_width()
 	if camera.position.x > map_sprite.position.x + map_width:
@@ -36,13 +37,13 @@ func _ready() -> void:
 	MapManager.load_country_data()
 
 	print("World: Map is ready -> configuring visuals...")
-	
+
 	MapManager.all_cities = MapManager.get_all_cities()
 	CountryManager.initialize_countries()
 	CountryManager.set_player_country("peru")
 	# For debugging purposes. Create some troops first
 	MapManager.force_bidirectional_connections()
-	
+
 	var map_width := MapManager.id_map_image.get_width()
 	var map_height := MapManager.id_map_image.get_height()
 
@@ -62,9 +63,9 @@ func _ready() -> void:
 			var province = MapManager.province_objects.get(pid)
 
 			if province:
-				if province.type == 0: # SEA
+				if province.type == 0:  # SEA
 					type_img.set_pixel(x, y, Color(0, 0, 0))
-				else: # LAND
+				else:  # LAND
 					type_img.set_pixel(x, y, Color(1, 1, 1))
 			else:
 				# It's a border (PID 1 or null). Mark as uncertain for now.
@@ -74,26 +75,28 @@ func _ready() -> void:
 	for pos in uncertain_pixels:
 		var touches_land = false
 		var touches_sea = false
-		
+
 		# Check 8-way neighbors (Radius 1 ONLY - very important)
 		for dy in range(-1, 2):
 			for dx in range(-1, 2):
-				if dx == 0 and dy == 0: continue
-				
+				if dx == 0 and dy == 0:
+					continue
+
 				var nx = pos.x + dx
 				var ny = pos.y + dy
-				
+
 				if nx >= 0 and nx < map_width and ny >= 0 and ny < map_height:
 					var nid = MapManager._get_pid_fast(nx, ny)
 					if nid > 1:
 						var n_prov = MapManager.province_objects.get(nid)
 						if n_prov:
-							if n_prov.type != 0: touches_land = true
-							else: touches_sea = true
-		
+							if n_prov.type != 0:
+								touches_land = true
+							else:
+								touches_sea = true
 
 		if touches_land:
-			type_img.set_pixel(pos.x, pos.y, Color(1, 1, 1)) 
+			type_img.set_pixel(pos.x, pos.y, Color(1, 1, 1))
 		else:
 			# If it only touches sea (or nothing), it's a Sea Grid/Open Water
 			type_img.set_pixel(pos.x, pos.y, Color(0, 0, 0))
@@ -120,7 +123,7 @@ func _ready() -> void:
 
 	await noise_tex.changed
 	mat.set_shader_parameter("ocean_noise", noise_tex)
-	
+
 	mat.set_shader_parameter("original_texture", map_sprite.texture)
 	mat.set_shader_parameter("sea_speed", 0.00)  # Changed by MainClock
 	mat.set_shader_parameter("tex_size", Vector2(map_width, MapManager.id_map_image.get_height()))
@@ -136,7 +139,7 @@ func _ready() -> void:
 		troop_renderer.map_width = map_width
 	else:
 		push_error("CustomRenderer node not found!")
-		
+
 
 func _create_ghost_map(offset: Vector2, p_material: ShaderMaterial) -> void:
 	var ghost := Sprite2D.new()
@@ -148,10 +151,7 @@ func _create_ghost_map(offset: Vector2, p_material: ShaderMaterial) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if (
-		event is InputEventMouseButton
-		and event.button_index == MOUSE_BUTTON_LEFT
-	):
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			MapManager.handle_click_down(get_global_mouse_position(), map_sprite)
 		else:

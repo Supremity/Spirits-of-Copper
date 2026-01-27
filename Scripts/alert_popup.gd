@@ -7,12 +7,15 @@ extends Control
 
 var data = {}
 
+
 func setup_alert(config: Dictionary):
 	data = config
+
 
 func _ready():
 	button.pressed.connect(_on_ok)
 	_build_ui()
+
 
 func _build_ui():
 	var type = data.get("type", "default")
@@ -54,11 +57,13 @@ func _build_ui():
 	if params.has("color"):
 		description.add_theme_color_override("font_color", params["color"])
 
+
 func _on_ok():
 	# If we passed a callback function in params, run it!
 	if data.get("params", {}).has("callback"):
 		data["params"]["callback"].call()
 	queue_free()
+
 
 func _get_flag(country: String):
 	var path = "res://assets/flags/%s_flag.png" % country.to_lower()

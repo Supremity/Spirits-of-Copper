@@ -8,16 +8,22 @@ func _ready() -> void:
 	Console.add_command("annex", _annex, ["country_name"], 1, "Annex Country for Player")
 	Console.add_command("pp", _add_pp, ["amount"], 1, "Add Poltical power to player")
 	Console.add_command("manpower", _add_manpower, ["amount"], 1, "Add Manpower to Country")
-	Console.add_command("set_manpower", _set_manpower, ["amount"], 1, "Sets manpower to a specific amount")
-	
-func _add_pp (amount):
+	Console.add_command(
+		"set_manpower", _set_manpower, ["amount"], 1, "Sets manpower to a specific amount"
+	)
+
+
+func _add_pp(amount):
 	CountryManager.player_country.political_power += float(amount)
+
 
 func _add_manpower(amount):
 	CountryManager.player_country.manpower += int(amount)
 
+
 func _set_manpower(amount):
 	CountryManager.player_country.manpower = int(amount)
+
 
 func _annex(country_name: String) -> void:
 	if CountryManager.countries.has(country_name):
@@ -31,7 +37,7 @@ func _play_country(country_name: String) -> void:
 	if CountryManager.countries.has(country_name):
 		CountryManager.set_player_country(country_name)
 		return
-	
+
 	Console.print_line("Unknown country: " + country_name)
 
 

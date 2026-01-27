@@ -12,6 +12,7 @@ var game_ui: GameUI
 var decision_menu_open: bool = false
 var in_peace_process: bool = false
 
+
 func reset_industry_building():
 	industry_building = IndustryType.DEFAULT
 	MapManager.show_countries_map()

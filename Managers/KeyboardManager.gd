@@ -55,7 +55,7 @@ func _cycle_map_mode() -> void:
 			current_view = MapView.ETHNICITY
 			MapManager.show_ethnic_map()
 			print("Map Mode: Ethnicity")
-			
+
 		MapView.ETHNICITY:
 			current_view = MapView.COUNTRIES
 			MapManager.show_countries_map()

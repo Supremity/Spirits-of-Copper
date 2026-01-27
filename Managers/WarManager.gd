@@ -1,14 +1,15 @@
 extends Node
 
 # --- Constants ---
-const BATTLE_TICK := 1.0  
-const MORALE_DECAY_RATE := 0.02 # Adjusted for better flow
+const BATTLE_TICK := 1.0
+const MORALE_DECAY_RATE := 0.02  # Adjusted for better flow
 const MORALE_BOOST_DEFENDER := 10.0
 
 # --- State ---
 var wars := {}
 var active_battles := []
 var original_territories := {}
+
 
 class Battle:
 	var attacker_pid: int
@@ -19,7 +20,7 @@ class Battle:
 	var attacker_stats: CountryData
 	var defender_stats: CountryData
 
-	var attack_progress := 0.0 
+	var attack_progress := 0.0
 	var att_morale: float
 	var def_morale: float
 	var initial_def_morale: float
@@ -27,10 +28,10 @@ class Battle:
 	# These now represent the total combined HP of all divisions in the battle
 	var current_def_hp: float = 0.0
 	var total_starting_hp: float = 0.0
-	
+
 	var timer := 0.0
 	var position: Vector2
-	var manager # Reference to WarManager
+	var manager  # Reference to WarManager
 
 	func _init(atk_pid: int, def_pid: int, atk_c: String, def_c: String, pos: Vector2, m):
 		attacker_pid = atk_pid
@@ -45,9 +46,12 @@ class Battle:
 
 		# Sync morale
 		att_morale = attacker_stats.get_max_morale() if attacker_stats else 80.0
-		initial_def_morale = (defender_stats.get_max_morale() if defender_stats else 80.0) + manager.MORALE_BOOST_DEFENDER
+		initial_def_morale = (
+			(defender_stats.get_max_morale() if defender_stats else 80.0)
+			+ manager.MORALE_BOOST_DEFENDER
+		)
 		def_morale = initial_def_morale
-		
+
 		# Set initial HP snapshot
 		_update_hp_totals()
 		total_starting_hp = current_def_hp
@@ -55,7 +59,9 @@ class Battle:
 	func _update_hp_totals():
 		# This sums up the current HP of every division the defender has in the province
 		var total := 0.0
-		var def_troops = TroopManager.get_troops_in_province(defender_pid).filter(func(t): return t.country_name == defender_country)
+		var def_troops = TroopManager.get_troops_in_province(defender_pid).filter(
+			func(t): return t.country_name == defender_country
+		)
 		for t in def_troops:
 			for div in t.stored_divisions:
 				total += div.hp
@@ -68,8 +74,12 @@ class Battle:
 			_resolve_round()
 
 	func _resolve_round():
-		var att_troops = TroopManager.get_troops_in_province(attacker_pid).filter(func(t): return t.country_name == attacker_country)
-		var def_troops = TroopManager.get_troops_in_province(defender_pid).filter(func(t): return t.country_name == defender_country)
+		var att_troops = TroopManager.get_troops_in_province(attacker_pid).filter(
+			func(t): return t.country_name == attacker_country
+		)
+		var def_troops = TroopManager.get_troops_in_province(defender_pid).filter(
+			func(t): return t.country_name == defender_country
+		)
 		if att_troops.is_empty():
 			manager.end_battle(self)
 			return
@@ -89,7 +99,7 @@ class Battle:
 			for div in t.stored_divisions:
 				var template = div.TEMPLATES.get(div.type, div.TEMPLATES["infantry"])
 				def_supply_cost += template["cost"] * 0.1
-		
+
 		defender_stats.money -= def_supply_cost
 		# Apply costs and determine penalties
 		var att_supply_mult = 1.0
@@ -100,8 +110,8 @@ class Battle:
 				attacker_stats.money -= att_supply_cost
 			else:
 				# Out of money! Attack power drops by 50%
-				att_supply_mult = 0.5 
-				att_morale -= 2.0 # Extra morale penalty for hungry troops
+				att_supply_mult = 0.5
+				att_morale -= 2.0  # Extra morale penalty for hungry troops
 
 		if defender_stats:
 			if defender_stats.money >= def_supply_cost:
@@ -131,18 +141,18 @@ class Battle:
 		# --- 3. Apply Damage ---
 		manager.apply_casualties(defender_pid, defender_country, final_attack)
 		manager.apply_casualties(attacker_pid, attacker_country, final_defense * 0.5)
-		
+
 		# --- 4. Update Morale Decay ---
 		att_morale -= (final_defense * manager.MORALE_DECAY_RATE)
 		def_morale -= (final_attack * manager.MORALE_DECAY_RATE)
 
 		# --- 5. Wrap up Round ---
 		_update_hp_totals()
-		
+
 		if current_def_hp <= 0 or def_morale <= 5.0:
 			_defender_loses()
 			return
-		
+
 		if att_morale <= 5.0:
 			manager.end_battle(self)
 			return
@@ -156,11 +166,12 @@ class Battle:
 		var troops = TroopManager.get_troops_in_province(defender_pid)
 		var retreat_pid = _find_retreat_province(defender_pid, defender_country)
 
-		for t in troops.duplicate(): # Duplicate to avoid modification errors during loop
-			if t.country_name != defender_country: continue
+		for t in troops.duplicate():  # Duplicate to avoid modification errors during loop
+			if t.country_name != defender_country:
+				continue
 
 			# If no where to run or bad luck, unit is destroyed
-			if retreat_pid == -1 or randf() < 0.2: 
+			if retreat_pid == -1 or randf() < 0.2:
 				TroopManager.remove_troop(t)
 			else:
 				# RETREAT: Lose 20% of strength then move
@@ -168,7 +179,7 @@ class Battle:
 				for i in range(shatter_count):
 					if not t.stored_divisions.is_empty():
 						t.stored_divisions.remove_at(randi() % t.stored_divisions.size())
-				
+
 				if t.stored_divisions.is_empty():
 					TroopManager.remove_troop(t)
 				else:
@@ -179,8 +190,9 @@ class Battle:
 		manager.end_battle(self)
 
 	func _find_retreat_province(from_pid: int, country: String) -> int:
-		if not MapManager.adjacency_list.has(from_pid): return -1
-		
+		if not MapManager.adjacency_list.has(from_pid):
+			return -1
+
 		for n in MapManager.adjacency_list[from_pid]:
 			# Retreat logic: Must be owned by self and not currently under attack
 			if MapManager.province_to_country[n] == country:
@@ -231,7 +243,7 @@ func apply_casualties(pid: int, country: String, damage_amount: float):
 	var troops_list = TroopManager.get_troops_in_province(pid).filter(
 		func(t): return t.country_name == country
 	)
-	
+
 	if troops_list.is_empty() or damage_amount <= 0:
 		return
 
@@ -239,18 +251,18 @@ func apply_casualties(pid: int, country: String, damage_amount: float):
 	var damage_per_troop = damage_amount / troops_list.size()
 
 	for t in troops_list:
-		if t.stored_divisions.is_empty(): 
+		if t.stored_divisions.is_empty():
 			continue
-		
+
 		# Distribute troop damage among all divisions in that stack
 		var damage_per_div = damage_per_troop / t.stored_divisions.size()
-		
+
 		for i in range(t.stored_divisions.size() - 1, -1, -1):
 			var div = t.stored_divisions[i]
-			
+
 			# Deduct HP
 			div.hp -= damage_per_div
-			
+
 			# Gain Experience based on how much damage they took/dealt
 			# More fighting = faster elite status
 			div.experience = min(1.0, div.experience + 0.005)
@@ -258,7 +270,7 @@ func apply_casualties(pid: int, country: String, damage_amount: float):
 			# Remove division if it hits 0 HP
 			if div.hp <= 0:
 				t.stored_divisions.remove_at(i)
-		
+
 		# If the entire stack is gone, remove the troop icon from the map
 		if t.stored_divisions.is_empty():
 			TroopManager.remove_troop(t)
@@ -274,22 +286,27 @@ func resolve_province_arrival(pid: int, troop: TroopData):
 			MapManager.transfer_ownership(pid, troop.country_name)
 			_check_country_collapse(target_country, troop.country_name)
 
+
 func declare_war(a: CountryData, b: CountryData) -> void:
-	if a == b or is_at_war(a, b): return
+	if a == b or is_at_war(a, b):
+		return
 	_snapshot_country_territory(a.country_name)
 	_snapshot_country_territory(b.country_name)
 	var ok := add_war_silent(a, b)
-	if not ok: return
+	if not ok:
+		return
 
 	if a.is_player or b.is_player:
 		PopupManager.show_alert("war", a, b)
 		MusicManager.play_music(MusicManager.MUSIC.BATTLE_THEME)
 		MusicManager.play_sfx(MusicManager.SFX.DECLARE_WAR)
 
+
 func _snapshot_country_territory(c_name: String) -> void:
 	if not original_territories.has(c_name):
 		var pids = MapManager.country_to_provinces.get(c_name, []).duplicate()
 		original_territories[c_name] = pids
+
 
 func add_war_silent(a: CountryData, b: CountryData) -> bool:
 	if a == b or is_at_war(a, b):
@@ -306,7 +323,7 @@ func add_war_silent(a: CountryData, b: CountryData) -> bool:
 		a.allowedCountries.append(b.country_name)
 	if not b.allowedCountries.has(a.country_name):
 		b.allowedCountries.append(a.country_name)
-	
+
 	return true
 
 
@@ -320,6 +337,7 @@ func is_country_at_war(country_name: String) -> bool:
 		return false
 
 	return wars.has(country_data) and not wars[country_data].is_empty()
+
 
 func is_at_war_names(a_name: String, b_name: String) -> bool:
 	if not CountryManager:
@@ -386,7 +404,7 @@ func _handle_total_collapse(fallen_name: String, victor_name: String) -> void:
 	for c in wars:
 		if wars[c].has(loser):
 			wars[c].erase(loser)
-		
+
 		if c.allowedCountries.has(fallen_name):
 			c.allowedCountries.erase(fallen_name)
 	var player_involved := loser.is_player or winner.is_player
@@ -394,11 +412,7 @@ func _handle_total_collapse(fallen_name: String, victor_name: String) -> void:
 	if player_involved:
 		MusicManager.play_sfx(MusicManager.SFX.POPUP)
 
-		PopupManager.show_alert(
-			"capitulated",
-			loser,
-			loser
-		)
+		PopupManager.show_alert("capitulated", loser, loser)
 
 	if loser.is_player:
 		MusicManager.play_sfx(MusicManager.SFX.GAME_OVER)
@@ -408,10 +422,11 @@ func _handle_total_collapse(fallen_name: String, victor_name: String) -> void:
 			MusicManager.play_music(MusicManager.MUSIC.MAIN_THEME)
 
 	# --- 3. Territory preview (for peace UI only) ---
-	var provinces_to_negotiate = original_territories.get(
-		fallen_name,
-		MapManager.country_to_provinces.get(fallen_name, [])
-	).duplicate()
+	var provinces_to_negotiate = (
+		original_territories
+		. get(fallen_name, MapManager.country_to_provinces.get(fallen_name, []))
+		. duplicate()
+	)
 
 	if winner.is_player:
 		for pid in provinces_to_negotiate:
