@@ -256,7 +256,7 @@ func update_topbar_stats() -> void:
 	stats_labels.pp.text = str(floori(CountryManager.player_country.political_power))
 	stats_labels.stability.text = str(round(CountryManager.player_country.stability * 100)) + "%"
 	stats_labels.manpower.text = format_number(CountryManager.player_country.manpower)
-	stats_labels.money.text = "$" + format_number(CountryManager.player_country.money)
+	stats_labels.money.text = format_number(CountryManager.player_country.money)
 	stats_labels.industry.text = str(CountryManager.player_country.factories_amount)
 
 

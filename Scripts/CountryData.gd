@@ -19,6 +19,7 @@ var money: float = 0.0
 var gdp: int = 0
 var income: float = 0.0
 var factories_amount: int = 0
+var factory_income = 100
 var hourly_money_income: float = 0.0  # Calculated value
 
 # Politics
@@ -86,7 +87,7 @@ func process_hour() -> void:
 	# Economic Cycle
 	# (GDP / Hours in a year) * Tax Rate + Factory Output
 	var base_income = (gdp / 8760.0) * 0.2
-	var factory_income = factories_amount * 1000.0
+	var factory_income = factories_amount * factory_income
 	var gross_income = base_income + factory_income
 	hourly_money_income = gross_income * (1.0 - economy_law_penalty)
 	army_cost = calculate_army_upkeep()
@@ -282,7 +283,7 @@ func _setup_starting_army() -> void:
 	# 1. Economic Safety: Calculate what we can actually afford
 	# We use the same math as process_hour to see our projected income
 	var base_income = (gdp / 8760.0) * 0.2
-	var factory_income = factories_amount * 1000.0
+	var factory_income = factories_amount * factory_income
 	var total_hourly_income = base_income + factory_income
 
 	# Don't spend more than 25% of hourly income on starting upkeep

@@ -14,7 +14,7 @@ signal day_passed
 
 var time_scale := MIN_SPEED
 const MIN_SPEED := 0
-const MAX_SPEED := 75.0
+const MAX_SPEED := 80.0
 
 var hour: int = start_hour
 var date_dict: Dictionary = {"year": start_year, "month": start_month, "day": start_day}
@@ -66,11 +66,11 @@ func set_speed(scale: float) -> void:
 
 
 func decrease_speed():
-	set_speed(time_scale - 5)
+	set_speed(time_scale - 8)
 
 
 func increase_speed():
-	set_speed(time_scale + 5)
+	set_speed(time_scale + 8)
 	if paused:
 		resume()
 

@@ -408,6 +408,8 @@ func _get_contextual_highlight(pid: int) -> Color:
 
 
 func handle_click_down(global_pos: Vector2, map_sprite: Sprite2D) -> void:
+	if _is_mouse_over_ui() or Console.is_visible(): return
+
 	TroopManager.troop_selection.deselect_all()
 
 

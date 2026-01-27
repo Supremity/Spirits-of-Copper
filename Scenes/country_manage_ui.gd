@@ -267,7 +267,7 @@ func _refresh_army_counts() -> void:
 	# Detailed Income String using BBCode
 	var txt = ""
 	txt += "[color=#cccccc]Base Income:[/color] [color=#88ff88]+$%.1f[/color]\n" % (current_country.gdp / 8760.0 * 0.2)
-	txt += "[color=#cccccc]Factories:[/color] [color=#88ff88]+$%.1f[/color]\n" % (current_country.factories_amount * 1000.0)
+	txt += "[color=#cccccc]Factories:[/color] [color=#88ff88]+$%.1f[/color]\n" % (current_country.factories_amount * current_country.factory_income)
 	
 	if current_country.economy_law_penalty > 0:
 		var pen_pct = current_country.economy_law_penalty * 100.0
