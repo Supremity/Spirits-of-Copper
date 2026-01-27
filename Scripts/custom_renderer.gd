@@ -334,58 +334,59 @@ func _draw_cities() -> void:
 
 
 func draw_battles():
-	# Replace this with however you store your current player country name
 	var player_country = CountryManager.player_country.country_name
-
+	
 	for battle in WarManager.active_battles:
-		if not battle:
-			continue
+		if not battle: continue
 
 		var pos: Vector2 = battle.position
-
-		# 1. Determine "Winningness" (0.0 = Losing badly, 1.0 = Winning)
-		var win_ratio: float = 0.5  # Default for AI vs AI
+		var progress: float = battle.attack_progress
+		
+		# 1. Determine Win/Loss relative to player
 		var is_player_involved = false
+		var is_winning = false
+		var display_ratio = progress 
 
 		if battle.attacker_country == player_country:
-			win_ratio = battle.attack_progress
 			is_player_involved = true
+			is_winning = progress > 0.5
+			display_ratio = progress
 		elif battle.defender_country == player_country:
-			win_ratio = 1.0 - battle.attack_progress
 			is_player_involved = true
+			is_winning = (1.0 - progress) > 0.5
+			display_ratio = 1.0 - progress
 		else:
-			# AI vs AI: Just show raw progress toward attacker victory
-			win_ratio = battle.attack_progress
+			is_winning = true 
+			display_ratio = progress
 
-		# 2. Refined Visuals (Smaller Sizes)
-		# Pulse effect: makes the dots feel 'alive'
-		var pulse = sin(Time.get_ticks_msec() * 0.01) * 0.5
-		var base_radius = 2
-		var current_radius = base_radius + (battle.attack_progress * 1.5) + pulse
-
-		# 3. Dynamic Coloring
-		var hue: float
-		var sat: float = 0.85
-		var val: float = 1.0
-
+		# 2. Your Exact Sizes
+		var base_radius = 1.0
+		var ring_radius = 1.2
+		var line_width = 0.5
+		var start_angle = -PI/2 # Top
+		
+		# 3. Colors
+		var arc_color = Color.GOLD
 		if is_player_involved:
-			# Red (0.0) -> Yellow (0.15) -> Green (0.35)
-			# This creates a more natural 'warning' gradient
-			hue = lerp(0.0, 0.35, win_ratio)
+			# High-saturation colors work better at tiny scales
+			arc_color = Color(0.0, 1.0, 0.0) if is_winning else Color(1.0, 0.0, 0.0)
 		else:
-			# AI vs AI: Blueish-Purple for neutral
-			hue = lerp(0.65, 0.0, win_ratio)
-			sat = 0.5
-			val = 0.7
+			arc_color = Color(0.8, 0.5, 0.0)
 
-		var color = Color.from_hsv(hue, sat, val)
+		# 4. Draw Background/Outline (Crucial for tiny icons)
+		# We draw a slightly larger black circle first so the icon "pops"
+		draw_circle(pos, ring_radius + 0.3, Color(0, 0, 0, 0.8))
 
-		# 4. Draw Layers
-		# Shadow/Outline
-		draw_circle(pos, current_radius + 1.0, Color(0, 0, 0, 0.6))
+		# 5. Draw Progress Arc
+		var end_angle: float
+		if is_winning:
+			# Clockwise Green
+			end_angle = start_angle + (display_ratio * TAU)
+			draw_arc(pos, ring_radius, start_angle, end_angle, 16, arc_color, line_width, true)
+		else:
+			# Counter-Clockwise Red
+			end_angle = start_angle - (display_ratio * TAU)
+			draw_arc(pos, ring_radius, end_angle, start_angle, 16, arc_color, line_width, true)
 
-		# Main Pip
-		draw_circle(pos, current_radius, color)
-
-		# Add a tiny white 'glint' in the center to make it pop
-		draw_circle(pos, 1.2, Color.WHITE)
+		# 6. Static Center White Dot (No Pulse)
+		draw_circle(pos, base_radius, Color.WHITE)
