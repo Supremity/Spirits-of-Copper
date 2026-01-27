@@ -1,6 +1,6 @@
 [gd_scene load_steps=7 format=3 uid="uid://3jqreuwgn3ti"]
 
-[ext_resource type="Script" uid="uid://bmffrhl6hb5bl" path="res://Scenes/division_item.gd" id="1_bl13n"]
+[ext_resource type="Script" uid="uid://bmffrhl6hb5bl" path="res://Scripts/division_item.gd" id="1_bl13n"]
 [ext_resource type="Texture2D" uid="uid://une8u7tuv306" path="res://assets/icons/hoi4/infantry.png" id="1_sbw2w"]
 [ext_resource type="FontFile" uid="uid://cfsmiwr5bc70" path="res://font/Google_Sans/static/GoogleSans-Medium.ttf" id="3_1h1m1"]
 [ext_resource type="Texture2D" uid="uid://bi6opsv56phsp" path="res://assets/icons/hoi4/shield.png" id="4_7jmgu"]

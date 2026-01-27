@@ -8,6 +8,7 @@ const MORALE_BOOST_DEFENDER := 10.0
 # --- State ---
 var wars := {}
 var active_battles := []
+var original_territories := {}
 
 class Battle:
 	var attacker_pid: int
@@ -273,18 +274,22 @@ func resolve_province_arrival(pid: int, troop: TroopData):
 			MapManager.transfer_ownership(pid, troop.country_name)
 			_check_country_collapse(target_country, troop.country_name)
 
-
 func declare_war(a: CountryData, b: CountryData) -> void:
+	if a == b or is_at_war(a, b): return
+	_snapshot_country_territory(a.country_name)
+	_snapshot_country_territory(b.country_name)
 	var ok := add_war_silent(a, b)
-	if not ok:
-		return
+	if not ok: return
 
 	if a.is_player or b.is_player:
 		PopupManager.show_alert("war", a, b)
 		MusicManager.play_music(MusicManager.MUSIC.BATTLE_THEME)
 		MusicManager.play_sfx(MusicManager.SFX.DECLARE_WAR)
 
-
+func _snapshot_country_territory(c_name: String) -> void:
+	if not original_territories.has(c_name):
+		var pids = MapManager.country_to_provinces.get(c_name, []).duplicate()
+		original_territories[c_name] = pids
 
 func add_war_silent(a: CountryData, b: CountryData) -> bool:
 	if a == b or is_at_war(a, b):
@@ -363,48 +368,65 @@ func _check_country_collapse(country_name: String, victor_name: String):
 		_handle_total_collapse(country_name, victor_name)
 
 
-func _handle_total_collapse(fallen_country_name: String, victor_country_name: String):
+func _handle_total_collapse(fallen_name: String, victor_name: String) -> void:
+	var loser := CountryManager.get_country(fallen_name)
+	var winner := CountryManager.get_country(victor_name)
 
-	# 1. Get all provinces owned by the fallen country
-	var all_provinces = MapManager.country_to_provinces.get(fallen_country_name, []).duplicate()
-
-	# 2. Transfer every single one to the victor
-	for pid in all_provinces:
-		MapManager.transfer_ownership(pid, victor_country_name)
-
-	# 3. Wipe any remaining troops of the fallen country from the map
-	var remaining_troops = TroopManager.get_troops_for_country(fallen_country_name).duplicate()
+	# --- 0. Remove all remaining troops ---
+	var remaining_troops = TroopManager.get_troops_for_country(fallen_name).duplicate()
 	for t in remaining_troops:
 		TroopManager.remove_troop(t)
 
-	# 4. Remove the country from all active wars
-	var winner_country = CountryManager.get_country(victor_country_name)
-	var loser_country = CountryManager.get_country(fallen_country_name)
-	if wars.has(loser_country):
-		wars.erase(loser_country)
+# --- 1. Clean up wars and permissions ---
+	if wars.has(loser):
+		wars.erase(loser)
+		if loser.allowedCountries.has(victor_name):
+			loser.allowedCountries.erase(victor_name)
 
-	# Clean up other countries' war lists
-	for country_obj in wars:
-		if wars[country_obj].has(loser_country):
-			wars[country_obj].erase(loser_country)
-
-	if fallen_country_name == CountryManager.player_country.country_name:
-		MusicManager.play_sfx(MusicManager.SFX.GAME_OVER)
-		PopupManager.show_alert(
-			"game_over", CountryManager.player_country, CountryManager.player_country
-		)
-		MusicManager.play_music(MusicManager.MUSIC.MAIN_THEME)
-	elif victor_country_name == CountryManager.player_country.country_name:
-		if !is_country_at_war(victor_country_name):
-			MusicManager.play_music(MusicManager.MUSIC.MAIN_THEME)
-			pass
-		pass
+	for c in wars:
+		if wars[c].has(loser):
+			wars[c].erase(loser)
 		
-	if winner_country.is_player or loser_country.is_player:
+		if c.allowedCountries.has(fallen_name):
+			c.allowedCountries.erase(fallen_name)
+	var player_involved := loser.is_player or winner.is_player
+
+	if player_involved:
 		MusicManager.play_sfx(MusicManager.SFX.POPUP)
 
 		PopupManager.show_alert(
-			"capitulated", 
-			CountryManager.get_country(fallen_country_name), 
-			CountryManager.get_country(fallen_country_name)
+			"capitulated",
+			loser,
+			loser
 		)
+
+	if loser.is_player:
+		MusicManager.play_sfx(MusicManager.SFX.GAME_OVER)
+		MusicManager.play_music(MusicManager.MUSIC.MAIN_THEME)
+	elif winner.is_player:
+		if !is_country_at_war(victor_name):
+			MusicManager.play_music(MusicManager.MUSIC.MAIN_THEME)
+
+	# --- 3. Territory preview (for peace UI only) ---
+	var provinces_to_negotiate = original_territories.get(
+		fallen_name,
+		MapManager.country_to_provinces.get(fallen_name, [])
+	).duplicate()
+
+	if winner.is_player:
+		for pid in provinces_to_negotiate:
+			MapManager.transfer_ownership(pid, fallen_name)
+
+	# --- 4. Player peace OR AI annexation ---
+	if winner.is_player:
+		var peace_ui = get_tree().root.find_child("PeaceProcessUI", true, false)
+		if peace_ui:
+			peace_ui.open_menu(winner, loser)
+			original_territories.erase(fallen_name)
+		return
+
+	# --- 5. AI takes everything ---
+	var all_provinces = MapManager.country_to_provinces.get(fallen_name, []).duplicate()
+	for pid in all_provinces:
+		MapManager.transfer_ownership(pid, victor_name)
+	original_territories.erase(fallen_name)

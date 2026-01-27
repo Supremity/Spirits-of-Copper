@@ -402,13 +402,14 @@ func _get_contextual_highlight(pid: int) -> Color:
 
 	return Color.TRANSPARENT
 
+func handle_click_down (global_pos :Vector2, map_sprite: Sprite2D) -> void:
+	TroopManager.troop_selection.deselect_all()
 
 func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 	if _is_mouse_over_ui() or Console.is_visible():
 		return
 
 	var pid = get_province_with_radius(global_pos, map_sprite, 5)
-
 	# 1. Handle Clicks on Water or Invalid Areas
 	if pid <= 1 or province_objects[pid].type == 0:  # 0 is SEA
 		if GameState.industry_building != GameState.IndustryType.DEFAULT:
@@ -1313,5 +1314,5 @@ func annex_country(target_country_name: String) -> void:
 	for pid in provinces_to_transfer:
 		transfer_ownership(pid, player)
 
-	playerobj.reset_manpower()
+	#playerobj.reset_manpower()
 	print("ANNEXATION COMPLETE: ", player, " has taken all of ", target_country_name)

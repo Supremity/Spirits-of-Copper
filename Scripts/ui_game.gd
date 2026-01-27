@@ -49,8 +49,6 @@ var current_category: Category = Category.GENERAL
 
 @export var military_access_label: Label
 
-@export var decision_tree: DecisionTree
-
 var menu_actions = {
 	# When clicking on player country
 	Context.PLAYER_COUNTRY:

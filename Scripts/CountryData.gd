@@ -92,8 +92,6 @@ func process_hour() -> void:
 	if not is_player:
 		AiManager.ai_tick(self)
 		pass
-		#AiManager.ai_handle_deployment(self)
-		#AiManager.ai_consider_recruitment(self)
 
 func process_day() -> void:
 	# Refresh stats that change daily/weekly
@@ -102,7 +100,6 @@ func process_day() -> void:
 	DecisionManager.process_country_day(self)
 	if not is_player:
 		pass
-	#	AiManager.manage_military_readiness(self)
 
 func _refresh_economic_stats() -> void:
 	total_population = CountryManager.get_country_population(country_name)

@@ -42,7 +42,7 @@ func _ready() -> void:
 	CountryManager.set_player_country("peru")
 	# For debugging purposes. Create some troops first
 	MapManager.force_bidirectional_connections()
-
+	
 	var map_width := MapManager.id_map_image.get_width()
 	var map_height := MapManager.id_map_image.get_height()
 
@@ -136,7 +136,7 @@ func _ready() -> void:
 		troop_renderer.map_width = map_width
 	else:
 		push_error("CustomRenderer node not found!")
-
+		
 
 func _create_ghost_map(offset: Vector2, p_material: ShaderMaterial) -> void:
 	var ghost := Sprite2D.new()
@@ -150,9 +150,11 @@ func _create_ghost_map(offset: Vector2, p_material: ShaderMaterial) -> void:
 func _input(event: InputEvent) -> void:
 	if (
 		event is InputEventMouseButton
-		and !event.pressed
 		and event.button_index == MOUSE_BUTTON_LEFT
 	):
-		MapManager.handle_click(get_global_mouse_position(), map_sprite)
+		if event.pressed:
+			MapManager.handle_click_down(get_global_mouse_position(), map_sprite)
+		else:
+			MapManager.handle_click(get_global_mouse_position(), map_sprite)
 	if event is InputEventMouseMotion:
 		MapManager.handle_hover(get_global_mouse_position(), map_sprite)

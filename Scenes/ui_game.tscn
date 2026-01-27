@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=3 uid="uid://dgfixe44dvfny"]
+[gd_scene load_steps=32 format=3 uid="uid://dgfixe44dvfny"]
 
 [ext_resource type="Script" uid="uid://dqvjehbri1br0" path="res://Scripts/ui_game.gd" id="1_rp7y5"]
 [ext_resource type="Texture2D" uid="uid://dpohmal5pe58k" path="res://assets/flags/abkhazia_flag.png" id="1_xar7q"]
@@ -13,7 +13,6 @@
 [ext_resource type="Texture2D" uid="uid://d0jobkwbqofhx" path="res://assets/icons/liberal_icon.png" id="8_okksu"]
 [ext_resource type="Texture2D" uid="uid://ddbgdqwtqoole" path="res://assets/icons/plus_icon.png" id="10_lnl2f"]
 [ext_resource type="Texture2D" uid="uid://bggny42m0dmo1" path="res://assets/icons/minus_icon.png" id="11_6bnrr"]
-[ext_resource type="PackedScene" uid="uid://bxwbym5vybefv" path="res://Scenes/decision_tree.tscn" id="13_364vl"]
 [ext_resource type="Theme" uid="uid://c38ivksvf4is0" path="res://main_theme.tres" id="13_sdmnd"]
 [ext_resource type="Texture2D" uid="uid://blvp32r1imoh" path="res://assets/ui/inverted_corner.png" id="14_yp111"]
 [ext_resource type="FontFile" uid="uid://cfsmiwr5bc70" path="res://font/Google_Sans/static/GoogleSans-Medium.ttf" id="15_yp111"]
@@ -59,11 +58,10 @@ bg_color = Color(0.6313726, 0.6901961, 0.6313726, 1)
 
 [sub_resource type="GDScript" id="GDScript_lpwmk"]
 
-[node name="GameUI" type="CanvasLayer" node_paths=PackedStringArray("military_access_label", "decision_tree")]
+[node name="GameUI" type="CanvasLayer" node_paths=PackedStringArray("military_access_label")]
 script = ExtResource("1_rp7y5")
 action_scene = ExtResource("2_5phox")
 military_access_label = NodePath("Control/SidemenuBG/Sidemenu/PanelContainer/VBoxContainer/MilitaryAccess")
-decision_tree = NodePath("Control/DecisionTree")
 
 [node name="Control" type="Control" parent="."]
 layout_mode = 3
@@ -577,13 +575,6 @@ text = "100"
 [node name="label_manpower" type="Label" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel/VBoxContainer4"]
 layout_mode = 2
 text = "100"
-
-[node name="DecisionTree" parent="Control" instance=ExtResource("13_364vl")]
-process_mode = 3
-visible = false
-z_index = 1
-layout_mode = 1
-anchors_preset = 15
 
 [node name="TroopContainer" type="PanelContainer" parent="Control"]
 visible = false
