@@ -11,6 +11,7 @@ func _ready() -> void:
 	Console.add_command(
 		"set_manpower", _set_manpower, ["amount"], 1, "Sets manpower to a specific amount"
 	)
+	Console.add_command("peace_treaty", _peace_treaty, ["country"], 1, "Spawns a peace treaty with country")
 
 
 func _add_pp(amount):
@@ -24,6 +25,8 @@ func _add_manpower(amount):
 func _set_manpower(amount):
 	CountryManager.player_country.manpower = int(amount)
 
+func _peace_treaty(country):
+	WarManager._handle_total_collapse(country, CountryManager.player_country.country_name)
 
 func _annex(country_name: String) -> void:
 	if CountryManager.countries.has(country_name):
