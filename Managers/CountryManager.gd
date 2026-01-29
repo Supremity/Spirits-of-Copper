@@ -107,7 +107,9 @@ static func get_country_used_manpower(country_obj: CountryData) -> int:
 
 	# 2. Ongoing Training (Already using templates, but cleaned up)
 	for training in country_obj.ongoing_training:
-		total_used += (training.divisions_count * _get_manpower_from_template(training.division_type))
+		total_used += (
+			training.divisions_count * _get_manpower_from_template(training.division_type)
+		)
 
 	# 3. Troops in the "Ready" queue (deployment pool)
 	for batch in country_obj.ready_troops:
@@ -115,6 +117,7 @@ static func get_country_used_manpower(country_obj: CountryData) -> int:
 			total_used += _get_manpower_from_template(div.type)
 
 	return total_used
+
 
 # Helper to keep the code DRY (Don't Repeat Yourself)
 static func _get_manpower_from_template(type: String) -> int:

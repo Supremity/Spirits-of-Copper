@@ -11,11 +11,17 @@ func _ready() -> void:
 	Console.add_command(
 		"set_manpower", _set_manpower, ["amount"], 1, "Sets manpower to a specific amount"
 	)
-	Console.add_command("peace_treaty", _peace_treaty, ["country"], 1, "Spawns a peace treaty with country")
-	Console.add_command("release", _release_country, ["country"], 1, "Releases a country based on all its cores")
+	Console.add_command(
+		"peace_treaty", _peace_treaty, ["country"], 1, "Spawns a peace treaty with country"
+	)
+	Console.add_command(
+		"release", _release_country, ["country"], 1, "Releases a country based on all its cores"
+	)
+
 
 func _release_country(country):
 	MapManager.release_country(country)
+
 
 func _add_pp(amount):
 	CountryManager.player_country.political_power += float(amount)
@@ -28,8 +34,10 @@ func _add_manpower(amount):
 func _set_manpower(amount):
 	CountryManager.player_country.manpower = int(amount)
 
+
 func _peace_treaty(country):
 	WarManager._handle_total_collapse(country, CountryManager.player_country.country_name)
+
 
 func _annex(country_name: String) -> void:
 	if CountryManager.countries.has(country_name):

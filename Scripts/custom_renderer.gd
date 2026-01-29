@@ -335,17 +335,18 @@ func _draw_cities() -> void:
 
 func draw_battles():
 	var player_country = CountryManager.player_country.country_name
-	
+
 	for battle in WarManager.active_battles:
-		if not battle: continue
+		if not battle:
+			continue
 
 		var pos: Vector2 = battle.position
 		var progress: float = battle.attack_progress
-		
+
 		# 1. Determine Win/Loss relative to player
 		var is_player_involved = false
 		var is_winning = false
-		var display_ratio = progress 
+		var display_ratio = progress
 
 		if battle.attacker_country == player_country:
 			is_player_involved = true
@@ -356,15 +357,15 @@ func draw_battles():
 			is_winning = (1.0 - progress) > 0.5
 			display_ratio = 1.0 - progress
 		else:
-			is_winning = true 
+			is_winning = true
 			display_ratio = progress
 
 		# 2. Your Exact Sizes
 		var base_radius = 1.0
 		var ring_radius = 1.2
 		var line_width = 0.5
-		var start_angle = -PI/2 # Top
-		
+		var start_angle = -PI / 2  # Top
+
 		# 3. Colors
 		var arc_color = Color.GOLD
 		if is_player_involved:

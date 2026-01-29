@@ -13,12 +13,14 @@ var hovered_pid: int = -1
 # Color Palette
 const COLOR_BG = Color(0.1, 0.1, 0.12, 0.98)
 const COLOR_GOLD = Color(0.85, 0.65, 0.2)
-const COLOR_SELECT = Color(0.0, 1.0, 0.8) # Cyan/Teal for treaty selection
+const COLOR_SELECT = Color(0.0, 1.0, 0.8)  # Cyan/Teal for treaty selection
 const COLOR_DANGER = Color(0.7, 0.2, 0.2)
+
 
 func _ready() -> void:
 	_setup_ui_elements()
 	self.hide()
+
 
 func _input(event: InputEvent) -> void:
 	if not self.visible:
@@ -89,13 +91,12 @@ func _process_click(map_pos: Vector2):
 	_update_summary()
 
 
-
 func _setup_ui_elements():
 	# Sidebar Setup
 	sidebar_panel = PanelContainer.new()
 	sidebar_panel.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
 	var screen_width = get_viewport().get_visible_rect().size.x
-	sidebar_panel.custom_minimum_size.x = screen_width * 0.22 # Slightly slimmer
+	sidebar_panel.custom_minimum_size.x = screen_width * 0.22  # Slightly slimmer
 
 	var style = StyleBoxFlat.new()
 	style.bg_color = COLOR_BG
@@ -158,7 +159,7 @@ func _setup_ui_elements():
 	stats_vbox.add_child(stats_label)
 
 	# --- Buttons ---
-	v_box.add_spacer(false) # Pushes buttons to bottom
+	v_box.add_spacer(false)  # Pushes buttons to bottom
 
 	var annex_btn = _create_styled_button("ANNEX ALL", Color(0.3, 0.5, 0.3))
 	annex_btn.pressed.connect(_on_annex_all_pressed)
@@ -173,27 +174,27 @@ func _setup_ui_elements():
 	v_box.add_child(confirm_btn)
 
 
-
 func _create_styled_button(btn_text: String, accent_color: Color) -> Button:
 	var btn = Button.new()
 	btn.text = btn_text
 	btn.custom_minimum_size.y = 45
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	
+
 	var style_normal = StyleBoxFlat.new()
 	style_normal.bg_color = accent_color * 0.6
 	style_normal.border_width_bottom = 4
 	style_normal.border_color = accent_color * 0.4
 	style_normal.set_corner_radius_all(3)
-	
+
 	var style_hover = style_normal.duplicate()
 	style_hover.bg_color = accent_color * 0.8
-	
+
 	btn.add_theme_stylebox_override("normal", style_normal)
 	btn.add_theme_stylebox_override("hover", style_hover)
 	btn.add_theme_color_override("font_color", Color.WHITE)
 	return btn
-	
+
+
 func _on_annex_all_pressed():
 	provinces_to_take.clear()
 	# Iterate through MapManager to find all provinces belonging to loser
@@ -203,17 +204,18 @@ func _on_annex_all_pressed():
 			_update_map_visual(pid, COLOR_SELECT)
 	_update_summary()
 
+
 func _on_clear_selection_pressed():
 	for pid in provinces_to_take:
 		_reset_province_visual_immediate(pid)
 	provinces_to_take.clear()
 	_update_summary()
 
+
 func _reset_province_visual_immediate(pid: int):
 	var owner = MapManager.province_to_country[pid]
 	var original_color = MapManager.country_colors.get(owner, Color.WHITE)
 	_update_map_visual(pid, original_color)
-
 
 
 # --- Logic & Integration ---
@@ -235,12 +237,13 @@ func open_menu(winner: CountryData, loser: CountryData):
 
 func _update_summary():
 	summary_label.text = "Provinces Selected: %d" % provinces_to_take.size()
-	
+
 	# Calculate percentage for flavor
 	var total_loser_provinces = 0
 	for p in MapManager.province_to_country.values():
-		if p == current_loser.country_name: total_loser_provinces += 1
-	
+		if p == current_loser.country_name:
+			total_loser_provinces += 1
+
 	if total_loser_provinces > 0:
 		var percent = (float(provinces_to_take.size()) / total_loser_provinces) * 100
 		stats_label.text = "Total Country Loss: %d%%" % int(percent)

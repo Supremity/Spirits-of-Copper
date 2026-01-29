@@ -407,9 +407,11 @@ func open_research_tree():
 func open_decisions_tree():
 	get_tree().root.find_child("DecisionTreeUI", true, false).open_menu()
 
-func open_manage_country():
-	get_tree().root.find_child("CountryManageUI", true, false).open_menu(CountryManager.player_country)
 
+func open_manage_country():
+	get_tree().root.find_child("CountryManageUI", true, false).open_menu(
+		CountryManager.player_country
+	)
 
 	#GameState.current_world.set_process(false)
 	#GameState.current_world.clock.set_process(false)
@@ -437,7 +439,7 @@ func make_troop_container(selected_troops: Array[TroopData]) -> void:
 		# --- Create a Province Header ---
 		var header_panel = PanelContainer.new()
 		var h_style = StyleBoxFlat.new()
-		h_style.bg_color = Color(0.12, 0.13, 0.15, 0.95) # Cleaner military dark
+		h_style.bg_color = Color(0.12, 0.13, 0.15, 0.95)  # Cleaner military dark
 		h_style.border_width_bottom = 2
 		h_style.border_color = Color.GOLD
 		header_panel.add_theme_stylebox_override("panel", h_style)
@@ -451,7 +453,7 @@ func make_troop_container(selected_troops: Array[TroopData]) -> void:
 		# --- Group Divisions by Type ---
 		# Resulting dict will look like: {"infantry": [div1, div2], "tank": [div3]}
 		var groups: Dictionary = {}
-		
+
 		for div in troop.stored_divisions:
 			if not groups.has(div.type):
 				groups[div.type] = []
@@ -460,26 +462,27 @@ func make_troop_container(selected_troops: Array[TroopData]) -> void:
 		# --- Draw One Card Per Type ---
 		for type in groups.keys():
 			var divisions_of_type: Array = groups[type]
-			
+
 			var card = DIVISION_CARD_SCENE.instantiate()
 			troop_list_parent.add_child(card)
 
 			# Check if the group is selected based on the first element
 			var is_selected = divisions_of_type[0] in selected_division_objects
-			
+
 			# FIX: Pass 'divisions_of_type' (the Array) as the second argument
 			# We no longer pass 'count' here because the card calculates it from the array
 			card.setup_grouped(type, divisions_of_type, is_selected)
-			
+
 			# Update the signal connection
 			if not card.is_connected("clicked", _on_group_clicked):
 				# We pass the card node (self) and the array to the handler
 				card.clicked.connect(_on_group_clicked)
 
+
 func _on_group_clicked(card_node: Control, divs_in_group: Array):
 	# Check the first div to see if we are selecting or deselecting the group
 	var is_already_selected = divs_in_group[0] in selected_division_objects
-	
+
 	for div in divs_in_group:
 		if is_already_selected:
 			if div in selected_division_objects:
@@ -487,10 +490,11 @@ func _on_group_clicked(card_node: Control, divs_in_group: Array):
 		else:
 			if not div in selected_division_objects:
 				selected_division_objects.append(div)
-	
+
 	# Toggle the card's visual state
 	card_node.is_selected = !is_already_selected
 	card_node.update_visuals()
+
 
 func _on_card_clicked(div: DivisionData, card_node: Control):
 	if div in selected_division_objects:

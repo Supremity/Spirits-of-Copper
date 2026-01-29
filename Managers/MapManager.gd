@@ -49,6 +49,7 @@ const CACHE_FOLDER = "res://map_data/"
 @export var ethnicity_texture: Texture2D
 @export var claims_texture: Texture2D
 
+
 func load_country_data() -> void:
 	# NOTE Z21 this can all be done in 1 function like load_json("countries.json", color_to_country_map)
 	_load_country_colors()
@@ -139,7 +140,7 @@ func initialize_map(
 	var gdp_img = gdp_tex.get_image()
 	var ethnicity_img = ethnicity_tex.get_image()
 	var claims_img = claims_tex.get_image()
-	
+
 	var w = r_img.get_width()
 	var h = r_img.get_height()
 
@@ -417,7 +418,8 @@ func _get_contextual_highlight(pid: int) -> Color:
 
 
 func handle_click_down(global_pos: Vector2, map_sprite: Sprite2D) -> void:
-	if _is_mouse_over_ui() or Console.is_visible(): return
+	if _is_mouse_over_ui() or Console.is_visible():
+		return
 
 	TroopManager.troop_selection.deselect_all()
 
@@ -436,10 +438,9 @@ func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 			close_sidemenu.emit()
 		return
 
-	
 	var player_country_name = CountryManager.player_country.country_name
 	var is_player_owned = province_to_country.get(pid) == player_country_name
-	
+
 	if GameState.choosing_deploy_city:
 		if is_player_owned:
 			_execute_deployment(pid, player_country_name)
@@ -1098,7 +1099,8 @@ func _load_city_json() -> void:
 	var json_data = JSON.parse_string(file.get_as_text())
 	if json_data is Dictionary:
 		color_to_city_map = json_data
-	
+
+
 func _load_claims_json() -> void:
 	var path = "res://map_data/claims.json"  # Ensure path is correct
 	if not FileAccess.file_exists(path):
@@ -1225,17 +1227,14 @@ func _get_name_from_color(c: Color, data_map: Dictionary) -> String:
 
 	return "Unknown"
 
+
 func _get_claims_from_color(c: Color, data_map: Dictionary) -> Array:
 	var r = int(round(c.r * 255.0))
 	var g = int(round(c.g * 255.0))
 	var b = int(round(c.b * 255.0))
 
 	# Define possible key formats (Standard, Tight, and No-Bracket)
-	var formats = [
-		"(%d, %d, %d)" % [r, g, b],
-		"(%d,%d,%d)" % [r, g, b],
-		"%d,%d,%d" % [r, g, b]
-	]
+	var formats = ["(%d, %d, %d)" % [r, g, b], "(%d,%d,%d)" % [r, g, b], "%d,%d,%d" % [r, g, b]]
 
 	# 1. Try Exact Matches
 	for key in formats:
@@ -1259,15 +1258,17 @@ func _get_claims_from_color(c: Color, data_map: Dictionary) -> Array:
 	if min_dist < 100 and best_data != null:
 		return _force_array(best_data)
 
-	return [] # Return empty array if no claim found
+	return []  # Return empty array if no claim found
+
 
 # Helper to ensure we never return a single String when an Array is expected
 func _force_array(data) -> Array:
 	if data is Array:
 		return data
 	elif data is String:
-		return [data] # Wrap the single country in a list
+		return [data]  # Wrap the single country in a list
 	return []
+
 
 func _get_gdp_from_color(c: Color) -> int:
 	var r = int(round(c.r * 255.0))
@@ -1342,10 +1343,12 @@ func get_border_provinces(country_name: String) -> Array[int]:
 
 	return border_provinces
 
+
 func release_country(country_name: String) -> void:
 	for obj in province_objects.values():
 		if obj.claims.has(country_name):
 			transfer_ownership(obj.id, country_name)
+
 
 func get_all_cities() -> Array:
 	var pids = []

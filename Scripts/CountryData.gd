@@ -1,7 +1,7 @@
 extends Resource
 class_name CountryData
 
-var economy_law_penalty: float = 0.0 # 0.10 means 10% income loss
+var economy_law_penalty: float = 0.0  # 0.10 means 10% income loss
 var army_composition_cache: Dictionary = {"infantry": 0, "tank": 0, "artillery": 0}
 #region --- Configuration & Constants ---
 const MANPOWER_RECOVERY_PER_YEAR := 0.10
@@ -173,15 +173,15 @@ func _graduate_troops(training: TroopTraining) -> void:
 #region --- Stats & Manpower ---
 func update_manpower_pool() -> void:
 	var max_allowed_manpower = int(total_population * military_size_ratio)
-	
+
 	var used_manpower = CountryManager.get_country_used_manpower(self)
-	
+
 	var total_mobilized = manpower + used_manpower
-	
+
 	if total_mobilized < max_allowed_manpower:
 		var daily_growth = max(1, int(total_population * 0.0001))
 		manpower += daily_growth
-		
+
 	if (manpower + used_manpower) > max_allowed_manpower:
 		manpower = max(0, max_allowed_manpower - used_manpower)
 
@@ -345,13 +345,14 @@ func _process_reinforcements():
 	var all_my_troops = TroopManager.get_troops_for_country(country_name)
 
 	for troop in all_my_troops:
-		if troop.is_moving: continue
+		if troop.is_moving:
+			continue
 
 		for div in troop.stored_divisions:
 			if div.hp < div.max_hp:
 				var template = DivisionData.TEMPLATES[div.type]
-				var men_needed = int(template["manpower"] * 0.05) # 5% reinforcement
-				
+				var men_needed = int(template["manpower"] * 0.05)  # 5% reinforcement
+
 				# REINFORCEMENT SAFETY: Stop if it would drop us below zero
 				if manpower >= men_needed and money >= (template["cost"] * 0.05):
 					money -= (template["cost"] * 0.05)
