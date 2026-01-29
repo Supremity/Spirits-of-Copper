@@ -2,9 +2,9 @@ extends CanvasLayer
 class_name CountryManageUI
 
 #region --- Theme Configuration ---
-const COLOR_BG_GLASS = Color(0.08, 0.09, 0.11, 0.96)  # Deep dark blue-grey
+const COLOR_BG_GLASS = Color(0.08, 0.09, 0.11, 0.96)
 const COLOR_PANEL_INNER = Color(0.15, 0.16, 0.19, 1.0)
-const COLOR_ACCENT = Color(0.24, 0.65, 0.85)  # Tech Blue
+const COLOR_ACCENT = Color(0.24, 0.65, 0.85)
 const COLOR_TEXT_HEADER = Color(0.9, 0.9, 0.9)
 const COLOR_TEXT_DIM = Color(0.6, 0.6, 0.6)
 const COLOR_POSITIVE = Color(0.4, 0.8, 0.4)
@@ -14,12 +14,13 @@ const COLOR_WARNING = Color(0.9, 0.7, 0.2)
 
 #region --- Nodes ---
 var main_container: MarginContainer
-var laws_grid: GridContainer
+var category_hbox: HBoxContainer
+var laws_grid: VBoxContainer # Changed to VBox for a cleaner list feel
 
-# Dynamic Labels
+# Header & Stats
 var header_label: Label
 var flag_rect: TextureRect
-var pp_label: Label  # Political Power display
+var pp_label: Label
 var money_display: Label
 var manpower_display: Label
 
@@ -27,46 +28,41 @@ var manpower_display: Label
 var comp_infantry: Label
 var comp_tank: Label
 var comp_artillery: Label
-var income_breakdown_label: RichTextLabel  # For the detailed tooltip style text
+var income_breakdown_label: RichTextLabel
 
 # Data
+enum Category { MILITARY, ECONOMY, COUNTRY, RELEASABLES }
+var current_category: Category = Category.MILITARY
 var current_country: CountryData
 var _update_timer: float = 0.0
 #endregion
-
 
 func _ready() -> void:
 	visible = false
 	_build_ui()
 
-
 func open_menu(country: CountryData) -> void:
 	current_country = country
+	_switch_category(Category.MILITARY) # Default to Military
 	_refresh_full_data()
 	show()
-
 
 func close_menu() -> void:
 	hide()
 
-
 func _process(delta: float) -> void:
-	if not visible or not current_country:
-		return
-
-	# Update stats every frame for smooth numbers, but heavy calcs (army count) less often
+	if not visible or not current_country: return
 	money_display.text = "$%s" % _format_money(current_country.money)
 	pp_label.text = "%.1f PP" % current_country.political_power
-
+	
 	_update_timer += delta
 	if _update_timer > 1.0:
 		_update_timer = 0.0
-		_refresh_army_counts()  # Only count army once per second
-
+		_refresh_army_counts()
 
 #region --- UI Construction ---
+
 func _build_ui() -> void:
-	# 1. Root Container with Padding
 	main_container = MarginContainer.new()
 	main_container.set_anchors_preset(Control.PRESET_FULL_RECT)
 	main_container.add_theme_constant_override("margin_left", 40)
@@ -75,159 +71,168 @@ func _build_ui() -> void:
 	main_container.add_theme_constant_override("margin_bottom", 40)
 	add_child(main_container)
 
-	# 2. Main Background Panel (Glass Look)
 	var bg_panel = PanelContainer.new()
 	var style = StyleBoxFlat.new()
 	style.bg_color = COLOR_BG_GLASS
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
+#	style.corner_radius_all(8)
+#	style.border_width_all(2)
 	style.border_color = Color(0.3, 0.35, 0.4)
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_right = 8
-	style.corner_radius_bottom_left = 8
 	bg_panel.add_theme_stylebox_override("panel", style)
 	main_container.add_child(bg_panel)
 
-	# 3. Vertical Layout
 	var vbox = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 15)
-	# Inner padding for the content
 	var content_margin = MarginContainer.new()
-	content_margin.add_theme_constant_override("margin_top", 20)
-	content_margin.add_theme_constant_override("margin_left", 20)
-	content_margin.add_theme_constant_override("margin_right", 20)
-	content_margin.add_theme_constant_override("margin_bottom", 20)
+	content_margin.add_theme_constant_override("margin_all", 20)
 	content_margin.add_child(vbox)
 	bg_panel.add_child(content_margin)
 
-	# --- Header ---
-	var header_hbox = HBoxContainer.new()
+	_build_header(vbox)
 
-	flag_rect = TextureRect.new()
-	flag_rect.custom_minimum_size = Vector2(100, 60)
-	flag_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	flag_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	# Fix Purple: Create a grey placeholder instead of default gradient
-	var placeholder = GradientTexture2D.new()
-	placeholder.fill_to = Vector2(1, 1)  # slight gradient
-	placeholder.gradient = Gradient.new()
-	placeholder.gradient.set_color(0, Color(0.2, 0.2, 0.2))  # Grey
-	placeholder.gradient.set_color(1, Color(0.3, 0.3, 0.3))  # Lighter Grey
-	flag_rect.texture = placeholder
-
-	var title_vbox = VBoxContainer.new()
-	header_label = Label.new()
-	header_label.text = "COUNTRY NAME"
-	header_label.add_theme_font_size_override("font_size", 28)
-	header_label.add_theme_color_override("font_color", COLOR_TEXT_HEADER)
-
-	pp_label = Label.new()
-	pp_label.text = "100 PP"
-	pp_label.add_theme_color_override("font_color", COLOR_WARNING)
-
-	title_vbox.add_child(header_label)
-	title_vbox.add_child(pp_label)
-
-	var close_btn = Button.new()
-	close_btn.text = " DISMISS "
-	close_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	close_btn.pressed.connect(close_menu)
-
-	header_hbox.add_child(flag_rect)
-	header_hbox.add_child(VSeparator.new())
-	header_hbox.add_child(title_vbox)
-	header_hbox.add_spacer(false)  # Expands to push close button right
-	header_hbox.add_child(close_btn)
-	vbox.add_child(header_hbox)
-	vbox.add_child(HSeparator.new())
-
-	# --- Main Content Split (Stats Left, Laws Right) ---
 	var split = HBoxContainer.new()
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	split.add_theme_constant_override("separation", 30)
 	vbox.add_child(split)
 
-	# --- LEFT COLUMN: Statistics ---
+	_build_left_column(split)
+	_build_right_column(split)
+
+func _build_header(parent: VBoxContainer) -> void:
+	var header_hbox = HBoxContainer.new()
+	flag_rect = TextureRect.new()
+	flag_rect.custom_minimum_size = Vector2(100, 60)
+	flag_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	flag_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	flag_rect.texture = TroopManager.get_flag(CountryManager.player_country.country_name)
+	
+	var title_vbox = VBoxContainer.new()
+	header_label = Label.new()
+	header_label.add_theme_font_size_override("font_size", 28)
+	pp_label = Label.new()
+	pp_label.add_theme_color_override("font_color", COLOR_WARNING)
+	title_vbox.add_child(header_label)
+	title_vbox.add_child(pp_label)
+
+	var close_btn = Button.new()
+	close_btn.text = " DISMISS "
+	close_btn.pressed.connect(close_menu)
+
+	header_hbox.add_child(flag_rect)
+	header_hbox.add_child(VSeparator.new())
+	header_hbox.add_child(title_vbox)
+	header_hbox.add_spacer(false)
+	header_hbox.add_child(close_btn)
+	parent.add_child(header_hbox)
+	parent.add_child(HSeparator.new())
+
+func _build_left_column(parent: HBoxContainer) -> void:
 	var left_col = VBoxContainer.new()
 	left_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left_col.size_flags_stretch_ratio = 0.4  # Takes 40% width
-	split.add_child(left_col)
+	left_col.size_flags_stretch_ratio = 0.4
+	parent.add_child(left_col)
 
 	_create_section_header(left_col, "Economic Status")
 	money_display = _create_stat_row(left_col, "Treasury", "$0.00")
 	income_breakdown_label = RichTextLabel.new()
-	income_breakdown_label.fit_content = true
-	income_breakdown_label.scroll_active = false
 	income_breakdown_label.bbcode_enabled = true
-	income_breakdown_label.text = "[color=#aaaaaa]Income Breakdown...[/color]"
+	income_breakdown_label.fit_content = true
 	left_col.add_child(income_breakdown_label)
 
 	left_col.add_child(HSeparator.new())
-
 	_create_section_header(left_col, "Army Logistics")
 	manpower_display = _create_stat_row(left_col, "Active Personnel", "0")
-
-	# Composition Grid
-	var comp_panel = PanelContainer.new()
-	var comp_style = StyleBoxFlat.new()
-	comp_style.bg_color = COLOR_PANEL_INNER
-	comp_style.corner_radius_top_left = 4
-	comp_style.corner_radius_top_right = 4
-	comp_style.corner_radius_bottom_right = 4
-	comp_style.corner_radius_bottom_left = 4
-	comp_panel.add_theme_stylebox_override("panel", comp_style)
-	left_col.add_child(comp_panel)
-
+	
+	# Composition
 	var comp_vbox = VBoxContainer.new()
 	comp_vbox.add_theme_constant_override("separation", 4)
-	var m = MarginContainer.new()
-	m.add_theme_constant_override("margin_left", 10)
-	m.add_theme_constant_override("margin_right", 10)
-	m.add_theme_constant_override("margin_top", 10)
-	m.add_theme_constant_override("margin_bottom", 10)
-	m.add_child(comp_vbox)
-	comp_panel.add_child(m)
-
-	var comp_lbl = Label.new()
-	comp_lbl.text = "DIVISION COMPOSITION"
-	comp_lbl.add_theme_font_size_override("font_size", 12)
-	comp_lbl.add_theme_color_override("font_color", COLOR_TEXT_DIM)
-	comp_vbox.add_child(comp_lbl)
-
 	comp_infantry = _create_simple_row(comp_vbox, "Infantry")
 	comp_tank = _create_simple_row(comp_vbox, "Armor")
 	comp_artillery = _create_simple_row(comp_vbox, "Artillery")
+	left_col.add_child(comp_vbox)
 
-	# --- RIGHT COLUMN: Laws ---
+func _build_right_column(parent: HBoxContainer) -> void:
 	var right_col = VBoxContainer.new()
 	right_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right_col.size_flags_stretch_ratio = 0.6
-	split.add_child(right_col)
+	parent.add_child(right_col)
 
-	_create_section_header(right_col, "Conscription Laws")
+	# Category Tabs
+	category_hbox = HBoxContainer.new()
+	category_hbox.add_theme_constant_override("separation", 5)
+	right_col.add_child(category_hbox)
+	
+	_add_category_button("MILITARY", Category.MILITARY)
+	_add_category_button("ECONOMY", Category.ECONOMY)
+	_add_category_button("COUNTRY", Category.COUNTRY)
+	_add_category_button("RELEASABLES", Category.RELEASABLES)
 
-	var law_desc = Label.new()
-	law_desc.text = "Select a conscription policy. Stricter laws increase manpower but harm economic efficiency."
-	law_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	law_desc.add_theme_color_override("font_color", COLOR_TEXT_DIM)
-	law_desc.add_theme_font_size_override("font_size", 14)
-	right_col.add_child(law_desc)
 	right_col.add_child(HSeparator.new())
 
-	laws_grid = GridContainer.new()
-	laws_grid.columns = 1  # List view
-	laws_grid.add_theme_constant_override("v_separation", 10)
-	right_col.add_child(laws_grid)
+	# Laws Container with Scroll
+	var scroll = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_col.add_child(scroll)
 
-	_add_law_option("Volunteer Only", 0.005, 0.0, 0, "Professional army only.")
+	laws_grid = VBoxContainer.new()
+	laws_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	laws_grid.add_theme_constant_override("separation", 10)
+	scroll.add_child(laws_grid)
+
+#endregion
+
+#region --- Category Management ---
+
+func _add_category_button(label: String, cat: Category) -> void:
+	var btn = Button.new()
+	btn.text = "  %s  " % label
+	btn.toggle_mode = true
+	btn.pressed.connect(_switch_category.bind(cat))
+	category_hbox.add_child(btn)
+
+func _switch_category(cat: Category) -> void:
+	current_category = cat
+	
+	# Update Button Visuals
+	for i in category_hbox.get_child_count():
+		category_hbox.get_child(i).button_pressed = (i == cat)
+
+	# Clear Current List
+	for child in laws_grid.get_children():
+		child.queue_free()
+
+	# Populate based on selection
+	match current_category:
+		Category.MILITARY: _populate_military()
+		Category.ECONOMY:  _populate_economy()
+		Category.COUNTRY:  _populate_country()
+		Category.RELEASABLES: _populate_releasables()
+	
+	_update_law_buttons_visuals()
+
+func _populate_military() -> void:
+	_add_law_option("Volunteer Only", 0.005, 0.0, 0, "Professional army.")
 	_add_law_option("Limited Conscription", 0.01, 0.05, 150, "Drafting young men.")
 	_add_law_option("Extensive Conscription", 0.015, 0.15, 150, "Wide-scale mobilization.")
-	_add_law_option("Service by Requirement", 0.02, 0.30, 150, "All eligible adults must serve.")
+	_add_law_option("Service by Requirement", 0.02, 0.30, 150, "All eligible adults.")
 	_add_law_option("All Adult Serve", 0.4, 0.50, 150, "Scraping the barrel.")
 
+func _populate_economy() -> void:
+	var lbl = Label.new()
+	lbl.text = "Economy laws coming soon..."
+	lbl.add_theme_color_override("font_color", COLOR_TEXT_DIM)
+	laws_grid.add_child(lbl)
+
+func _populate_country() -> void:
+	var lbl = Label.new()
+	lbl.text = "Country decisions coming soon..."
+	lbl.add_theme_color_override("font_color", COLOR_TEXT_DIM)
+	laws_grid.add_child(lbl)
+
+func _populate_releasables() -> void:
+	var lbl = Label.new()
+	lbl.text = "No nations to release."
+	lbl.add_theme_color_override("font_color", COLOR_TEXT_DIM)
+	laws_grid.add_child(lbl)
 
 #endregion
 

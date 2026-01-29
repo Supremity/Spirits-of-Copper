@@ -320,7 +320,7 @@ layout_mode = 1
 anchors_preset = 9
 anchor_bottom = 1.0
 offset_top = 35.0
-offset_right = 265.0
+offset_right = 310.0
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_85er5")
 
@@ -337,8 +337,9 @@ texture = ExtResource("14_yp111")
 
 [node name="PanelContainer" type="PanelContainer" parent="Control/SidemenuBG/Sidemenu"]
 layout_mode = 0
-offset_right = 267.0
-offset_bottom = 253.0
+offset_right = 387.25
+offset_bottom = 247.5
+scale = Vector2(0.8, 0.8)
 theme_override_styles/panel = SubResource("StyleBoxFlat_ilaaa")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Control/SidemenuBG/Sidemenu/PanelContainer"]
@@ -396,17 +397,18 @@ icon = ExtResource("3_liin1")
 
 [node name="Panel" type="Panel" parent="Control/SidemenuBG/Sidemenu"]
 layout_mode = 0
-offset_top = 253.0
-offset_right = 267.0
-offset_bottom = 303.0
+offset_top = 198.0
+offset_right = 310.0
+offset_bottom = 248.0
 theme = ExtResource("13_sdmnd")
 theme_override_styles/panel = SubResource("StyleBoxFlat_6c76w")
 
 [node name="TextureRect" type="TextureRect" parent="Control/SidemenuBG/Sidemenu/Panel"]
 layout_mode = 0
-offset_left = 198.0
-offset_right = 248.00003
-offset_bottom = 50.0
+offset_left = 251.0
+offset_top = -1.0
+offset_right = 301.00003
+offset_bottom = 49.0
 texture = ExtResource("2_xsn6u")
 
 [node name="label_category" type="Label" parent="Control/SidemenuBG/Sidemenu/Panel"]
@@ -429,9 +431,9 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -122.0
-offset_top = 5.5
-offset_right = 123.0
+offset_left = -125.0
+offset_top = -38.5
+offset_right = 144.0
 offset_bottom = 301.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -441,10 +443,10 @@ layout_mode = 2
 
 [node name="MilitaryExtraPanel" type="ColorRect" parent="Control/SidemenuBG/Sidemenu"]
 layout_mode = 0
-offset_left = 264.0
-offset_top = 304.0
-offset_right = 568.0
-offset_bottom = 613.0
+offset_left = 309.0
+offset_top = 306.0
+offset_right = 613.0
+offset_bottom = 612.0
 color = Color(0.09803922, 0.09803922, 0.09803922, 1)
 
 [node name="button_infantry" type="Button" parent="Control/SidemenuBG/Sidemenu/MilitaryExtraPanel"]

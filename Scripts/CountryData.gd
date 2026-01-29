@@ -7,7 +7,7 @@ var army_composition_cache: Dictionary = {"infantry": 0, "tank": 0, "artillery":
 const MANPOWER_RECOVERY_PER_YEAR := 0.10
 const MANPOWER_RECOVERY_PER_DAY := MANPOWER_RECOVERY_PER_YEAR / 365.0
 var military_size_ratio := 0.005
-const BASE_ARMY_COST := 100.0  # Multiplied by army level
+const BASE_ARMY_COST := 10 
 #endregion
 
 #region --- Properties ---

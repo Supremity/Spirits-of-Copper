@@ -4,6 +4,8 @@
 [ext_resource type="Theme" uid="uid://c38ivksvf4is0" path="res://main_theme.tres" id="2_ycgp7"]
 
 [node name="HBoxContainer" type="HBoxContainer"]
+offset_right = 200.0
+offset_bottom = 50.0
 script = ExtResource("1_0hb5u")
 
 [node name="ColorRect" type="ColorRect" parent="."]
@@ -15,8 +17,7 @@ color = Color(0.11764706, 0.11764706, 0.11764706, 0)
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.1
-anchor_bottom = 1.0
-offset_bottom = -9.0
+anchor_bottom = 0.82000005
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("2_ycgp7")

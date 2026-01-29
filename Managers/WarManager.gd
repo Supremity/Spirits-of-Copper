@@ -109,15 +109,14 @@ class Battle:
 			if attacker_stats.money >= att_supply_cost:
 				attacker_stats.money -= att_supply_cost
 			else:
-				# Out of money! Attack power drops by 80%
-				att_supply_mult = 0.2
+				att_supply_mult = 0.4
 				att_morale -= 2.0  # Extra morale penalty for hungry troops
 
 		if defender_stats:
 			if defender_stats.money >= def_supply_cost:
 				defender_stats.money -= def_supply_cost
 			else:
-				def_supply_mult = 0.2
+				def_supply_mult = 0.4
 				def_morale -= 2.0
 
 		# --- 1. Calculate Power (Now including Supply Penalty) ---
