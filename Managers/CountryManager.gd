@@ -58,6 +58,7 @@ func set_player_country(country_name: String) -> void:
 
 
 func add_country(country_name: String) -> CountryData:
+	if country_name == "sea": return
 	var c_name_lower = country_name.to_lower()
 
 	# 1. Check if it already exists
