@@ -445,3 +445,4 @@ func _handle_total_collapse(fallen_name: String, victor_name: String) -> void:
 	for pid in all_provinces:
 		MapManager.transfer_ownership(pid, victor_name)
 	original_territories.erase(fallen_name)
+	CountryManager._cleanup_empty_countries()

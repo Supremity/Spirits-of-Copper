@@ -945,6 +945,7 @@ func show_gdp_map() -> void:
 		state_color_image.set_pixel(pid, 0, gdp_color)
 
 	state_color_texture.update(state_color_image)
+	KeyboardManager.current_view = KeyboardManager.MapView.GDP
 	print("MapManager: GDP View Updated. Max GDP: ", current_max_gdp)
 
 
@@ -962,6 +963,8 @@ func show_countries_map() -> void:
 		state_color_image.set_pixel(pid, 0, country_color)
 
 	state_color_texture.update(state_color_image)
+	KeyboardManager.current_view = KeyboardManager.MapView.COUNTRIES
+
 
 
 func show_industry_country(country_name: String) -> void:
@@ -1354,6 +1357,7 @@ func release_country(country_name: String) -> void:
 
 			transfer_ownership(obj.id, country_name)
 	CountryManager.add_country(country_name)
+	CountryManager._cleanup_empty_countries()
 
 
 func get_all_cities() -> Array:

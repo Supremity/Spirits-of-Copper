@@ -15,6 +15,7 @@ func _on_day_passed() -> void:
 	for c_name: String in countries:
 		var country_obj: CountryData = countries[c_name]
 		country_obj.process_day()
+	MapManager.country_to_provinces
 
 
 func initialize_countries() -> void:
@@ -59,13 +60,21 @@ func set_player_country(country_name: String) -> void:
 func add_country(country_name: String) -> CountryData:
 	var c_name_lower = country_name.to_lower()
 
+	# 1. Check if it already exists
 	if countries.has(c_name_lower):
 		push_warning("CountryManager: Country '%s' already exists!" % country_name)
 		return countries[c_name_lower]
 
-	var new_country := CountryData.new(country_name)
-	countries[c_name_lower] = new_country
+	# 2. Check if the flag exists before proceeding
+	var flag = TroopManager.get_flag(c_name_lower)
+	if flag == null:
+		push_error("CountryManager: Cannot add '%s'. No flag found at res://assets/flags/" % country_name)
+		return null
 
+	# 3. If flag exists, create and store the country
+	var new_country := CountryData.new(country_name)
+	
+	countries[c_name_lower] = new_country
 	return new_country
 
 
@@ -134,3 +143,15 @@ static func get_country_used_manpower(country_obj: CountryData) -> int:
 static func _get_manpower_from_template(type: String) -> int:
 	var stats = DivisionData.TEMPLATES.get(type, DivisionData.TEMPLATES["infantry"])
 	return stats["manpower"]
+	
+func _cleanup_empty_countries() -> void:
+	var to_remove: Array[String] = []
+	
+	for c_name in countries.keys():
+		var provinces = MapManager.country_to_provinces.get(countries[c_name].country_name, [])
+		if provinces.is_empty():
+			to_remove.append(c_name)
+
+	for c_name in to_remove:
+		print("CountryManager: Removing '%s' (No provinces found)." % c_name)
+		countries.erase(c_name)
