@@ -14,3 +14,4 @@ enum { SEA = 0, LAND = 1 }
 @export var gdp: int = 1000
 @export var center: Vector2
 @export var neighbors: Array[int] = []
+@export var claims = []

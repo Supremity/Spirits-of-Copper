@@ -22,6 +22,7 @@ var country_colors: Dictionary = {}
 var color_to_pop_map: Dictionary = {}  # Stores {"(0, 10, 255)": 764}
 var color_to_city_map: Dictionary = {}
 var color_to_ethnic_map: Dictionary = {}
+var color_to_claim_map: Dictionary = {}
 var ethnic_name_to_color: Dictionary = {}  # both used
 var gdp_map: Dictionary = {}
 
@@ -46,14 +47,16 @@ const CACHE_FOLDER = "res://map_data/"
 @export var city_texture: Texture2D
 @export var gdp_texture: Texture2D
 @export var ethnicity_texture: Texture2D
-
+@export var claims_texture: Texture2D
 
 func load_country_data() -> void:
+	# NOTE Z21 this can all be done in 1 function like load_json("countries.json", color_to_country_map)
 	_load_country_colors()
 	_load_population_json()
 	_load_city_json()
 	_load_gdp_json()
 	_load_ethnic_json()
+	_load_claims_json()
 	var dir = DirAccess.open("res://")
 	if dir and not dir.dir_exists(CACHE_FOLDER):
 		dir.make_dir_recursive(CACHE_FOLDER)
@@ -73,8 +76,9 @@ func load_country_data() -> void:
 	var ethnicity = (
 		ethnicity_texture if ethnicity_texture else preload("res://maps/ethnicities.png")
 	)
+	var claims = claims_texture if claims_texture else preload("res://maps/claims.png")
 
-	_generate_and_save(region, culture, population, city, gdp_data, ethnicity)
+	_generate_and_save(region, culture, population, city, gdp_data, ethnicity, claims)
 
 
 func _generate_and_save(
@@ -83,9 +87,10 @@ func _generate_and_save(
 	population: Texture2D,
 	city: Texture2D,
 	gdp_data: Texture2D,
-	ethnicity: Texture2D
+	ethnicity: Texture2D,
+	claims: Texture2D
 ) -> void:
-	initialize_map(region, culture, population, city, gdp_data, ethnicity)
+	initialize_map(region, culture, population, city, gdp_data, ethnicity, claims)
 
 	var map_data := MapData.new()
 	map_data.province_centers = province_centers.duplicate()
@@ -124,7 +129,8 @@ func initialize_map(
 	population_tex: Texture2D,
 	city_tex: Texture2D,
 	gdp_tex,
-	ethnicity_tex
+	ethnicity_tex,
+	claims_tex
 ) -> void:
 	var r_img = region_tex.get_image()
 	var c_img = culture_tex.get_image()
@@ -132,7 +138,8 @@ func initialize_map(
 	var city_img = city_tex.get_image()
 	var gdp_img = gdp_tex.get_image()
 	var ethnicity_img = ethnicity_tex.get_image()
-
+	var claims_img = claims_tex.get_image()
+	
 	var w = r_img.get_width()
 	var h = r_img.get_height()
 
@@ -186,9 +193,11 @@ func initialize_map(
 					var city_color = city_img.get_pixel(min(x, pw - 1), min(y, ph - 1))
 					var gdp_color = gdp_img.get_pixel(min(x, pw - 1), min(y, ph - 1))
 					var ethnicity_color = ethnicity_img.get_pixel(min(x, pw - 1), min(y, ph - 1))
+					var claims_color = claims_img.get_pixel(min(x, pw - 1), min(y, ph - 1))
 					province.population = _get_pop_from_color(p_color)
 					province.city = _get_city_from_color(city_color)
 					province.ethnicity = _get_name_from_color(ethnicity_color, color_to_ethnic_map)
+					province.claims = _get_claims_from_color(claims_color, color_to_claim_map)
 					if len(province.city) > 0:  # Cities by default have factories
 						province.has_factory = true
 					province.gdp = _get_gdp_from_color(gdp_color)
@@ -427,9 +436,10 @@ func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 			close_sidemenu.emit()
 		return
 
+	
 	var player_country_name = CountryManager.player_country.country_name
 	var is_player_owned = province_to_country.get(pid) == player_country_name
-
+	
 	if GameState.choosing_deploy_city:
 		if is_player_owned:
 			_execute_deployment(pid, player_country_name)
@@ -1088,6 +1098,17 @@ func _load_city_json() -> void:
 	var json_data = JSON.parse_string(file.get_as_text())
 	if json_data is Dictionary:
 		color_to_city_map = json_data
+	
+func _load_claims_json() -> void:
+	var path = "res://map_data/claims.json"  # Ensure path is correct
+	if not FileAccess.file_exists(path):
+		push_error("City JSON missing!")
+		return
+
+	var file = FileAccess.open(path, FileAccess.READ)
+	var json_data = JSON.parse_string(file.get_as_text())
+	if json_data is Dictionary:
+		color_to_claim_map = json_data
 
 
 func _get_city_from_color(c: Color) -> String:
@@ -1204,6 +1225,49 @@ func _get_name_from_color(c: Color, data_map: Dictionary) -> String:
 
 	return "Unknown"
 
+func _get_claims_from_color(c: Color, data_map: Dictionary) -> Array:
+	var r = int(round(c.r * 255.0))
+	var g = int(round(c.g * 255.0))
+	var b = int(round(c.b * 255.0))
+
+	# Define possible key formats (Standard, Tight, and No-Bracket)
+	var formats = [
+		"(%d, %d, %d)" % [r, g, b],
+		"(%d,%d,%d)" % [r, g, b],
+		"%d,%d,%d" % [r, g, b]
+	]
+
+	# 1. Try Exact Matches
+	for key in formats:
+		if data_map.has(key):
+			return _force_array(data_map[key])
+
+	# 2. Fuzzy Match
+	var best_data = null
+	var min_dist = 999999.0
+	var current_vec = Vector3(r, g, b)
+
+	for color_str in data_map.keys():
+		var target_rgb = _parse_color_string(color_str)
+		var dist = (current_vec - target_rgb).length_squared()
+
+		if dist < min_dist:
+			min_dist = dist
+			best_data = data_map[color_str]
+
+	# Threshold check (10 units distance)
+	if min_dist < 100 and best_data != null:
+		return _force_array(best_data)
+
+	return [] # Return empty array if no claim found
+
+# Helper to ensure we never return a single String when an Array is expected
+func _force_array(data) -> Array:
+	if data is Array:
+		return data
+	elif data is String:
+		return [data] # Wrap the single country in a list
+	return []
 
 func _get_gdp_from_color(c: Color) -> int:
 	var r = int(round(c.r * 255.0))
@@ -1278,6 +1342,10 @@ func get_border_provinces(country_name: String) -> Array[int]:
 
 	return border_provinces
 
+func release_country(country_name: String) -> void:
+	for obj in province_objects.values():
+		if obj.claims.has(country_name):
+			transfer_ownership(obj.id, country_name)
 
 func get_all_cities() -> Array:
 	var pids = []

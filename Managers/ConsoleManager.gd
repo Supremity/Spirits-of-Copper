@@ -12,7 +12,10 @@ func _ready() -> void:
 		"set_manpower", _set_manpower, ["amount"], 1, "Sets manpower to a specific amount"
 	)
 	Console.add_command("peace_treaty", _peace_treaty, ["country"], 1, "Spawns a peace treaty with country")
+	Console.add_command("release", _release_country, ["country"], 1, "Releases a country based on all its cores")
 
+func _release_country(country):
+	MapManager.release_country(country)
 
 func _add_pp(amount):
 	CountryManager.player_country.political_power += float(amount)
