@@ -1347,7 +1347,13 @@ func get_border_provinces(country_name: String) -> Array[int]:
 func release_country(country_name: String) -> void:
 	for obj in province_objects.values():
 		if obj.claims.has(country_name):
+			var troops = TroopManager.troops_by_province.get(obj.id, [])
+			for troop in troops.duplicate():
+				if is_instance_valid(troop):
+					TroopManager.remove_troop(troop)
+
 			transfer_ownership(obj.id, country_name)
+	CountryManager.add_country(country_name)
 
 
 func get_all_cities() -> Array:

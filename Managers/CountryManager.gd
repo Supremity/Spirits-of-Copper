@@ -22,12 +22,10 @@ func initialize_countries() -> void:
 
 	var detected_countries = MapManager.country_to_provinces.keys()
 	if detected_countries.is_empty():
-		push_warning("CountryManager: No countries detected in MapManager!")
 		detected_countries = MapManager.country_colors.keys()
 
 	for country_name in detected_countries:
-		var new_country := CountryData.new(country_name)
-		countries[country_name] = new_country
+		add_country(country_name)
 
 	print("CountryManager: Initialized %d countries." % countries.size())
 
@@ -56,6 +54,19 @@ func set_player_country(country_name: String) -> void:
 
 	print("Player is now playing as: ", country_name)
 	emit_signal("player_country_changed")
+
+
+func add_country(country_name: String) -> CountryData:
+	var c_name_lower = country_name.to_lower()
+
+	if countries.has(c_name_lower):
+		push_warning("CountryManager: Country '%s' already exists!" % country_name)
+		return countries[c_name_lower]
+
+	var new_country := CountryData.new(country_name)
+	countries[c_name_lower] = new_country
+
+	return new_country
 
 
 # HELPER FUNCTIONS ==========================================
