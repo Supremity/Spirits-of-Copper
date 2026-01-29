@@ -17,7 +17,14 @@ func _ready() -> void:
 	Console.add_command(
 		"release", _release_country, ["country"], 1, "Releases a country based on all its cores"
 	)
+	Console.add_command(
+		"releasables", _show_releasables_country, ["country"], 1, "Shows the releasables of a country"
+	)
+	
 
+func _show_releasables_country(country):
+	var releasables = MapManager.get_all_releasables(country)
+	Console.print_info(JSON.stringify(releasables))
 
 func _release_country(country):
 	MapManager.release_country(country)

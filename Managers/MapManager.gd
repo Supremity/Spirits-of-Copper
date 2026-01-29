@@ -36,6 +36,11 @@ var last_hovered_pid: int = -1
 var original_hover_color: Color
 var province_centers: Dictionary = {}  # Stores {ID: Vector2(x, y)}
 
+# This will look like: {"french_empire": [101, 102, 103], "canada": [1, 2, 5]}
+var global_claims_registry: Dictionary = {}
+
+
+
 var all_cities = []
 
 const MAP_DATA_PATH = "res://map_data/MapData.tres"
@@ -1346,6 +1351,43 @@ func get_border_provinces(country_name: String) -> Array[int]:
 
 	return border_provinces
 
+func get_all_releasables(my_country: String) -> Array:
+	var releasables = []
+	
+	# 1. Get a list of all province IDs I currently own
+	var my_provinces = []
+	for obj in province_objects.values():
+		# Using 'country' as per your Province resource
+		if obj.country == my_country:
+			my_provinces.append(obj.id)
+			
+	# 2. Check every country in the registry
+	for potential_country in global_claims_registry.keys():
+		if potential_country == my_country: 
+			continue
+		
+		var required_provinces = global_claims_registry[potential_country]
+		var has_all_provinces = true
+		
+		# 3. Verify I own every province they claim
+		for p_id in required_provinces:
+			if not p_id in my_provinces:
+				has_all_provinces = false
+				break
+		
+		if has_all_provinces:
+			# 4. Only add if they aren't already on the map
+			if not _country_exists_on_map(potential_country):
+				releasables.append(potential_country)
+				
+	return releasables
+
+func _country_exists_on_map(c_name: String) -> bool:
+	for obj in province_objects.values():
+		if obj.country == c_name:
+			return true
+	return false
+
 
 func release_country(country_name: String) -> void:
 	for obj in province_objects.values():
@@ -1410,3 +1452,12 @@ func annex_country(target_country_name: String) -> void:
 
 	#playerobj.reset_manpower()
 	print("ANNEXATION COMPLETE: ", player, " has taken all of ", target_country_name)
+
+
+func _build_global_registry():
+	global_claims_registry.clear()
+	for obj in province_objects.values():
+		for country_name in obj.claims:
+			if not global_claims_registry.has(country_name):
+				global_claims_registry[country_name] = []
+			global_claims_registry[country_name].append(obj.id)

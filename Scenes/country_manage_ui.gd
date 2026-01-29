@@ -205,7 +205,7 @@ func _switch_category(cat: Category) -> void:
 		Category.MILITARY: _populate_military()
 		Category.ECONOMY:  _populate_economy()
 		Category.COUNTRY:  _populate_country()
-		Category.RELEASABLES: _populate_releasables()
+		Category.RELEASABLES: _populate_releasables(current_country.country_name)
 	
 	_update_law_buttons_visuals()
 
@@ -228,14 +228,119 @@ func _populate_country() -> void:
 	lbl.add_theme_color_override("font_color", COLOR_TEXT_DIM)
 	laws_grid.add_child(lbl)
 
-func _populate_releasables() -> void:
-	var lbl = Label.new()
-	lbl.text = "No nations to release."
-	lbl.add_theme_color_override("font_color", COLOR_TEXT_DIM)
-	laws_grid.add_child(lbl)
+func _populate_releasables(player_country: String) -> void:
+	for child in laws_grid.get_children():
+		child.queue_free()
+
+	var releasables = MapManager.get_all_releasables(player_country)
+
+	if releasables.is_empty():
+		var lbl = Label.new()
+		lbl.text = "No nations to release."
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5)) # COLOR_TEXT_DIM
+		laws_grid.add_child(lbl)
+		return
+
+	for country_id in releasables:
+		_add_releasable_option(country_id)
 
 #endregion
 
+func _add_releasable_option(country_id: String) -> void:
+	var btn_panel = PanelContainer.new()
+	btn_panel.custom_minimum_size = Vector2(0, 55) # Slimmer height for HBox layout
+	
+	# 1. Styling
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.12, 0.14)
+	style.border_color = Color(0.25, 0.25, 0.3)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(4)
+	btn_panel.add_theme_stylebox_override("panel", style)
+
+	# 2. Main Layout
+	var m = MarginContainer.new()
+	m.add_theme_constant_override("margin_left", 10)
+	m.add_theme_constant_override("margin_right", 10)
+	btn_panel.add_child(m)
+
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 15)
+	m.add_child(hbox)
+
+	# 3. Flag
+	var flag = TextureRect.new()
+	flag.custom_minimum_size = Vector2(40, 26)
+	flag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	flag.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	flag.texture = TroopManager.get_flag(country_id)
+	hbox.add_child(flag)
+
+	# 4. Text Info (Expand to push buttons to the right)
+	var v_text = VBoxContainer.new()
+	v_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v_text.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_child(v_text)
+
+	var title = Label.new()
+	title.text = country_id.capitalize().replace("_", " ")
+	title.add_theme_font_size_override("font_size", 14)
+	v_text.add_child(title)
+
+	# PP Cost Label
+	var cost_lbl = Label.new()
+	cost_lbl.text = "Cost: 50 PP"
+	cost_lbl.add_theme_font_size_override("font_size", 10)
+	cost_lbl.add_theme_color_override("font_color", Color(0.2, 0.8, 0.4))
+	v_text.add_child(cost_lbl)
+
+	# 5. Buttons HBox (The Action Area)
+	var h_btns = HBoxContainer.new()
+	h_btns.add_theme_constant_override("separation", 8)
+	h_btns.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_child(h_btns)
+
+	# --- Button: Release ---
+	var btn_release = Button.new()
+	btn_release.text = "Release"
+	btn_release.custom_minimum_size = Vector2(80, 30)
+	btn_release.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	btn_release.pressed.connect(_on_release_pressed.bind(country_id))
+	h_btns.add_child(btn_release)
+
+	# --- Button: Play As (Distinct style) ---
+	var btn_play = Button.new()
+	btn_play.text = "Play As"
+	btn_play.custom_minimum_size = Vector2(80, 30)
+	btn_play.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	
+	# Optional: Give 'Play As' a slightly blue-ish tint to distinguish it
+	btn_play.add_theme_color_override("font_hover_color", Color(0.5, 0.8, 1.0))
+	
+	btn_play.pressed.connect(_on_release_and_play_pressed.bind(country_id))
+	h_btns.add_child(btn_play)
+
+	laws_grid.add_child(btn_panel)
+	
+func _on_release_pressed(country_id: String) -> void:
+	if current_country.political_power >= 50:
+		current_country.political_power -= 50
+		MapManager.release_country(country_id)
+		# Refresh UI
+		_populate_releasables(current_country.country_name)
+	else:
+		Console.print_error("Not enough Political Power!")
+
+func _on_release_and_play_pressed(country_id: String) -> void:
+	if current_country.political_power >= 50:
+		# 1. Release the land
+		MapManager.release_country(country_id)
+		CountryManager.set_player_country(country_id)
+		Console.print_info("Switched playing as: " + country_id)
+		_populate_releasables(country_id)
+	else:
+		Console.print_error("Not enough Political Power!")
 
 #region --- Logic & Data Refresh ---
 func _refresh_full_data() -> void:
@@ -467,6 +572,25 @@ func _add_law_option(
 
 
 #region --- Interactions ---
+
+func _on_releasable_gui_input(event: InputEvent, panel: PanelContainer) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var country_id = panel.get_meta("country_id")
+		var cost = panel.get_meta("cost")
+		
+		# Assuming you have a global 'PlayerData' or similar for Political Power
+		if current_country.political_power >= cost:
+			current_country.political_power -= cost
+			MapManager.release_country(country_id)
+			
+			# Refresh the UI since the list might change after a release
+			_populate_releasables(current_country.country_name)
+			
+			print("Successfully released ", country_id)
+		else:
+			print("Not enough Political Power!")
+			# Optional: Play a "buzz" error sound or shake the panel
+
 func _on_law_gui_input(event: InputEvent, btn: PanelContainer) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var ratio = btn.get_meta("ratio")
