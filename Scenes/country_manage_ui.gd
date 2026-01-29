@@ -39,10 +39,11 @@ var _update_timer: float = 0.0
 
 func _ready() -> void:
 	visible = false
-	_build_ui()
+	#_build_ui()
 
 func open_menu(country: CountryData) -> void:
 	current_country = country
+	_build_ui()
 	_switch_category(Category.MILITARY) # Default to Military
 	_refresh_full_data()
 	show()
@@ -103,7 +104,7 @@ func _build_header(parent: VBoxContainer) -> void:
 	flag_rect.custom_minimum_size = Vector2(100, 60)
 	flag_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	flag_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	flag_rect.texture = TroopManager.get_flag(CountryManager.player_country.country_name)
+	flag_rect.texture = TroopManager.get_flag(current_country.country_name)
 	
 	var title_vbox = VBoxContainer.new()
 	header_label = Label.new()
@@ -338,6 +339,7 @@ func _on_release_and_play_pressed(country_id: String) -> void:
 		MapManager.release_country(country_id)
 		CountryManager.set_player_country(country_id)
 		Console.print_info("Switched playing as: " + country_id)
+		
 		_populate_releasables(country_id)
 	else:
 		Console.print_error("Not enough Political Power!")
