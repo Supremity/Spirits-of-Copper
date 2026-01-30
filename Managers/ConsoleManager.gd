@@ -4,6 +4,8 @@ extends Node
 func _ready() -> void:
 	Console.add_command("play_country", _play_country, ["country_name"], 1, "Change player country")
 	Console.add_command("play_as", _play_country, ["country_name"], 1, "Change player country")
+	Console.add_command("play", _play_country, ["country_name"], 1, "Change player country")
+
 	Console.add_command("start_war", _start_war, ["a", "b"], 2, "Start a war between 2 countries")
 	Console.add_command("annex", _annex, ["country_name"], 1, "Annex Country for Player")
 	Console.add_command("pp", _add_pp, ["amount"], 1, "Add Poltical power to player")

@@ -76,6 +76,11 @@ func add_country(country_name: String) -> CountryData:
 	# 3. If flag exists, create and store the country
 	var new_country := CountryData.new(country_name)
 	
+	# NOTE Z21: Relations should be based on political affinity and stuff
+	for existing_name in countries.keys():
+		new_country.set_relation_with(existing_name, 50)
+		countries[existing_name].set_relation_with(c_name_lower, 50)
+	
 	countries[c_name_lower] = new_country
 	return new_country
 

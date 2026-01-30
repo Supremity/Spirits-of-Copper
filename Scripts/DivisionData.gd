@@ -10,7 +10,7 @@ const TEMPLATES = {
 		"cost": 500,
 		"days": 9,
 		"attack": 1,
-		"defense": 2,
+		"defense": 1,
 		"speed": 1.0
 	},
 	"tank":
@@ -20,7 +20,7 @@ const TEMPLATES = {
 		"cost": 10000,
 		"days": 30,
 		"attack": 5,
-		"defense": 10.0,
+		"defense": 7,
 		"speed": 2.5
 	},
 	"artillery":
@@ -29,8 +29,8 @@ const TEMPLATES = {
 		"manpower": 1000,
 		"cost": 10000,
 		"days": 15,
-		"attack": 7,
-		"defense": 1.0,
+		"attack": 5,
+		"defense": 0.3,
 		"speed": 0.8
 	}
 }

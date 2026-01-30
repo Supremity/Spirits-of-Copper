@@ -14,6 +14,8 @@ const BASE_ARMY_COST := 20
 var country_name: String
 var is_player: bool = false
 
+var relations: Dictionary = {}
+
 var factory_port_daily_cost = 0.2 # The less the better. It's percentage based
 
 # Economy
@@ -360,3 +362,13 @@ func _process_reinforcements():
 					money -= (template["cost"] * 0.05)
 					manpower -= men_needed
 					div.hp = min(div.max_hp, div.hp + 5.0)
+					
+					
+					
+func set_relation_with(other_country_name: String, value: int) -> void:
+	other_country_name = other_country_name.to_lower()
+	relations[other_country_name] = clampi(value, 0, 100)
+
+func get_relation_with(other_country_name: String) -> int:
+	other_country_name = other_country_name.to_lower()
+	return relations.get(other_country_name, 50)

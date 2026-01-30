@@ -338,21 +338,13 @@ texture = ExtResource("14_yp111")
 [node name="PanelContainer" type="PanelContainer" parent="Control/SidemenuBG/Sidemenu"]
 layout_mode = 0
 offset_right = 387.25
-offset_bottom = 247.5
+offset_bottom = 277.49997
 scale = Vector2(0.8, 0.8)
 theme_override_styles/panel = SubResource("StyleBoxFlat_ilaaa")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Control/SidemenuBG/Sidemenu/PanelContainer"]
 layout_mode = 2
 theme_override_constants/separation = 8
-
-[node name="Label" type="Label" parent="Control/SidemenuBG/Sidemenu/PanelContainer/VBoxContainer"]
-texture_filter = 2
-layout_mode = 2
-theme_override_fonts/font = ExtResource("15_yp111")
-theme_override_font_sizes/font_size = 24
-text = "country1"
-horizontal_alignment = 1
 
 [node name="Flag" type="PanelContainer" parent="Control/SidemenuBG/Sidemenu/PanelContainer/VBoxContainer"]
 clip_children = 1
@@ -365,6 +357,17 @@ layout_mode = 2
 texture = ExtResource("1_xar7q")
 expand_mode = 1
 stretch_mode = 5
+
+[node name="Label" type="Label" parent="Control/SidemenuBG/Sidemenu/PanelContainer/VBoxContainer"]
+texture_filter = 2
+layout_mode = 2
+theme_override_fonts/font = ExtResource("15_yp111")
+theme_override_font_sizes/font_size = 24
+text = "country1"
+horizontal_alignment = 1
+
+[node name="RelationsHbox" type="HBoxContainer" parent="Control/SidemenuBG/Sidemenu/PanelContainer/VBoxContainer"]
+layout_mode = 2
 
 [node name="MilitaryAccess" type="Label" parent="Control/SidemenuBG/Sidemenu/PanelContainer/VBoxContainer"]
 texture_filter = 2
@@ -397,9 +400,10 @@ icon = ExtResource("3_liin1")
 
 [node name="Panel" type="Panel" parent="Control/SidemenuBG/Sidemenu"]
 layout_mode = 0
-offset_top = 198.0
-offset_right = 310.0
-offset_bottom = 248.0
+offset_left = -2.0
+offset_top = 221.0
+offset_right = 308.0
+offset_bottom = 271.0
 theme = ExtResource("13_sdmnd")
 theme_override_styles/panel = SubResource("StyleBoxFlat_6c76w")
 
@@ -431,8 +435,8 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -125.0
-offset_top = -38.5
+offset_left = -133.0
+offset_top = -16.5
 offset_right = 144.0
 offset_bottom = 301.0
 grow_horizontal = 2
