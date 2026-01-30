@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://bonl378c51366"]
+[gd_scene load_steps=17 format=3 uid="uid://bonl378c51366"]
 
 [ext_resource type="Script" uid="uid://pcq6svrgye6v" path="res://Scripts/world.gd" id="1_go701"]
 [ext_resource type="Script" uid="uid://bjvlgraecimcy" path="res://Scenes/main.gd" id="1_o06y3"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" uid="uid://cdspipsa2vbk5" path="res://Scripts/decision_tree_ui.gd" id="9_5v1tr"]
 [ext_resource type="Script" uid="uid://dmywidiiomun4" path="res://Scenes/peace_process_ui.gd" id="10_0fj1v"]
 [ext_resource type="Script" uid="uid://d00ogcoh5s68w" path="res://Scenes/country_manage_ui.gd" id="11_ikia7"]
+[ext_resource type="Script" uid="uid://dgg5vvwt2yua6" path="res://Scenes/menu.gd" id="12_7yui6"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_fo5ed"]
 load_path = "res://.godot/imported/cultures.png-f9255a05eddadc8a9aa0dedbe091def9.ctex"
@@ -72,3 +73,6 @@ script = ExtResource("10_0fj1v")
 
 [node name="CountryManageUI" type="CanvasLayer" parent="."]
 script = ExtResource("11_ikia7")
+
+[node name="Menu" type="CanvasLayer" parent="."]
+script = ExtResource("12_7yui6")

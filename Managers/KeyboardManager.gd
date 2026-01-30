@@ -12,9 +12,12 @@ var _debounce := false
 func _process(_delta: float) -> void:
 	if Console.is_visible():
 		return
-	# --- 1. MENU TOGGLE (Esc / Tab / Etc) ---
 	if Input.is_action_just_pressed("deselect_troops"):
-		TroopManager.troop_selection.deselect_all()
+		if !TroopManager.troop_selection.selected_troops.is_empty():
+			TroopManager.troop_selection.deselect_all()
+		else:
+			get_tree().root.find_child("Menu", true, false).toggle_menu()
+
 	if Input.is_action_just_pressed("open_menu"):
 		if not _debounce:
 			_debounce = true
