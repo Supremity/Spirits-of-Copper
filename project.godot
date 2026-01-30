@@ -30,6 +30,7 @@ ConsoleManager="*res://Managers/ConsoleManager.gd"
 Console="*res://addons/console/console.gd"
 AiManager="*res://Managers/AiManager.gd"
 DecisionManager="*res://Managers/DecisionManager.gd"
+EconomyManager="*res://Managers/EconomyManager.gd"
 
 [display]
 

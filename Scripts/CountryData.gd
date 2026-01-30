@@ -7,12 +7,14 @@ var army_composition_cache: Dictionary = {"infantry": 0, "tank": 0, "artillery":
 const MANPOWER_RECOVERY_PER_YEAR := 0.10
 const MANPOWER_RECOVERY_PER_DAY := MANPOWER_RECOVERY_PER_YEAR / 365.0
 var military_size_ratio := 0.005
-const BASE_ARMY_COST := 10 
+const BASE_ARMY_COST := 20
 #endregion
 
 #region --- Properties ---
 var country_name: String
 var is_player: bool = false
+
+var factory_port_daily_cost = 0.2 # The less the better. It's percentage based
 
 # Economy
 var money: float = 0.0

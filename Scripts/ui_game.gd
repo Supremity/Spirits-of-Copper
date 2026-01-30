@@ -92,13 +92,12 @@ var menu_actions = {
 		Category.GENERAL:
 		[
 			{"text": "Declare War", "cost": 50, "func": "_declare_war"},
-			{"text": "Request Access", "cost": 25, "func": "_request_access"},
+			{"text": "Request Access", "cost": 50, "func": "_request_access"},
 			{"text": "Improve Relations", "cost": 15, "func": "_improve_relations"},
 			{"text": "Form Alliance", "cost": 80, "func": "_form_alliance"},
 		],
 		Category.ECONOMY:
 		[
-			{"text": "Demand Tribute", "cost": 40, "func": "_demand_tribute"},
 			{"text": "Trade Deal", "cost": 10, "func": "_trade_deal"},
 		],
 	}
@@ -221,8 +220,12 @@ func _build_action_list() -> void:
 	label_category.text = Category.keys()[current_category].capitalize()
 
 	for item in (menu_actions[current_context] as Dictionary[int, Array]).get(current_category, []):
+		
+		if item.func == "_request_access":
+			if CountryManager.player_country.allowedCountries.has(selected_country.country_name):
+				continue
+		
 		var new_btn = action_scene.instantiate()
-
 		var call_ref = Callable(self, item.func)
 		if item.func == "_conscript":
 			call_ref = call_ref.bind(item)
@@ -373,6 +376,8 @@ func _build_port():
 
 
 func _request_access():
+	CountryManager.player_country.allowedCountries.append(selected_country.country_name)
+	_build_action_list()
 	pass
 
 

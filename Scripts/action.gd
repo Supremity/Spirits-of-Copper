@@ -106,6 +106,6 @@ func _update_standard_text_and_cost(player) -> void:
 
 func _on_button_pressed() -> void:
 	var cost = data.get("cost", 0)
-
+	CountryManager.player_country.political_power -= cost
 	if _callback.is_valid():
 		_callback.call()

@@ -9,9 +9,10 @@ func _on_hour_passed() -> void:
 	for c_name: String in countries:
 		var country_obj: CountryData = countries[c_name]
 		country_obj.process_hour()
-
+		
 
 func _on_day_passed() -> void:
+	EconomyManager.process_economy_day()
 	for c_name: String in countries:
 		var country_obj: CountryData = countries[c_name]
 		country_obj.process_day()
@@ -109,11 +110,11 @@ func get_country_gdp(country_name: String) -> int:
 
 func get_factories_amount(country_name: String) -> int:
 	var provinces = MapManager.country_to_provinces.get(country_name, [])
-	return provinces.reduce(
-		func(accum, pid): return accum + (1 if MapManager.province_objects[pid].has_factory else 0),
-		0
-	)
-
+	var count = 0
+	for pid in provinces:
+		if MapManager.province_objects[pid].factory == Province.FACTORY_BUILT:
+			count += 1
+	return count
 
 # NOTE(pol): We should keep track of the manpower used instead of recalculating
 # In CountryManager.gd (or wherever this static function lives)

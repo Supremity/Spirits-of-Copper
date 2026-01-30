@@ -191,14 +191,14 @@ func _handle_peace_movement(country: CountryData, idle_troops: Array) -> void:
 
 
 func _get_peace_hubs(country: CountryData) -> Array:
-	if "cached_garrison_hubs" in country and not country.cached_garrison_hubs.is_empty():
-		return country.cached_garrison_hubs
+	# Check if we have a valid list of all cities
 	var cities = MapManager.get_cities_province_country(country.country_name)
+	
+	# Fallback: If the country has no cities, use all their provinces
 	if cities.is_empty():
-		cities = MapManager.country_to_provinces.get(country.country_name, []).slice(0, 5)  # More hubs for larger countries
-	cities.shuffle()
-	country.cached_garrison_hubs = cities.slice(0, mini(5, cities.size()))
-	return country.cached_garrison_hubs
+		cities = MapManager.country_to_provinces.get(country.country_name, [])
+		
+	return cities
 
 
 func _is_at_war(country: CountryData) -> bool:
@@ -226,25 +226,22 @@ func _handle_deployment(country: CountryData) -> void:
 	if country.ready_troops.is_empty():
 		return
 
-	var enemies = WarManager.get_enemies_of(country.country_name)
-	var targets = _analyze_frontline_targets(country, enemies)
-	if not targets.is_empty():
-		targets.sort_custom(func(a, b): return a.score > b.score)
+	# Get every city the country owns
+	var cities = _get_peace_hubs(country)
+	if cities.is_empty():
+		return # No land to deploy to
 
+	# We duplicate to safely erase during iteration
 	for troop_data in country.ready_troops.duplicate():
-		var deploy_id
-		if not targets.is_empty():
-			# Deploy to highest-score target
-			deploy_id = targets[0].id
-			# Update virtual to avoid over-deploying (though deployments are instant?)
-			targets[0].virtual_strength += troop_data.stored_divisions.size()
-		else:
-			deploy_id = _get_peace_hubs(country).pick_random()
-
-		if deploy_id:
-			TroopManager.deploy_specific_divisions(
-				country.country_name, troop_data.stored_divisions, deploy_id
-			)
+		# Pick a random city from the full list to ensure spreading
+		var deploy_id = cities.pick_random()
+		
+		TroopManager.deploy_specific_divisions(
+			country.country_name, 
+			troop_data.stored_divisions, 
+			deploy_id
+		)
+		
 		country.ready_troops.erase(troop_data)
 
 

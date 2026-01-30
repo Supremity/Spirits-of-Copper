@@ -205,7 +205,7 @@ func initialize_map(
 					province.ethnicity = _get_name_from_color(ethnicity_color, color_to_ethnic_map)
 					province.claims = _get_claims_from_color(claims_color, color_to_claim_map)
 					if len(province.city) > 0:  # Cities by default have factories
-						province.has_factory = true
+						province.factory = Province.FACTORY_BUILT
 					province.gdp = _get_gdp_from_color(gdp_color)
 
 				province_objects[next_id] = province
@@ -406,7 +406,7 @@ func _get_contextual_highlight(pid: int) -> Color:
 
 	if GameState.industry_building == GameState.IndustryType.PORT:
 		var coastal_provinces = get_provinces_near_sea(player_name)
-		if pid in coastal_provinces && !province_objects[pid].has_port:
+		if pid in coastal_provinces && !province_objects[pid].port == Province.PORT_BUILT:
 			return Color.CYAN
 		else:
 			return Color.TRANSPARENT
@@ -474,24 +474,34 @@ func _execute_deployment(pid: int, player_name: String) -> void:
 func _province_build_industry(pid: int, player_name: String) -> void:
 	var type := GameState.industry_building
 	var province = province_objects[pid]
+	var country = CountryManager.get_country(player_name)
 
-	if province.has_factory or province.has_port:
-		return
+	# 1. Safety Check: Is there already something there or currently building?
+	# Using your Enums: 0 = NO, 1 = BUILDING, 2 = BUILT
+	if type == GameState.IndustryType.FACTORY:
+		if province.factory != province.NO_FACTORY:
+			print("Cannot build: Factory slot is busy or full.")
+			return
+			
+		EconomyManager.start_construction(pid, "factory", 10, 150.0, country)
+		
+		_cleanup_interaction_state()
+		show_industry_country(player_name)
 
-	match type:
-		GameState.IndustryType.FACTORY:
-			province.has_factory = true
+	elif type == GameState.IndustryType.PORT:
+		if province.port != province.NO_PORT:
+			print("Cannot build: Port slot is busy or full.")
+			return
+			
+		# 3. Sea check for Ports
+		if pid in get_provinces_near_sea(player_name):
+			EconomyManager.start_construction(pid, "port", 10, 150.0, country)
+			
 			_cleanup_interaction_state()
 			show_industry_country(player_name)
-
-		GameState.IndustryType.PORT:
-			if pid in get_provinces_near_sea(player_name):
-				province.has_port = true
-				_cleanup_interaction_state()
-				show_industry_country(player_name)
-			else:
-				print("Action Failed: Port must be on a coast!")
-				return
+		else:
+			print("Action Failed: Port must be on a coast!")
+			return
 
 	country_clicked.emit(player_name)
 
@@ -744,7 +754,7 @@ func _find_path_astar(start_pid: int, end_pid: int, allowed_countries: Array[Str
 
 			# --- RULE 1: LAND -> SEA REQUIRES PORT ---
 			if current_prov.type == Province.LAND and neighbor_prov.type == Province.SEA:
-				if not current_prov.has_port:
+				if not current_prov.port == Province.PORT_BUILT:
 					continue  # BLOCKED: No port to launch ships
 
 			# --- RULE 2: POLITICAL RESTRICTIONS ---
@@ -971,6 +981,9 @@ func show_countries_map() -> void:
 	KeyboardManager.current_view = KeyboardManager.MapView.COUNTRIES
 
 
+func province_updated():
+	if GameState.industry_building:
+		show_industry_country(CountryManager.player_country.country_name)
 
 func show_industry_country(country_name: String) -> void:
 	if not country_to_provinces.has(country_name):
@@ -982,18 +995,26 @@ func show_industry_country(country_name: String) -> void:
 
 	for pid in provinces:
 		var province = province_objects[pid]
+		var color = Color.WHITE # Default color
 
 		if province.city.length() > 0:
-			state_color_image.set_pixel(pid, 0, Color.YELLOW)
-		elif province.has_factory:
-			state_color_image.set_pixel(pid, 0, Color.GREEN)
-		elif province.has_port:
-			state_color_image.set_pixel(pid, 0, Color.BLUE)
+			color = Color.YELLOW
+		
+		elif province.factory == province.FACTORY_BUILT:
+			color = Color.GREEN
+		elif province.factory == province.FACTORY_BUILDING:
+			color = Color.ORANGE # Show progress
+			
+		elif province.port == province.PORT_BUILT:
+			color = Color.BLUE
+		elif province.port == province.PORT_BUILDING:
+			color = Color.CYAN # Show progress
+			
 		elif pid in provinces_near_sea:
-			state_color_image.set_pixel(pid, 0, Color.LIGHT_SKY_BLUE)
+			color = Color.LIGHT_SKY_BLUE
+		
+		state_color_image.set_pixel(pid, 0, color)
 
-		else:
-			state_color_image.set_pixel(pid, 0, Color.WHITE)
 	state_color_texture.update(state_color_image)
 
 
