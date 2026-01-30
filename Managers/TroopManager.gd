@@ -290,7 +290,7 @@ func _create_new_split_troop(original: TroopData, specific_divisions: Array) -> 
 	var pos = original.position
 
 	var new_troop = load("res://Scripts/TroopData.gd").new(
-		original.country_name, original.province_id, 0, pos, original.flag_texture
+		original.country_name, original.province_id, 0, pos, TroopManager.get_flag(original.country_name)
 	)
 
 	# FIX: Ensure the new split troop knows which country it belongs to

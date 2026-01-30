@@ -48,6 +48,8 @@ var ready_troops: Array[ReadyTroop] = []
 var deploy_pid: int = -1  # ID of province to deploy to
 #endregion
 
+var _is_loading := false
+
 
 #region --- Inner Classes ---
 class TroopTraining:
@@ -74,8 +76,11 @@ class ReadyTroop:
 
 
 #region --- Lifecycle ---
-func _init(p_country_name: String) -> void:
-	country_name = p_country_name
+func _init(p_country_name: String = "") -> void:
+	if p_country_name != "":
+		country_name = p_country_name
+	if _is_loading:
+		return
 	allowedCountries.append_array([p_country_name, "sea"])
 	_refresh_economic_stats()
 
@@ -86,6 +91,9 @@ func _init(p_country_name: String) -> void:
 
 
 func process_hour() -> void:
+	if _is_loading:
+		return
+
 	political_power += daily_pp_gain
 
 	# Economic Cycle
@@ -108,6 +116,9 @@ func process_hour() -> void:
 
 
 func process_day() -> void:
+	if _is_loading:
+		return
+
 	# Refresh stats that change daily/weekly
 	_refresh_economic_stats()
 	_process_training()

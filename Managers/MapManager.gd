@@ -19,11 +19,11 @@ var max_province_id: int = 0
 
 var country_colors: Dictionary = {}
 
-var color_to_pop_map: Dictionary = {}  # Stores {"(0, 10, 255)": 764}
+var color_to_pop_map: Dictionary = {}  
 var color_to_city_map: Dictionary = {}
 var color_to_ethnic_map: Dictionary = {}
 var color_to_claim_map: Dictionary = {}
-var ethnic_name_to_color: Dictionary = {}  # both used
+var ethnic_name_to_color: Dictionary = {}  
 var gdp_map: Dictionary = {}
 
 var province_to_country: Dictionary = {}

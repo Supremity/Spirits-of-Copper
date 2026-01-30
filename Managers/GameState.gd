@@ -16,3 +16,5 @@ var in_peace_process: bool = false
 func reset_industry_building():
 	industry_building = IndustryType.DEFAULT
 	MapManager.show_countries_map()
+
+var is_loading_game := false

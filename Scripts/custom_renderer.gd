@@ -37,7 +37,6 @@ func _ready() -> void:
 	z_index = 20  # Keep renderer high
 	_setup_multimesh()
 
-
 func _process(_delta: float) -> void:
 	if !map_sprite:
 		return
@@ -204,11 +203,8 @@ func _draw_troop(troop: TroopData, pos: Vector2) -> void:
 	var tx = text_area_x + (LAYOUT.min_text_width - text_size.x) * 0.5
 	var ty = text_size.y * 0.3  # Vertical center relative to (0,0)
 
-	# Draw Flag (Left side)
-	if troop.flag_texture:
-		# Shrink by 1px to stay inside the border
-		var flag_rect = Rect2(top_left, Vector2(LAYOUT.flag_width, total_h)).grow(-1.0)
-		draw_texture_rect(troop.flag_texture, flag_rect, false)
+	var flag_rect = Rect2(top_left, Vector2(LAYOUT.flag_width, total_h)).grow(-1.0)
+	draw_texture_rect(TroopManager.get_flag(troop.country_name), flag_rect, false)
 
 	draw_string(
 		_font, Vector2(tx, ty), label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, COLORS.text

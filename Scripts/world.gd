@@ -150,6 +150,7 @@ func _create_ghost_map(offset: Vector2, p_material: ShaderMaterial) -> void:
 	$MapContainer.add_child(ghost)
 
 
+
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
@@ -158,3 +159,135 @@ func _input(event: InputEvent) -> void:
 			MapManager.handle_click(get_global_mouse_position(), map_sprite)
 	if event is InputEventMouseMotion:
 		MapManager.handle_hover(get_global_mouse_position(), map_sprite)
+
+
+func save_game(slot: String):
+	var save = SaveGame.new()
+	
+	# Use duplicate() WITHOUT 'true'. 
+	# This copies the list of pointers to your Resources, which is what ResourceSaver needs.
+	
+	# --- COUNTRY DATA ---
+	save.countries = CountryManager.countries.duplicate()
+	if CountryManager.player_country:
+		save.player_country_name = CountryManager.player_country.country_name
+	
+	# --- MAP DATA ---
+	save.province_objects = MapManager.province_objects.duplicate()
+	save.province_to_country = MapManager.province_to_country.duplicate()
+	save.country_to_provinces = MapManager.country_to_provinces.duplicate()
+	
+	# --- TROOP DATA ---
+	save.troops = TroopManager.troops.duplicate()
+	save.moving_troops = TroopManager.moving_troops.duplicate()
+	save.troops_by_province = TroopManager.troops_by_province.duplicate()
+	save.troops_by_country = TroopManager.troops_by_country.duplicate()
+	
+	# Ensure directory exists
+	if not DirAccess.dir_exists_absolute("res://saves/"):
+		DirAccess.make_dir_absolute("res://saves/")
+		
+	var path = "res://saves/" + slot + ".tres"
+	var error = ResourceSaver.save(save, path)
+	
+	if error == OK:
+		print("Game State saved successfully to: ", path)
+	else:
+		printerr("Save failed! Error code: ", error)
+	
+func load_game(save_name: String):
+	var path = "res://saves/" + save_name + ".tres"
+
+	# --- 1. File check ---
+	if not FileAccess.file_exists(path):
+		push_error("Save file not found: " + path)
+		return
+
+	# --- 2. Load WITHOUT cache ---
+	var save := ResourceLoader.load(
+		path,
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as SaveGame
+
+	if not save:
+		push_error("Failed to load SaveGame resource!")
+		return
+
+	# --- 3. Pause systems that react to state ---
+	if troop_renderer:
+		troop_renderer.set_process(false)
+
+	# =====================================================
+	# COUNTRY MANAGER
+	# =====================================================
+	CountryManager.countries.clear()
+
+	for c_name in save.countries:
+		var country = save.countries[c_name]
+		if country is CountryData:
+			country._is_loading = true
+			CountryManager.countries[c_name] = country
+
+
+	CountryManager.set_player_country(save.player_country_name)
+
+	# =====================================================
+	# MAP MANAGER
+	# =====================================================
+	MapManager.province_objects.clear()
+	for p_id in save.province_objects:
+		var province = save.province_objects[p_id]
+		if province is Province:
+			MapManager.province_objects[p_id] = province
+
+	MapManager.province_to_country.clear()
+	for p_id in save.province_to_country:
+		MapManager.province_to_country[p_id] = save.province_to_country[p_id]
+
+	MapManager.country_to_provinces.clear()
+	for c_name in save.country_to_provinces:
+		MapManager.country_to_provinces[c_name] = save.country_to_provinces[c_name].duplicate()
+
+	# =====================================================
+	# TROOP MANAGER (CRITICAL ORDER)
+	# =====================================================
+	TroopManager.troops.clear()
+	TroopManager.moving_troops.clear()
+	TroopManager.troops_by_province.clear()
+	TroopManager.troops_by_country.clear()
+
+	# --- 1. Load canonical troop list ---
+	for t in save.troops:
+		if t is TroopData:
+			t.country_obj = CountryManager.get_country(t.country_name)
+			TroopManager.troops.append(t)
+
+	# --- 2. Moving troops ---
+	for t in save.moving_troops:
+		if t is TroopData:
+			TroopManager.moving_troops.append(t)
+
+	# --- 3. Rebuild province → troops ---
+	for province_id in save.troops_by_province:
+		TroopManager.troops_by_province[province_id] = []
+		for t in save.troops_by_province[province_id]:
+			if t is TroopData:
+				TroopManager.troops_by_province[province_id].append(t)
+
+	# --- 4. Rebuild country → troops ---
+	for c_name in save.troops_by_country:
+		TroopManager.troops_by_country[c_name] = []
+		for t in save.troops_by_country[c_name]:
+			if t is TroopData:
+				TroopManager.troops_by_country[c_name].append(t)
+
+	# =====================================================
+	# WORLD REFRESH
+	# =====================================================
+	MapManager._build_lookup_texture()
+
+	if troop_renderer:
+		troop_renderer.set_process(true)
+
+	print("Game loaded successfully:", save_name)

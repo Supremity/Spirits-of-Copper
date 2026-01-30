@@ -6,12 +6,18 @@ var player_country: CountryData
 
 
 func _on_hour_passed() -> void:
+	if GameState.is_loading_game:
+		return
+
 	for c_name: String in countries:
 		var country_obj: CountryData = countries[c_name]
 		country_obj.process_hour()
 		
 
 func _on_day_passed() -> void:
+	if GameState.is_loading_game:
+		return
+
 	EconomyManager.process_economy_day()
 	for c_name: String in countries:
 		var country_obj: CountryData = countries[c_name]
@@ -20,6 +26,9 @@ func _on_day_passed() -> void:
 
 
 func initialize_countries() -> void:
+	if GameState.is_loading_game:
+		print("CountryManager: Skipping initialization (loading save)")
+		return
 	countries.clear()
 
 	var detected_countries = MapManager.country_to_provinces.keys()
