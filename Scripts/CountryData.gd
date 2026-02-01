@@ -49,12 +49,13 @@ var deploy_pid: int = -1  # ID of province to deploy to
 #endregion
 
 
+# for optimization
 var is_at_war = false
 var war_dirty = true
 var _is_loading := false
 var dirty := true
 var dirty_manpower:= true
-
+var enemies = []
 
 #region --- Inner Classes ---
 class TroopTraining:
@@ -375,6 +376,7 @@ func _deploy_initial_force(divisions: Array[DivisionData]) -> void:
 
 func update_is_at_war():
 	is_at_war = not WarManager.get_enemies_of(self.country_name).is_empty()
+	enemies = WarManager.get_enemies_of(self.country_name)
 	war_dirty = false
 
 func _process_reinforcements():

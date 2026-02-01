@@ -51,13 +51,12 @@ func _manage_frontline_logic(country: CountryData) -> void:
 	if idle_troops.is_empty():
 		return
 
-	var enemies = WarManager.get_enemies_of(country.country_name)
-	if enemies.is_empty():
+	if country.enemies.is_empty():
 		_handle_peace_movement(country, idle_troops)
 		return
 
 	# Get weighted targets (Cities, Troops, and Empty Gaps)
-	var targets = _analyze_frontline_targets(country, enemies)
+	var targets = _analyze_frontline_targets(country, country.enemies)
 	if targets.is_empty():
 		return
 
@@ -261,7 +260,7 @@ func _consider_declaring_war(country: CountryData) -> void:
 	if frame_now - last_frame < DECLARE_WAR_COOLDOWN_FRAMES:
 		return
 
-	if WarManager.get_enemies_of(country.country_name).size() >= MAX_PARALLEL_WARS:
+	if country.enemies.size() >= MAX_PARALLEL_WARS:
 		return
 
 	# 3. ECONOMIC PRUDENCE
