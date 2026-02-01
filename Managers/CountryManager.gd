@@ -93,6 +93,13 @@ func add_country(country_name: String) -> CountryData:
 	countries[c_name_lower] = new_country
 	return new_country
 
+func mark_country_dirty(country_name: String) -> void:
+	if country_name == "" or country_name == "sea":
+		return
+	var c = get_country(country_name)
+	if c:
+		c.dirty = true
+
 
 # HELPER FUNCTIONS ==========================================
 

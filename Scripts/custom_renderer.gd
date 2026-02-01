@@ -31,7 +31,7 @@ var troop_multimesh: MultiMeshInstance2D
 var _last_cam_pos := Vector2.INF
 var _last_cam_zoom := Vector2.INF
 
-var groups = _group_troops_by_visual_position(TroopManager.troops)
+var groups: Dictionary = {}
 
 
 # --- Lifecycle ---

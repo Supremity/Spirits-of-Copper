@@ -49,6 +49,7 @@ var deploy_pid: int = -1  # ID of province to deploy to
 #endregion
 
 var _is_loading := false
+var dirty := true
 
 
 #region --- Inner Classes ---
@@ -90,11 +91,15 @@ func _init(p_country_name: String = "") -> void:
 	_setup_starting_army()
 
 
+
+
 func process_hour() -> void:
 	if _is_loading:
 		return
 
 	political_power += daily_pp_gain
+	
+	
 
 	# Economic Cycle
 	# (GDP / Hours in a year) * Tax Rate + Factory Output
@@ -128,11 +133,14 @@ func process_day() -> void:
 
 
 func _refresh_economic_stats() -> void:
+	if not dirty:
+		return # Already up to date
+
 	total_population = CountryManager.get_country_population(country_name)
 	factories_amount = CountryManager.get_factories_amount(country_name)
-	# GDP calculation based on population (Simplified for performance)
 	gdp = int(CountryManager.get_country_gdp(country_name) * total_population * 0.000001)
 
+	self.dirty = false
 
 #endregion
 
