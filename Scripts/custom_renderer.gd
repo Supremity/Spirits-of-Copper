@@ -31,6 +31,8 @@ var troop_multimesh: MultiMeshInstance2D
 var _last_cam_pos := Vector2.INF
 var _last_cam_zoom := Vector2.INF
 
+var groups = _group_troops_by_visual_position(TroopManager.troops)
+
 
 # --- Lifecycle ---
 func _ready() -> void:
@@ -57,6 +59,7 @@ func _process(_delta: float) -> void:
 		_last_cam_zoom = cam.zoom
 		_last_cam_pos = cam.global_position
 
+	groups = _group_troops_by_visual_position(TroopManager.troops)
 	_update_multimesh_buffer()
 
 	queue_redraw()
@@ -118,7 +121,6 @@ func _update_multimesh_buffer():
 
 	var player_country = CountryManager.player_country.country_name
 	var selected_troops = TroopManager.troop_selection.selected_troops
-	var groups = _group_troops_by_visual_position(troops)
 	var idx = 0
 
 	for base_pos in groups:
@@ -165,7 +167,6 @@ func _draw_troops() -> void:
 
 	# Use the same grouping logic but account for movement
 	var troops = TroopManager.troops
-	var groups = _group_troops_by_visual_position(troops)
 
 	for base_pos in groups:
 		var stack = groups[base_pos]
