@@ -33,7 +33,7 @@ func increase_world_tension(amount: float) -> void:
 
 
 func ai_tick(country: CountryData) -> void:
-	var tick_rate = TICK_RATE_WAR if _is_at_war(country) else TICK_RATE_PEACE
+	var tick_rate = TICK_RATE_WAR if country.is_at_war else TICK_RATE_PEACE
 	if Engine.get_frames_drawn() % tick_rate != 0:
 		return
 
@@ -201,8 +201,6 @@ func _get_peace_hubs(country: CountryData) -> Array:
 	return cities
 
 
-func _is_at_war(country: CountryData) -> bool:
-	return not WarManager.get_enemies_of(country.country_name).is_empty()
 
 
 func _manage_recruitment(country: CountryData) -> void:
@@ -215,7 +213,7 @@ func _manage_recruitment(country: CountryData) -> void:
 		return
 
 	var target_recruit = clampi(max_affordable, 1, 10)
-	if _is_at_war(country):
+	if country.is_at_war:
 		target_recruit *= 2  # Recruit more aggressively in war
 	target_recruit = mini(target_recruit, max_affordable)
 

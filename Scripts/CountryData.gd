@@ -48,6 +48,9 @@ var ready_troops: Array[ReadyTroop] = []
 var deploy_pid: int = -1  # ID of province to deploy to
 #endregion
 
+
+var is_at_war = false
+var war_dirty = true
 var _is_loading := false
 var dirty := true
 var dirty_manpower:= true
@@ -113,6 +116,10 @@ func process_hour() -> void:
 	
 	if dirty_manpower and !dirty: # Because if dirty. refresh_economic_stats will do it anyways
 		update_manpower_pool()
+	
+	if war_dirty: # For the AI
+		update_is_at_war()
+	
 	if not is_player:
 		AiManager.ai_tick(self)
 		pass
@@ -366,6 +373,9 @@ func _deploy_initial_force(divisions: Array[DivisionData]) -> void:
 			TroopManager.deploy_specific_divisions(country_name, current_batch, target_pid)
 			current_batch = []  # Reset for next stack
 
+func update_is_at_war():
+	is_at_war = not WarManager.get_enemies_of(self.country_name).is_empty()
+	war_dirty = false
 
 func _process_reinforcements():
 	var all_my_troops = TroopManager.get_troops_for_country(country_name)
