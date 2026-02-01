@@ -15,8 +15,8 @@ const TEMPLATES = {
 	},
 	"tank":
 	{
-		"hp": 280.0,
-		"manpower": 20000,
+		"hp": 300.0,
+		"manpower": 30000,
 		"cost": 10000,
 		"days": 30,
 		"attack": 5,
@@ -26,7 +26,7 @@ const TEMPLATES = {
 	"artillery":
 	{
 		"hp": 50.0,
-		"manpower": 1000,
+		"manpower": 10000,
 		"cost": 10000,
 		"days": 15,
 		"attack": 5,

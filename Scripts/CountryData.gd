@@ -50,6 +50,7 @@ var deploy_pid: int = -1  # ID of province to deploy to
 
 var _is_loading := false
 var dirty := true
+var dirty_manpower:= true
 
 
 #region --- Inner Classes ---
@@ -98,9 +99,6 @@ func process_hour() -> void:
 		return
 
 	political_power += daily_pp_gain
-	
-	
-
 	# Economic Cycle
 	# (GDP / Hours in a year) * Tax Rate + Factory Output
 	var base_income = (gdp / 8760.0) * 0.2
@@ -112,9 +110,9 @@ func process_hour() -> void:
 	money += income
 
 	troop_speed_modifier = 1.0 + (army_level * 0.1)
-
-	update_manpower_pool()
-	_process_reinforcements()
+	
+	if dirty_manpower and !dirty: # Because if dirty. refresh_economic_stats will do it anyways
+		update_manpower_pool()
 	if not is_player:
 		AiManager.ai_tick(self)
 		pass
@@ -127,6 +125,8 @@ func process_day() -> void:
 	# Refresh stats that change daily/weekly
 	_refresh_economic_stats()
 	_process_training()
+	_process_reinforcements()
+
 	DecisionManager.process_country_day(self)
 	if not is_player:
 		pass
@@ -135,11 +135,11 @@ func process_day() -> void:
 func _refresh_economic_stats() -> void:
 	if not dirty:
 		return # Already up to date
-
+		
 	total_population = CountryManager.get_country_population(country_name)
 	factories_amount = CountryManager.get_factories_amount(country_name)
 	gdp = int(CountryManager.get_country_gdp(country_name) * total_population * 0.000001)
-
+	update_manpower_pool()
 	self.dirty = false
 
 #endregion
@@ -160,7 +160,7 @@ func train_troops(count: int, type: String = "infantry") -> bool:
 		return false
 
 	manpower -= total_manpower_needed
-
+	dirty_manpower = true
 	# Add to training queue
 	var training_batch = TroopTraining.new(count, type, template["days"], template["cost"])
 	ongoing_training.append(training_batch)
@@ -188,6 +188,7 @@ func _graduate_troops(training: TroopTraining) -> void:
 		new_divisions.append(DivisionData.create_division(training.division_type))
 
 	ready_troops.append(ReadyTroop.new(new_divisions))
+	dirty_manpower = true
 
 
 #endregion
@@ -210,6 +211,7 @@ func update_manpower_pool() -> void:
 
 	# HARD SAFETY: Never let the variable itself be negative
 	manpower = max(0, manpower)
+	dirty_manpower = false
 
 
 func get_army_pressure() -> float:
@@ -256,6 +258,7 @@ func deploy_ready_troop(troop: ReadyTroop, specific_pid: int = -1) -> bool:
 
 	TroopManager.deploy_specific_divisions(country_name, troop.stored_divisions, target_pid)
 	ready_troops.remove_at(index)
+	dirty_manpower = true
 	return true
 
 
@@ -284,7 +287,7 @@ func demobilize_troop(troop: TroopData, count: int = -1) -> void:
 	if not divs_to_reserve.is_empty():
 		var reserve = ReadyTroop.new(divs_to_reserve)
 		ready_troops.append(reserve)
-
+	dirty_manpower = true
 
 ## Enhanced upkeep: Reserves cost 25% of active troops
 func calculate_army_upkeep() -> float:
