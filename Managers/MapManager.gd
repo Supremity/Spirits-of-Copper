@@ -1446,3 +1446,55 @@ func _build_global_registry():
 			if not global_claims_registry.has(country_name):
 				global_claims_registry[country_name] = []
 			global_claims_registry[country_name].append(obj.id)
+
+
+func generate_type_mask() -> ImageTexture:
+	if id_map_image == null:
+		push_error("MapManager: Cannot generate type mask - id_map_image is null!")
+		return null
+
+	var w := id_map_image.get_width()
+	var h := id_map_image.get_height()
+	
+	var type_img := Image.create_empty(w, h, false, Image.FORMAT_L8)
+	var uncertain_pixels: Array[Vector2i] = []
+
+	# --- PASS 1: Direct Mapping ---
+	for y in range(h):
+		for x in range(w):
+			var pid = _get_pid_fast(x, y)
+			var province = province_objects.get(pid)
+
+			if province:
+				# 0 is usually Sea, anything else is Land
+				var color = Color.WHITE if province.type != 0 else Color.BLACK
+				type_img.set_pixel(x, y, color)
+			else:
+				# This pixel is a border (ID 1) or unassigned.
+				uncertain_pixels.append(Vector2i(x, y))
+
+	# --- PASS 2: Neighbor Check for Borders ---
+	for pos in uncertain_pixels:
+		var touches_land := false
+		
+		# 8-way check (includes diagonals)
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				if dx == 0 and dy == 0: continue
+
+				var nx: int = pos.x + dx
+				var ny: int = pos.y + dy
+
+				if nx >= 0 and nx < w and ny >= 0 and ny < h:
+					var nid = _get_pid_fast(nx, ny)
+					if nid > 1: # Ignore other border pixels
+						var n_prov = province_objects.get(nid)
+						if n_prov and n_prov.type != 0:
+							touches_land = true
+							break
+			if touches_land: break
+
+		var final_color = Color.WHITE if touches_land else Color.BLACK
+		type_img.set_pixel(pos.x, pos.y, final_color)
+
+	return ImageTexture.create_from_image(type_img)
