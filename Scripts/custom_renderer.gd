@@ -54,6 +54,8 @@ func _process(_delta: float) -> void:
 		_last_cam_zoom = cam.zoom
 		_last_cam_pos = cam.global_position
 
+	var shader_clock = GameState.current_world.clock.total_game_seconds
+	troop_multimesh.material.set_shader_parameter("game_time", shader_clock)
 	# Always update the buffer because moving_troops change position every frame
 	_update_multimesh_buffer()
 	queue_redraw()
@@ -72,7 +74,7 @@ func _setup_multimesh():
 	var mm = MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_2D
 	mm.use_colors = true
-	mm.use_custom_data = false  # Simplified to avoid data corruption
+	mm.use_custom_data = true
 
 	var q_mesh = QuadMesh.new()
 	q_mesh.size = Vector2(LAYOUT.flag_width + LAYOUT.min_text_width, LAYOUT.flag_height)
@@ -82,20 +84,50 @@ func _setup_multimesh():
 	var mat = ShaderMaterial.new()
 	mat.shader = Shader.new()
 	mat.shader.code = """
-	shader_type canvas_item;
-	void fragment() {
-		float zoom = max(0.4, COLOR.a); // we’ll encode zoom in alpha
-		float tx = 0.05 * zoom;
-		float ty = 0.1 * zoom;
+shader_type canvas_item;
 
-		bool is_border = UV.x < tx || UV.x > (1.0 - tx) || UV.y < ty || UV.y > (1.0 - ty);
-		// COLOR here is the Instance Color we set in GDScript
-		if (is_border) {
-			COLOR = COLOR; 
-		} else {
-			COLOR = vec4(0.0, 0.0, 0.0, 0.8); 
-		}
-	}
+uniform float game_time; // Set this from GDScript every frame
+
+void vertex() {
+    // 1. Extract data from INSTANCE_CUSTOM
+    vec2 start_pos = INSTANCE_CUSTOM.xy;
+    float start_time = INSTANCE_CUSTOM.z;
+    float duration = INSTANCE_CUSTOM.w;
+
+    // 2. Calculate Progress
+    float progress = 1.0;
+    if (duration > 0.0) {
+        // Use the uniform game_time so it stays in sync with your logic
+        progress = clamp((game_time - start_time) / duration, 0.0, 1.0);
+    }
+
+    // 3. Get the Target Position
+    // In a CanvasItem shader, the MODEL_MATRIX[3].xy gives you 
+    // the position of the current instance in world space.
+    vec2 target_pos = vec2(MODEL_MATRIX[3][0], MODEL_MATRIX[3][1]);
+    
+    // 4. Calculate the Offset
+    // If progress is 0.0, offset is the full distance from target back to start.
+    // If progress is 1.0, offset is vec2(0,0).
+    vec2 offset = (start_pos - target_pos) * (1.0 - progress);
+    
+    // Applying the offset to the VERTEX moves the instance visually
+    VERTEX += offset;
+}
+
+void fragment() {
+    // Your existing border logic...
+    float zoom = max(0.4, COLOR.a);
+    float tx = 0.05 * zoom;
+    float ty = 0.1 * zoom;
+    bool is_border = UV.x < tx || UV.x > (1.0 - tx) || UV.y < ty || UV.y > (1.0 - ty);
+    
+    if (is_border) {
+        COLOR = COLOR; 
+    } else {
+        COLOR = vec4(0.0, 0.0, 0.0, 0.8); 
+    }
+}
 	"""
 	# Apply material to the Instance, not the Mesh (more reliable for updates)
 	troop_multimesh.material = mat
@@ -139,7 +171,7 @@ func _write_stack_to_multimesh(stack: Array, base_pos: Vector2, idx: int, player
 		if troop.country_name == player:
 			col = COLORS.border_selected if selected.has(troop) else COLORS.border_default
 
-		for m in [-1, 0, 1]:
+		for m in [0]:
 			var final_pos = vertical_pos + Vector2(map_width * m, 0) + map_sprite.position
 			mm.set_instance_transform_2d(idx, Transform2D(0, mm_scale, 0, final_pos))
 			mm.set_instance_color(idx, col)
@@ -255,15 +287,33 @@ func _draw_path_preview() -> void:
 
 
 func _draw_active_movements() -> void:
+	var now := GameState.current_world.clock.total_game_seconds
+
 	for troop in TroopManager.troops:
-		if !troop.is_moving:
+		if not troop.is_moving:
 			continue
+
 		var start = troop.position + map_sprite.position
 		var end = troop.target_position + map_sprite.position
-		if _screen_rect.has_point(start) or _screen_rect.has_point(end):
-			var current = start.lerp(end, troop.get_meta("visual_progress", 0.0))
-			draw_line(start, end, Color(1, 0, 0, 0.2), 1.0)
-			draw_line(start, current, COLORS.movement_active, 1.5)
+
+		if not (_screen_rect.has_point(start) or _screen_rect.has_point(end)):
+			continue
+
+		var start_time = troop.get_meta("start_time", 0.0)
+		var duration = troop.get_meta("duration", 0.0)
+
+		var progress := 1.0
+		if duration > 0.0:
+			progress = clamp((now - start_time) / duration, 0.0, 1.0)
+
+		var current = start.lerp(end, progress)
+
+		# Full planned path (faint)
+		draw_line(start, end, Color(1, 0, 0, 0.2), 1.0)
+
+		# Active traveled portion (bright)
+		draw_line(start, current, COLORS.movement_active, 1.5)
+
 
 
 func _update_screen_rect():
@@ -283,52 +333,53 @@ func _draw_cities() -> void:
 		return
 
 	var hovered_pid = MapManager.current_hovered_pid
-	var base_dot_radius = 4.0
-	var base_font_size = 24
-
-	var s = _current_inv_zoom
+	var base_dot_radius := 4.0
+	var base_font_size := 24
+	var s := _current_inv_zoom
 
 	for city_data in MapManager.all_cities:
 		var pid = city_data[0]
 		var city_name = city_data[1]
 
-		var base_pos = MapManager.province_centers.get(pid, Vector2.ZERO)
+		var base_pos: Vector2 = MapManager.province_centers.get(pid, Vector2.ZERO)
 		if base_pos == Vector2.ZERO:
 			continue
 
-		for j in [-1, 0, 1]:
-			var world_pos = base_pos + map_sprite.position + Vector2(map_width * j, 0)
-			if not _screen_rect.has_point(world_pos):
-				continue
+		var world_pos := base_pos + map_sprite.position
+		if not _screen_rect.has_point(world_pos):
+			continue
 
-			var t := Transform2D(0, Vector2(s, s), 0, world_pos)
-			draw_set_transform_matrix(t)
+		var t := Transform2D(0, Vector2(s, s), 0, world_pos)
+		draw_set_transform_matrix(t)
 
-			draw_circle(Vector2.ZERO, base_dot_radius, Color.WHITE)
+		draw_circle(Vector2.ZERO, base_dot_radius, Color.WHITE)
 
-			if pid == hovered_pid:
-				var offset = Vector2(10, base_font_size * 0.3)
-				draw_string_outline(
-					_font,
-					offset,
-					city_name,
-					HORIZONTAL_ALIGNMENT_LEFT,
-					-1,
-					base_font_size,
-					4,
-					Color(0, 0, 0, 0.8)
-				)
-				draw_string(
-					_font,
-					offset,
-					city_name,
-					HORIZONTAL_ALIGNMENT_LEFT,
-					-1,
-					base_font_size,
-					Color.WHITE
-				)
+		if pid == hovered_pid:
+			var offset := Vector2(10, base_font_size * 0.3)
+
+			draw_string_outline(
+				_font,
+				offset,
+				city_name,
+				HORIZONTAL_ALIGNMENT_LEFT,
+				-1,
+				base_font_size,
+				4,
+				Color(0, 0, 0, 0.8)
+			)
+
+			draw_string(
+				_font,
+				offset,
+				city_name,
+				HORIZONTAL_ALIGNMENT_LEFT,
+				-1,
+				base_font_size,
+				Color.WHITE
+			)
 
 	draw_set_transform_matrix(Transform2D())
+
 
 
 func draw_battles():
