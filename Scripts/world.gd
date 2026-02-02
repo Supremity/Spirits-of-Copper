@@ -42,7 +42,6 @@ func _ready() -> void:
 	CountryManager.initialize_countries()
 	CountryManager.set_player_country("brazil")
 	# For debugging purposes. Create some troops first
-	MapManager.force_bidirectional_connections()
 	MapManager._build_global_registry()
 	var map_width := MapManager.id_map_image.get_width()
 	var map_height := MapManager.id_map_image.get_height()

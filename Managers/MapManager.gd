@@ -583,18 +583,24 @@ func _build_adjacency_list() -> void:
 	var h = id_map_image.get_height()
 
 	adjacency_list.clear()
-
-	# Prepare dictionary for unique tracking
 	var unique_neighbors := {}
+
+	# Helper function to ensure bidirectional recording
+	var add_connection = func(a: int, b: int):
+		if a == b or a <= 1 or b <= 1: return
+		
+		# A -> B
+		if not unique_neighbors.has(a): unique_neighbors[a] = {}
+		unique_neighbors[a][b] = true
+		
+		# B -> A (The "Force" step)
+		if not unique_neighbors.has(b): unique_neighbors[b] = {}
+		unique_neighbors[b][a] = true
 
 	for y in range(h):
 		for x in range(w):
 			var pid = _get_pid_fast(x, y)
-			if pid <= 1:
-				continue
-
-			if not unique_neighbors.has(pid):
-				unique_neighbors[pid] = {}
+			if pid <= 1: continue
 
 			# 4-directional neighbors
 			var dirs = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
@@ -602,39 +608,31 @@ func _build_adjacency_list() -> void:
 			for d in dirs:
 				var nx = x + d.x
 				var ny = y + d.y
-				if nx < 0 or ny < 0 or nx >= w or ny >= h:
-					continue
+				if nx < 0 or ny < 0 or nx >= w or ny >= h: continue
 
 				var neighbor = _get_pid_fast(nx, ny)
 
-				# Normal adjacency (Land-to-Land)
 				if neighbor > 1 and neighbor != pid:
-					unique_neighbors[pid][neighbor] = true
-					continue
-
-				# Border pixel scan (ID=1)
-				if neighbor == 1:
+					add_connection.call(pid, neighbor)
+				
+				elif neighbor == 1:
 					var across = _scan_across_border(nx, ny, pid)
 					if across > 1 and across != pid:
-						unique_neighbors[pid][across] = true
+						add_connection.call(pid, across)
 
-	# --- THE FIX: Convert to Typed Arrays and Populate Objects ---
+	# --- Sync to Objects ---
 	for pid in unique_neighbors:
 		var neighbors_keys = unique_neighbors[pid].keys()
-
-		# Create a typed array for the Province resource
 		var typed_list: Array[int] = []
 		for n_id in neighbors_keys:
 			typed_list.append(int(n_id))
 
-		# Store in the global dictionary (can remain untyped for pathfinding)
 		adjacency_list[pid] = typed_list
 
-		# Sync to the Province object
 		if province_objects.has(pid):
 			province_objects[pid].neighbors = typed_list
 
-	print("MapManager: Adjacency list built and synced to Province objects.")
+	print("MapManager: Adjacency list built (guaranteed bidirectional).")
 
 
 func _scan_across_border(x: int, y: int, pid: int) -> int:
@@ -813,43 +811,6 @@ func is_path_possible(start_pid: int, end_pid: int) -> bool:
 
 func print_cache_stats() -> void:
 	print("Path Cache Stats: %d paths cached" % path_cache.size())
-
-
-func force_bidirectional_connections() -> void:
-	var fix_count = 0
-
-	# 1. Iterate through every province object
-	for pid_a in province_objects.keys():
-		var prov_a: Province = province_objects[pid_a]
-
-		var neighbors_of_a = prov_a.neighbors
-
-		for pid_b in neighbors_of_a:
-			# Safety check: Does the neighbor ID even exist in our world?
-			if not province_objects.has(pid_b):
-				push_warning(
-					(
-						"Graph Repair: Province %d lists neighbor %d, but %d doesn't exist!"
-						% [pid_a, pid_b, pid_b]
-					)
-				)
-				continue
-
-			var prov_b: Province = province_objects[pid_b]
-
-			# Check if B points back to A
-			if not pid_a in prov_b.neighbors:
-				prov_b.neighbors.append(pid_a)
-
-				if adjacency_list.has(pid_b):
-					if not pid_a in adjacency_list[pid_b]:
-						adjacency_list[pid_b].append(pid_a)
-				else:
-					adjacency_list[pid_b] = [pid_a]
-
-				fix_count += 1
-
-	print("Graph Repair Complete: Fixed %d one-way connections in Province Resources." % fix_count)
 
 
 func _is_mouse_over_ui() -> bool:
