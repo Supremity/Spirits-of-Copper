@@ -31,37 +31,31 @@ var troop_multimesh: MultiMeshInstance2D
 var _last_cam_pos := Vector2.INF
 var _last_cam_zoom := Vector2.INF
 
-var groups: Dictionary = {}
-
-
 # --- Lifecycle ---
 func _ready() -> void:
 	z_index = 20  # Keep renderer high
 	_setup_multimesh()
 
+
 func _process(_delta: float) -> void:
-	if !map_sprite:
-		return
+	if !map_sprite: return
 
 	var cam := get_viewport().get_camera_2d()
-	if not cam:
-		return
+	if not cam: return
 
+	# Camera/Zoom checks
 	var zoom_changed := cam.zoom != _last_cam_zoom
 	var pos_changed := cam.global_position != _last_cam_pos
 
 	if zoom_changed or pos_changed:
 		var raw_scale := 1.0 / cam.zoom.x
 		_current_inv_zoom = clamp(raw_scale, ZOOM_LIMITS.min_scale, ZOOM_LIMITS.max_scale)
-
 		_update_screen_rect()
-
 		_last_cam_zoom = cam.zoom
 		_last_cam_pos = cam.global_position
 
-	groups = _group_troops_by_visual_position(TroopManager.troops)
+	# Always update the buffer because moving_troops change position every frame
 	_update_multimesh_buffer()
-
 	queue_redraw()
 
 
@@ -108,47 +102,49 @@ func _setup_multimesh():
 	troop_multimesh.multimesh = mm
 
 
+## CustomRenderer.gd
+
 func _update_multimesh_buffer():
-	if not map_sprite or map_width <= 0 or not troop_multimesh:
-		return
-
-	var troops = TroopManager.troops
 	var mm = troop_multimesh.multimesh
-	var needed = troops.size() * 3
+	var total_troops = TroopManager.troops.size()
+	if mm.instance_count != total_troops * 3:
+		mm.instance_count = total_troops * 3
 
-	if mm.instance_count != needed:
-		mm.instance_count = needed
-
+	var idx = 0
 	var player_country = CountryManager.player_country.country_name
 	var selected_troops = TroopManager.troop_selection.selected_troops
-	var idx = 0
+	
+	for pid in TroopManager.troops_by_province:
+		var stack = TroopManager.troops_by_province[pid]
+		var static_stack = stack.filter(func(t): return not t.is_moving)
+		if static_stack.is_empty(): continue
+		
+		var base_pos = MapManager.province_centers.get(pid, Vector2.ZERO)
+		idx = _write_stack_to_multimesh(static_stack, base_pos, idx, player_country, selected_troops)
 
-	for base_pos in groups:
-		var stack = groups[base_pos]
-		var scaled_offset := STACKING_OFFSET_Y * _current_inv_zoom
-		var start_y = (stack.size() - 1) * scaled_offset * 0.5
+	for troop in TroopManager.moving_troops:
+		idx = _write_stack_to_multimesh([troop], troop.position, idx, player_country, selected_troops)
 
-		for i in range(stack.size()):
-			var troop = stack[i]
-			var pos = base_pos + Vector2(0, start_y - (i * scaled_offset))
+func _write_stack_to_multimesh(stack: Array, base_pos: Vector2, idx: int, player: String, selected: Array) -> int:
+	var mm = troop_multimesh.multimesh
+	var scaled_offset := STACKING_OFFSET_Y * _current_inv_zoom
+	var start_y = (stack.size() - 1) * scaled_offset * 0.5
+	var mm_scale := Vector2(_current_inv_zoom, _current_inv_zoom)
 
-			# Logic for colors
-			var col = COLORS.border_other
-			if troop.country_name == player_country:
-				col = (
-					COLORS.border_selected if selected_troops.has(troop) else COLORS.border_default
-				)
+	for i in range(stack.size()):
+		var troop = stack[i]
+		var vertical_pos = base_pos + Vector2(0, start_y - (i * scaled_offset))
+		
+		var col = COLORS.border_other
+		if troop.country_name == player:
+			col = COLORS.border_selected if selected.has(troop) else COLORS.border_default
 
-			for m in [-1, 0, 1]:
-				if idx >= mm.instance_count:
-					break
-				var f_pos = pos + Vector2(map_width * m, 0) + map_sprite.position
-				var mm_scale := Vector2(_current_inv_zoom, _current_inv_zoom)
-
-				mm.set_instance_transform_2d(idx, Transform2D(0, mm_scale, 0, f_pos))
-				mm.set_instance_color(idx, col)
-				idx += 1
-
+		for m in [-1, 0, 1]:
+			var final_pos = vertical_pos + Vector2(map_width * m, 0) + map_sprite.position
+			mm.set_instance_transform_2d(idx, Transform2D(0, mm_scale, 0, final_pos))
+			mm.set_instance_color(idx, col)
+			idx += 1
+	return idx
 
 func _draw() -> void:
 	if !map_sprite or map_width <= 0:
@@ -163,27 +159,32 @@ func _draw() -> void:
 
 func _draw_troops() -> void:
 	if _current_inv_zoom > 1.5:
-		return  # LOD optimization
+		return 
 
-	# Use the same grouping logic but account for movement
-	var troops = TroopManager.troops
+	for pid in TroopManager.troops_by_province:
+		var stack = TroopManager.troops_by_province[pid]
+		var static_stack = stack.filter(func(t): return not t.is_moving)
+		if static_stack.is_empty(): continue
+		
+		var base_pos = MapManager.province_centers.get(pid, Vector2.ZERO)
+		_draw_stack_labels(static_stack, base_pos)
 
-	for base_pos in groups:
-		var stack = groups[base_pos]
-		# Use scaled offset so text stays aligned with the MultiMesh boxes
-		var scaled_offset := STACKING_OFFSET_Y * _current_inv_zoom
-		var start_y = (stack.size() - 1) * scaled_offset * 0.5
+	# 2. Draw Moving Troops (Individual)
+	for troop in TroopManager.moving_troops:
+		_draw_stack_labels([troop], troop.position)
 
-		for i in range(stack.size()):
-			var troop = stack[i]
-			# Calculate position including world-wrapping (m)
-			var vertical_stack_pos = base_pos + Vector2(0, start_y - (i * scaled_offset))
-
-			for m in [-1, 0, 1]:
-				var d_pos = vertical_stack_pos + Vector2(map_width * m, 0) + map_sprite.position
-				if _screen_rect.has_point(d_pos):
-					_draw_troop(troop, d_pos)
-
+func _draw_stack_labels(stack: Array, base_pos: Vector2) -> void:
+	var scaled_offset := STACKING_OFFSET_Y * _current_inv_zoom
+	var start_y = (stack.size() - 1) * scaled_offset * 0.5
+	
+	for i in range(stack.size()):
+		var troop = stack[i]
+		var vertical_pos = base_pos + Vector2(0, start_y - (i * scaled_offset))
+		
+		for m in [-1, 0, 1]:
+			var d_pos = vertical_pos + Vector2(map_width * m, 0) + map_sprite.position
+			if _screen_rect.has_point(d_pos):
+				_draw_troop(troop, d_pos)
 
 func _draw_troop(troop: TroopData, pos: Vector2) -> void:
 	var t := Transform2D(0, Vector2(_current_inv_zoom, _current_inv_zoom), 0, pos)

@@ -53,16 +53,15 @@ func _update_moving_troop(troop: TroopData, delta: float) -> void:
 		# Smoothly slide from A to B
 		troop.position = start.lerp(end, move_progress)
 		troop.set_meta("progress", move_progress)
-
+	
 
 func _start_next_leg(troop: TroopData) -> void:
 	if troop.path.is_empty():
 		_stop_troop(troop)
 		return
 
-	var next_pid = troop.path[0]
+	var next_pid = int(troop.path[0])
 
-	# Check for Combat (WarManager logic)
 	var local_troops = troops_by_province.get(next_pid, [])
 	var enemies = local_troops.filter(
 		func(t): return WarManager.is_at_war_names(t.country_name, troop.country_name)
@@ -75,8 +74,9 @@ func _start_next_leg(troop: TroopData) -> void:
 			pause_troop(enemy)
 		return
 
-	# Update targets and start movement
-	troop.target_position = MapManager.province_centers.get(int(next_pid), troop.position)
+	var target_pos = MapManager.province_centers.get(next_pid, troop.position)
+	
+	troop.target_position = target_pos
 	troop.set_meta("start_pos", troop.position)
 	troop.set_meta("progress", 0.0)
 	troop.is_moving = true
@@ -90,21 +90,17 @@ func _arrive_at_leg_end(troop: TroopData) -> void:
 		_stop_troop(troop)
 		return
 
-	# Logic move: Update which province the troop is 'officially' in
-	var arrived_pid = troop.path.pop_front()
+	var arrived_pid = int(troop.path.pop_front())
 	_move_troop_to_province_logically(troop, arrived_pid)
 
-	# Trigger occupation/events
 	WarManager.resolve_province_arrival(arrived_pid, troop)
 
-	# Check if we keep going or stop
 	if troop.path.is_empty():
 		_stop_troop(troop)
 		if AUTO_MERGE:
 			_auto_merge_in_province(troop.province_id, troop.country_name)
 	else:
 		_start_next_leg(troop)
-
 
 func _stop_troop(troop: TroopData) -> void:
 	moving_troops.erase(troop)
