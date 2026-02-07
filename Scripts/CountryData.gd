@@ -105,6 +105,7 @@ func process_hour() -> void:
 	political_power += daily_pp_gain
 	# Economic Cycle
 	# (GDP / Hours in a year) * Tax Rate + Factory Output
+	update_manpower_pool()
 	var base_income = (gdp / 8760.0) * 0.2
 	var factory_income = factories_amount * factory_income
 	var gross_income = base_income + factory_income
@@ -120,10 +121,6 @@ func process_hour() -> void:
 	
 	if war_dirty: # For the AI
 		update_is_at_war()
-	
-	if not is_player:
-		AiManager.ai_tick(self)
-		pass
 
 
 func process_day() -> void:

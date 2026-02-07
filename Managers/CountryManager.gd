@@ -4,15 +4,36 @@ signal player_country_changed
 var countries: Dictionary[String, CountryData] = {}
 var player_country: CountryData
 
+var _hour_process_index: int = 0
+@export var hours_per_full_country_tick: int = 5
+
 
 func _on_hour_passed() -> void:
 	if GameState.is_loading_game:
 		return
 
-	for c_name: String in countries:
+	var country_keys := countries.keys()
+	var total := country_keys.size()
+	if total == 0:
+		return
+
+	var countries_per_hour := int(ceil(float(total) / hours_per_full_country_tick))
+
+	var processed := 0
+	while processed < countries_per_hour and _hour_process_index < total:
+		var c_name: String = country_keys[_hour_process_index]
 		var country_obj: CountryData = countries[c_name]
+
 		country_obj.process_hour()
-		
+		if !country_obj.is_player:
+			AiManager.ai_tick(country_obj)
+
+		_hour_process_index += 1
+		processed += 1
+
+	if _hour_process_index >= total:
+		_hour_process_index = 0
+
 
 func _on_day_passed() -> void:
 	if GameState.is_loading_game:
