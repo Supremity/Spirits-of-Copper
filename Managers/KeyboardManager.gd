@@ -1,8 +1,7 @@
 extends Node
 
 # Use the same names as your MapManager functions for clarity
-enum MapView { COUNTRIES, POPULATION, GDP, ETHNICITY }
-var current_view = MapView.COUNTRIES
+var current_view = MapManager.MapMode.POLITICAL
 
 signal toggle_menu
 
@@ -43,23 +42,5 @@ func _process(_delta: float) -> void:
 
 
 func _cycle_map_mode() -> void:
-	match current_view:
-		MapView.COUNTRIES:
-			current_view = MapView.POPULATION
-			MapManager.show_population_map()
-			print("Map Mode: Population")
-
-		MapView.POPULATION:
-			current_view = MapView.GDP
-			MapManager.show_gdp_map()
-			print("Map Mode: GDP")
-
-		MapView.GDP:
-			current_view = MapView.ETHNICITY
-			MapManager.show_ethnic_map()
-			print("Map Mode: Ethnicity")
-
-		MapView.ETHNICITY:
-			current_view = MapView.COUNTRIES
-			MapManager.show_countries_map()
-			print("Map Mode: Countries")
+	current_view = (current_view + 1) % MapManager.MapMode.size() as MapManager.MapMode
+	MapManager.update_map_view(current_view)

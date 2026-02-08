@@ -1,6 +1,8 @@
 extends Node
 var DEBUG_MODE = false
 
+enum MapMode { POLITICAL, POPULATION, GDP, ETHNICITY } 
+
 signal province_hovered(province_id: int, country_name: String)
 signal country_clicked(country_name: String)
 
@@ -833,111 +835,45 @@ func _is_mouse_over_ui() -> bool:
 	return hovered != null
 
 
-func _get_heatmap_color(pop: int, max_pop: float) -> Color:
-	# If population is 0, return a neutral "empty" color (dark slate/gray)
-	if pop <= 0:
-		return Color(0.1, 0.1, 0.15, 1.0)
+func update_map_view(mode: MapMode) -> void:
+	if province_objects.is_empty():
+		return
 
-	# Calculate intensity based on the REAL maximum in your current data
-	var intensity = clamp(float(pop) / max_pop, 0.0, 1.0)
+	# 1. Pre-calculate Max Values if the mode requires a heatmap
+	var max_val: float = 1.0
+	if mode == MapMode.POPULATION or mode == MapMode.GDP:
+		for p in province_objects.values():
+			var val = p.population if mode == MapMode.POPULATION else p.gdp
+			if val > max_val: max_val = float(val)
 
-	# We create a multi-stop gradient:
-	# Low: Cyan/Green -> Mid: Yellow -> High: Red
-	var col: Color
+	# 2. Single loop to update the lookup image
+	for pid in province_objects.keys():
+		if pid <= 1: continue # Skip borders/sea
+		
+		var province = province_objects[pid]
+		var final_color: Color
+
+		match mode:
+			MapMode.POPULATION:
+				final_color = _calculate_heat(province.population, max_val, 0.5)
+			MapMode.GDP:
+				final_color = _calculate_heat(province.gdp, max_val, 0.7)
+			MapMode.ETHNICITY:
+				final_color = ethnic_name_to_color.get(province.ethnicity, Color.BLACK)
+			MapMode.POLITICAL:
+				final_color = country_colors.get(province.country, Color.GRAY)
+
+		state_color_image.set_pixel(pid, 0, final_color)
+		
+	state_color_texture.update(state_color_image)
+	
+
+func _calculate_heat(value: float, max_value: float, power: float = 1.0) -> Color:
+	if value <= 0: return Color(0.1, 0.1, 0.1)
+	var intensity = clamp(pow(value / max_value, power), 0.0, 1.0)
 	if intensity < 0.5:
-		# Blend from a "Low Density" Teal to Yellow
-		col = Color.DARK_CYAN.lerp(Color.YELLOW, intensity * 2.0)
-	else:
-		# Blend from Yellow to a "High Density" Deep Red
-		col = Color.YELLOW.lerp(Color.RED, (intensity - 0.5) * 2.0)
-
-	return col
-
-
-func show_population_map() -> void:
-	if province_objects.is_empty():
-		return
-	var current_max_pop: float = 1.0
-	for province in province_objects.values():
-		if province.population > current_max_pop:
-			current_max_pop = float(province.population)
-
-	for pid in province_objects.keys():
-		var province = province_objects[pid]
-		if pid <= 1:
-			continue
-		var pop_color = _get_heatmap_color(province.population, current_max_pop)
-		state_color_image.set_pixel(pid, 0, pop_color)
-
-	state_color_texture.update(state_color_image)
-	print("MapManager: Population View Updated. Max Pop found: ", current_max_pop)
-
-
-func show_ethnic_map() -> void:
-	if province_objects.is_empty():
-		return
-
-	for pid in province_objects.keys():
-		# Skip index 0/1 (usually sea or null)
-		if pid <= 1:
-			continue
-
-		var province = province_objects[pid]
-		var eth_name = province.ethnicity  # Assuming this is the String name (e.g., "Igbo")
-
-		# Default to black or transparent if ethnicity not found
-		var display_color = Color.BLACK
-
-		if ethnic_name_to_color.has(eth_name):
-			display_color = ethnic_name_to_color[eth_name]
-
-		# Update the lookup texture
-		state_color_image.set_pixel(pid, 0, display_color)
-
-	state_color_texture.update(state_color_image)
-	print("MapManager: Ethnic View Updated.")
-
-
-func _get_gdp_heatmap_color(gdp: int, max_gdp: float) -> Color:
-	if gdp <= 0:
-		return Color(0.1, 0.1, 0.1)  # Dark gray for no data
-
-	# Using Square Root scale to make lower GDP differences more visible
-	# Otherwise, the richest city makes everything else look the same color.
-	var intensity = clamp(sqrt(float(gdp)) / sqrt(max_gdp), 0.0, 1.0)
-
-	var col: Color
-	if intensity < 0.5:
-		# Low GDP: Dark Red/Purple -> Neutral White/Blue
-		col = Color(0.6, 0.1, 0.1).lerp(Color.ALICE_BLUE, intensity * 2.0)
-	else:
-		# High GDP: White/Blue -> Deep Electric Blue
-		col = Color.ALICE_BLUE.lerp(Color(0.0, 0.4, 1.0), (intensity - 0.5) * 2.0)
-
-	return col
-
-
-func show_gdp_map() -> void:
-	if province_objects.is_empty():
-		return
-
-	var current_max_gdp: float = 1.0
-	for province in province_objects.values():
-		if province.gdp > current_max_gdp:
-			current_max_gdp = float(province.gdp)
-
-	for pid in province_objects.keys():
-		var province = province_objects[pid]
-
-		if pid <= 1:
-			continue
-
-		var gdp_color = _get_gdp_heatmap_color(province.gdp, current_max_gdp)
-		state_color_image.set_pixel(pid, 0, gdp_color)
-
-	state_color_texture.update(state_color_image)
-	KeyboardManager.current_view = KeyboardManager.MapView.GDP
-	print("MapManager: GDP View Updated. Max GDP: ", current_max_gdp)
+		return Color.DARK_CYAN.lerp(Color.YELLOW, intensity * 2.0)
+	return Color.YELLOW.lerp(Color.RED, (intensity - 0.5) * 2.0)
 
 
 func show_countries_map() -> void:
@@ -954,8 +890,6 @@ func show_countries_map() -> void:
 		state_color_image.set_pixel(pid, 0, country_color)
 
 	state_color_texture.update(state_color_image)
-	KeyboardManager.current_view = KeyboardManager.MapView.COUNTRIES
-
 
 func province_updated():
 	if GameState.industry_building:
