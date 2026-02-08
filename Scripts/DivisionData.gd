@@ -69,3 +69,31 @@ static func create_division(p_type: String) -> DivisionData:
 	div.name = "%s" % [p_type.capitalize()]
 
 	return div
+	
+	
+	
+	
+	
+	
+func get_raw_state() -> Dictionary:
+	var data = {}
+	for prop in get_property_list():
+		if prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			var val = get(prop.name)
+			# If the value is another object with this function, go deeper (Deep Copy)
+			if val is Object and val.has_method("get_raw_state"):
+				data[prop.name] = val.get_raw_state()
+			elif val is Array:
+				data[prop.name] = _serialize_array(val)
+			else:
+				data[prop.name] = val
+	return data
+
+func _serialize_array(arr: Array) -> Array:
+	var new_arr = []
+	for item in arr:
+		if item is Object and item.has_method("get_raw_state"):
+			new_arr.append(item.get_raw_state())
+		else:
+			new_arr.append(item)
+	return new_arr

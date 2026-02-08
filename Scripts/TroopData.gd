@@ -22,7 +22,11 @@ var progress: float = 0.0
 
 
 func _init(
-	p_country: String, p_province_id: int, p_divisions: int, p_position: Vector2, p_flag: Texture2D
+	p_country: String = "", 
+	p_province_id: int = -1, 
+	p_divisions: int = 0, 
+	p_position: Vector2 = Vector2.ZERO, 
+	p_flag: Texture2D = null
 ) -> void:
 	if p_country == "":
 		return
@@ -43,3 +47,42 @@ func _adjust_divisions_to_match_count(target_count: int):
 			stored_divisions.append(DivisionData.new())
 	elif target_count < current:
 		stored_divisions.resize(target_count)
+
+
+
+func get_raw_state() -> Dictionary:
+	var data = {}
+	for prop in get_property_list():
+		# Only save variables you created
+		if prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			var val = get(prop.name)
+			
+			# DO NOT save actual Objects that belong to other Managers
+			# Instead, we just save their names/IDs to re-link later
+			if prop.name == "country_obj": 
+				continue 
+			
+			# Recursive save for nested "owned" objects (like Divisions)
+			if val is Object and val.has_method("get_raw_state"):
+				data[prop.name] = val.get_raw_state()
+			elif val is Array:
+				data[prop.name] = _serialize_array(val)
+			else:
+				data[prop.name] = val
+	
+	# Metadata is essential for your visual positions
+	var meta_dict = {}
+	for m_key in get_meta_list():
+		meta_dict[m_key] = get_meta(m_key)
+	data["_metadata"] = meta_dict
+	
+	return data
+
+func _serialize_array(arr: Array) -> Array:
+	var new_arr = []
+	for item in arr:
+		if item is Object and item.has_method("get_raw_state"):
+			new_arr.append(item.get_raw_state())
+		else:
+			new_arr.append(item)
+	return new_arr

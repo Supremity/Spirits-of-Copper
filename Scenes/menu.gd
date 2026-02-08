@@ -250,10 +250,9 @@ func _draw_save_menu() -> void:
 
 	var save_btn = Button.new()
 	save_btn.text = "Save New"
-	save_btn.disabled = true  # Start disabled
+	save_btn.disabled = true
 	save_input_hbox.add_child(save_btn)
 
-	# Enable button only if text is not empty
 	line_edit.text_changed.connect(
 		func(new_text): save_btn.disabled = new_text.strip_edges().is_empty()
 	)
@@ -261,8 +260,9 @@ func _draw_save_menu() -> void:
 	save_btn.pressed.connect(
 		func():
 			var file_name = line_edit.text.strip_edges()
-			GameState.current_world.save_game(file_name)
-			_switch_section(Section.SAVE)  # Refresh list
+			# CALLING YOUR NEW REBEL SAVE FUNCTION
+			GameState.current_world.save_game_rebel(file_name) 
+			_switch_section(Section.SAVE)
 	)
 
 	content_area.add_child(HSeparator.new())
@@ -278,8 +278,7 @@ func _draw_save_menu() -> void:
 	save_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(save_list)
 
-	# Scan res://saves/ for files
-	var path = "res://saves/"
+	var path = "user://saves/"
 	if not DirAccess.dir_exists_absolute(path):
 		DirAccess.make_dir_recursive_absolute(path)
 
@@ -290,9 +289,10 @@ func _draw_save_menu() -> void:
 		var found_any = false
 
 		while file_name != "":
-			if not dir.current_is_dir() and file_name.ends_with(".tres"):
+			# CHANGED: Now looking for .dat instead of .tres
+			if not dir.current_is_dir() and file_name.ends_with(".dat"):
 				found_any = true
-				_add_save_row(save_list, file_name.replace(".tres", ""))
+				_add_save_row(save_list, file_name.replace(".dat", ""))
 			file_name = dir.get_next()
 
 		if not found_any:
@@ -316,7 +316,8 @@ func _add_save_row(parent: Node, save_name: String) -> void:
 	load_btn.custom_minimum_size.x = 80
 	load_btn.pressed.connect(
 		func():
-			GameState.current_world.load_game(save_name)
+			# CALLING YOUR NEW REBEL LOAD FUNCTION
+			GameState.current_world.load_game_rebel(save_name)
 			toggle_menu()
 	)
 
@@ -325,8 +326,9 @@ func _add_save_row(parent: Node, save_name: String) -> void:
 	del_btn.modulate = Color(1, 0.4, 0.4)
 	del_btn.pressed.connect(
 		func():
-			DirAccess.remove_absolute("res://saves/" + save_name + ".tres")
-			_switch_section(Section.SAVE)  # Refresh
+			# CHANGED: Remove .dat file
+			DirAccess.remove_absolute("user://saves/" + save_name + ".dat")
+			_switch_section(Section.SAVE)
 	)
 
 	hbox.add_child(load_btn)

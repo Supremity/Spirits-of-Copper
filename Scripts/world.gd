@@ -111,129 +111,137 @@ func _input(event: InputEvent) -> void:
 		MapManager.handle_hover(get_global_mouse_position(), map_sprite)
 
 
-func save_game(slot: String):
-	var save = SaveGame.new()
+func save_game_rebel(slot: String):
+	var save_data = {
+		"player_country": CountryManager.player_country.country_name,
+		"countries": {},
+		"troops": [],
+		"map_state": {
+			"province_to_country": MapManager.province_to_country.duplicate(),
+			"country_to_provinces": MapManager.country_to_provinces.duplicate(),
+			"provinces": {} # Start empty
+		}
+	}
 
-	# Use duplicate() WITHOUT 'true'.
-	# This copies the list of pointers to your Resources, which is what ResourceSaver needs.
+	# CORRECTED: Collect Province Data as Raw Dictionaries
+	for p_id in MapManager.province_objects:
+		var p_obj = MapManager.province_objects[p_id]
+		save_data["map_state"]["provinces"][p_id] = p_obj.get_raw_state()
 
-	# --- COUNTRY DATA ---
-	save.countries = CountryManager.countries.duplicate()
-	if CountryManager.player_country:
-		save.player_country_name = CountryManager.player_country.country_name
+	# Collect Countries
+	for c_name in CountryManager.countries:
+		save_data["countries"][c_name] = CountryManager.countries[c_name].get_raw_state()
 
-	# --- MAP DATA ---
-	save.province_objects = MapManager.province_objects.duplicate()
-	save.province_to_country = MapManager.province_to_country.duplicate()
-	save.country_to_provinces = MapManager.country_to_provinces.duplicate()
+	# Collect Troops
+	for troop in TroopManager.troops:
+		save_data["troops"].append(troop.get_raw_state())    
 
-	# --- TROOP DATA ---
-	save.troops = TroopManager.troops.duplicate()
-	save.moving_troops = TroopManager.moving_troops.duplicate()
-	save.troops_by_province = TroopManager.troops_by_province.duplicate()
-	save.troops_by_country = TroopManager.troops_by_country.duplicate()
+	var file = FileAccess.open("user://saves/" + slot + ".dat", FileAccess.WRITE)
+	file.store_var(save_data) 
+	file.close()
+	print("Rebel Save (Corrected) Complete.")
 
-	# Ensure directory exists
-	if not DirAccess.dir_exists_absolute("res://saves/"):
-		DirAccess.make_dir_absolute("res://saves/")
+func load_game_rebel(slot: String):
+	var path = "user://saves/" + slot + ".dat"
+	if not FileAccess.file_exists(path): return
+	
+	var file = FileAccess.open(path, FileAccess.READ)
+	var data = file.get_var()
+	file.close()
 
-	var path = "res://saves/" + slot + ".tres"
-	var error = ResourceSaver.save(save, path)
+	# 1. PURGE (Visuals and Managers)
+	_purge_game_state()
 
-	if error == OK:
-		print("Game State saved successfully to: ", path)
-	else:
-		printerr("Save failed! Error code: ", error)
+	# 2. RESTORE MAP & PROVINCES
+	if data.has("map_state"):
+		MapManager.province_to_country = data["map_state"]["province_to_country"]
+		MapManager.country_to_provinces = data["map_state"]["country_to_provinces"]
+		
+		var p_data_map = data["map_state"]["provinces"]
+		for p_id in p_data_map:
+			# Godot might load keys as Strings or Ints depending on the version
+			# We cast to int to be safe
+			var id_int = int(p_id) 
+			if MapManager.province_objects.has(id_int):
+				var p_obj = MapManager.province_objects[id_int]
+				_apply_raw_data(p_obj, p_data_map[p_id])
+				p_obj.troops_here = [] # Clear the old troop list
 
+	# 3. RESTORE COUNTRIES
+	for c_name in data["countries"]:
+		var country_obj = CountryData.new(c_name)
+		_apply_raw_data(country_obj, data["countries"][c_name])
+		CountryManager.countries[c_name] = country_obj
 
-func load_game(save_name: String):
-	var path = "res://saves/" + save_name + ".tres"
+	# 4. RESTORE TROOPS
+	for t_raw in data["troops"]:
+		var t_obj = load("res://Scripts/TroopData.gd").new()
+		_apply_raw_data(t_obj, t_raw)
+		
+		t_obj.country_obj = CountryManager.get_country(t_obj.country_name)
+		TroopManager.troops.append(t_obj)
+		TroopManager._add_troop_to_indexes(t_obj)
+		
+		if t_obj.is_moving:
+			TroopManager.moving_troops.append(t_obj)
+		else:
+			# Snap position
+			var center = MapManager.province_centers.get(t_obj.province_id, t_obj.position)
+			t_obj.position = center
+			t_obj.set_meta("start_pos", center)
 
-	# --- 1. File check ---
-	if not FileAccess.file_exists(path):
-		push_error("Save file not found: " + path)
+	# --- PHASE 5: THE FINAL RE-LINK ---
+	for p_id in MapManager.province_objects:
+		var p_obj = MapManager.province_objects[p_id]
+		
+		# Only try to link if there is an owner name
+		if p_obj.country != "" and p_obj.country != null:
+			var found_country = CountryManager.get_country(p_obj.country)
+			
+			if found_country != null:
+				# Now this works because we added 'country_obj' to Province.gd
+				p_obj.country_obj = found_country 
+			else:
+				# If it's a sea province or unclaimed land, set it to null safely
+				p_obj.country_obj = null
+		else:
+			p_obj.country_obj = null
+
+	CountryManager.set_player_country(data["player_country"])
+	if MapManager.has_method("refresh_all_province_colors"):
+		MapManager.refresh_all_province_colors()
+	
+	print("Full Rebel Load Complete. Factories and Ports restored.")
+
+# Helper to apply data and metadata safely
+func _apply_raw_data(obj: Object, raw_data: Variant):
+	if raw_data == null: 
 		return
+	
+	# If it's a Dictionary (The Rebel Way)
+	if raw_data is Dictionary:
+		for key in raw_data:
+			if key == "_metadata":
+				for m_key in raw_data[key]:
+					obj.set_meta(m_key, raw_data[key][m_key])
+			else:
+				obj.set(key, raw_data[key])
+	
+	# If it's an Object (The Godot Resource Way - Fallback)
+	elif raw_data is Object:
+		for prop in raw_data.get_property_list():
+			if prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
+				obj.set(prop.name, raw_data.get(prop.name))
 
-	# --- 2. Load WITHOUT cache ---
-	var save := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as SaveGame
-
-	if not save:
-		push_error("Failed to load SaveGame resource!")
-		return
-
-	# --- 3. Pause systems that react to state ---
-	if troop_renderer:
-		troop_renderer.set_process(false)
-
-	# =====================================================
-	# COUNTRY MANAGER
-	# =====================================================
+func _purge_game_state():
+	# Clear visuals
+	if has_node("TroopRenderer"):
+		for child in get_node("TroopRenderer").get_children(): child.queue_free()
+	
+	# Clear Logic
 	CountryManager.countries.clear()
-
-	for c_name in save.countries:
-		var country = save.countries[c_name]
-		if country is CountryData:
-			country._is_loading = true
-			CountryManager.countries[c_name] = country
-
-	CountryManager.set_player_country(save.player_country_name)
-
-	# =====================================================
-	# MAP MANAGER
-	# =====================================================
-	MapManager.province_objects.clear()
-	for p_id in save.province_objects:
-		var province = save.province_objects[p_id]
-		if province is Province:
-			MapManager.province_objects[p_id] = province
-
-	MapManager.province_to_country.clear()
-	for p_id in save.province_to_country:
-		MapManager.province_to_country[p_id] = save.province_to_country[p_id]
-
-	MapManager.country_to_provinces.clear()
-	for c_name in save.country_to_provinces:
-		MapManager.country_to_provinces[c_name] = save.country_to_provinces[c_name].duplicate()
-
-	# =====================================================
-	# TROOP MANAGER (CRITICAL ORDER)
-	# =====================================================
 	TroopManager.troops.clear()
 	TroopManager.moving_troops.clear()
-	TroopManager.troops_by_province.clear()
 	TroopManager.troops_by_country.clear()
-
-	# --- 1. Load canonical troop list ---
-	for t in save.troops:
-		if t is TroopData:
-			t.country_obj = CountryManager.get_country(t.country_name)
-			TroopManager.troops.append(t)
-
-	# --- 2. Moving troops ---
-	for t in save.moving_troops:
-		if t is TroopData:
-			TroopManager.moving_troops.append(t)
-
-	# --- 3. Rebuild province → troops ---
-	for province_id in save.troops_by_province:
-		TroopManager.troops_by_province[province_id] = []
-		for t in save.troops_by_province[province_id]:
-			if t is TroopData:
-				TroopManager.troops_by_province[province_id].append(t)
-
-	# --- 4. Rebuild country → troops ---
-	for c_name in save.troops_by_country:
-		TroopManager.troops_by_country[c_name] = []
-		for t in save.troops_by_country[c_name]:
-			if t is TroopData:
-				TroopManager.troops_by_country[c_name].append(t)
-
-	# =====================================================
-	# WORLD REFRESH
-	# =====================================================
-	MapManager._build_lookup_texture()
-
-	if troop_renderer:
-		troop_renderer.set_process(true)
-
-	print("Game loaded successfully:", save_name)
+	for p in MapManager.province_objects.values():
+		p.troops_here = []
