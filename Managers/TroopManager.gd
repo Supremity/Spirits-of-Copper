@@ -4,7 +4,6 @@ var AUTO_MERGE = true
 
 var troops: Array = []
 var moving_troops: Array = []
-var troops_by_province: Dictionary = {}  # { province_id: [TroopData, ...] }
 var troops_by_country: Dictionary = {}  # { country_name: [TroopData, ...] }
 
 var path_cache: Dictionary = {}  # { start_id: { target_id: path_array } }
@@ -54,7 +53,8 @@ func _start_next_leg(troop: TroopData) -> void:
 	var next_pid = int(troop.path[0])
 
 	# --- Combat Check ---
-	var local_troops = troops_by_province.get(next_pid, [])
+	var province = MapManager.province_objects.get(next_pid)
+	var local_troops = province.troops_here
 	var enemies = local_troops.filter(
 		func(t): return WarManager.is_at_war_names(t.country_name, troop.country_name)
 	)
@@ -350,7 +350,8 @@ func _auto_merge_in_province(province_id: int, country: String) -> void:
 	if not AUTO_MERGE:
 		return
 
-	var local_troops = troops_by_province.get(province_id, [])
+	var province = MapManager.province_objects.get(province_id)
+	var local_troops = province.troops_here
 	var candidates: Array = []
 
 	# 1. Collect Valid Candidates
@@ -420,9 +421,9 @@ func _add_troop_to_indexes(troop: TroopData) -> void:
 	var country = troop.country_name
 
 	# Province Index
-	if not troops_by_province.has(pid):
-		troops_by_province[pid] = []
-	troops_by_province[pid].append(troop)
+	if not MapManager.province_objects.has(pid):
+		MapManager.province_objects[pid].troops_here = []
+	MapManager.province_objects[pid].troops_here.append(troop)
 
 	# Country Index
 	if not troops_by_country.has(country):
@@ -433,77 +434,76 @@ func _add_troop_to_indexes(troop: TroopData) -> void:
 ## Removes a troop reference from all data structures (master, moving, indexes).
 func remove_troop(troop: TroopData) -> void:
 	troops.erase(troop)
+
 	moving_troops.erase(troop)
+	var province = MapManager.get_province(troop.province_id)
+	if province:
+		province.troops_here.erase(troop)
 
-	var pid = troop.province_id
-	var country = troop.country_name
-
-	if troops_by_province.has(pid):
-		troops_by_province[pid].erase(troop)
-		if troops_by_province[pid].is_empty():
-			troops_by_province.erase(pid)
-
-	if troops_by_country.has(country):
-		troops_by_country[country].erase(troop)
+	var country_list = troops_by_country.get(troop.country_name)
+	if country_list:
+		country_list.erase(troop)
 
 
-## Updates the troop's location in the spatial index (troops_by_province).
 func _move_troop_to_province_logically(troop: TroopData, new_pid: int) -> void:
 	var old_pid = troop.province_id
 	if old_pid == new_pid:
 		return
 
-	# Remove from old province list
-	if troops_by_province.has(old_pid):
-		troops_by_province[old_pid].erase(troop)
-		if troops_by_province[old_pid].is_empty():
-			troops_by_province.erase(old_pid)
+	var old_province = MapManager.get_province(old_pid)
+	if old_province:
+		old_province.troops_here.erase(troop)
 
-	# Add to new province list and update troop object
 	troop.province_id = new_pid
-	if not troops_by_province.has(new_pid):
-		troops_by_province[new_pid] = []
-	troops_by_province[new_pid].append(troop)
+
+	var new_province = MapManager.get_province(new_pid)
+	if new_province:
+		new_province.troops_here.append(troop)
+	else:
+		push_error("TroopManager: Attempted to move troop to non-existent province ID %d" % new_pid)
 
 
 # Careful using this
 func teleport_troop_to_province(troop: TroopData, target_pid: int) -> void:
-	# Remove from old province index
-	var old_pid = troop.province_id
-	if troops_by_province.has(old_pid):
-		troops_by_province[old_pid].erase(troop)
-		if troops_by_province[old_pid].is_empty():
-			troops_by_province.erase(old_pid)
+	var old_province = MapManager.get_province(troop.province_id)
+	if old_province:
+		old_province.troops_here.erase(troop)
 
-	# Update troop province
 	troop.province_id = target_pid
-
-	# Update troop position immediately to center of target province
-	troop.position = MapManager.province_centers.get(target_pid, Vector2.ZERO)
-	troop.target_position = troop.position
-	troop.path.clear()
-	troop.set_meta("start_pos", troop.position)
-	troop.set_meta("progress", 0.0)
 	troop.is_moving = false
+	troop.path.clear()
 
-	# Add to new province index
-	if not troops_by_province.has(target_pid):
-		troops_by_province[target_pid] = []
-	troops_by_province[target_pid].append(troop)
+	var new_center = MapManager.province_centers.get(target_pid, Vector2.ZERO)
+	troop.position = new_center
+	troop.target_position = new_center
+
+	# Update metadata for the shader/label systems
+	troop.set_meta("start_pos", new_center)
+	troop.set_meta("progress", 0.0)
+
+	var new_province = MapManager.get_province(target_pid)
+	if new_province:
+		new_province.troops_here.append(troop)
+	else:
+		push_error("TroopManager: Teleported to invalid province ID %d" % target_pid)
 
 
 func get_province_division_count(pid: int) -> int:
 	var total = 0
-	var list = troops_by_province.get(pid, [])
+	var list = MapManager.get_province(pid).troops_here
 	for troop in list:
 		total += troop.divisions_count
 	return total
 
 
-func have_troops_in_both_provinces(province_id_a: int, province_id_b: int) -> bool:
-	var has_troops_in_a: bool = troops_by_province.has(province_id_a)
-	var has_troops_in_b: bool = troops_by_province.has(province_id_b)
-	return has_troops_in_a and has_troops_in_b
+func have_troops_in_both_provinces(pid_a: int, pid_b: int) -> bool:
+	var prov_a = MapManager.get_province(pid_a)
+	var prov_b = MapManager.get_province(pid_b)
+
+	var a_occupied = prov_a and not prov_a.troops_here.is_empty()
+	var b_occupied = prov_b and not prov_b.troops_here.is_empty()
+
+	return a_occupied and b_occupied
 
 
 func clear_path_cache() -> void:
@@ -529,12 +529,12 @@ func get_troops_for_country(country):
 
 
 func get_troops_in_province(province_id):
-	return troops_by_province.get(province_id, [])
+	return MapManager.get_province(province_id).troops_here
 
 
 func get_province_strength(pid: int, country: String) -> int:
 	var total = 0
-	var list = troops_by_province.get(pid, [])
+	var list = MapManager.get_province(pid).troops_here
 	for t in list:
 		if t.country_name == country:
 			total += t.divisions_count

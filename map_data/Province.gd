@@ -23,3 +23,4 @@ enum {
 @export var center: Vector2
 @export var neighbors: Array[int] = []
 @export var claims = []
+@export var troops_here = []

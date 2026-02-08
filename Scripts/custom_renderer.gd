@@ -143,6 +143,7 @@ void fragment() {
 func _update_multimesh_buffer():
 	var mm = troop_multimesh.multimesh
 	var total_troops = TroopManager.troops.size()
+
 	if mm.instance_count != total_troops * 3:
 		mm.instance_count = total_troops * 3
 
@@ -150,21 +151,33 @@ func _update_multimesh_buffer():
 	var player_country = CountryManager.player_country.country_name
 	var selected_troops = TroopManager.troop_selection.selected_troops
 
-	for pid in TroopManager.troops_by_province:
-		var stack = TroopManager.troops_by_province[pid]
-		var static_stack = stack.filter(func(t): return not t.is_moving)
-		if static_stack.is_empty():
+	var stacks_to_draw = {}  # { province_id: [TroopData, ...] }
+
+	for troop in TroopManager.troops:
+		if troop.is_moving:
 			continue
 
+		var pid = troop.province_id
+		if not stacks_to_draw.has(pid):
+			stacks_to_draw[pid] = []
+		stacks_to_draw[pid].append(troop)
+
+	for pid in stacks_to_draw:
+		var stack = stacks_to_draw[pid]
 		var base_pos = MapManager.province_centers.get(pid, Vector2.ZERO)
-		idx = _write_stack_to_multimesh(
-			static_stack, base_pos, idx, player_country, selected_troops
-		)
+		idx = _write_stack_to_multimesh(stack, base_pos, idx, player_country, selected_troops)
 
 	for troop in TroopManager.moving_troops:
 		idx = _write_stack_to_multimesh(
 			[troop], troop.position, idx, player_country, selected_troops
 		)
+
+	_hide_unused_instances(idx, mm)
+
+
+func _hide_unused_instances(start_idx: int, mm: MultiMesh) -> void:
+	for i in range(start_idx, mm.instance_count):
+		mm.set_instance_transform_2d(i, Transform2D().scaled(Vector2.ZERO))
 
 
 func _write_stack_to_multimesh(
@@ -206,16 +219,22 @@ func _draw_troops() -> void:
 	if _current_inv_zoom > 1.5:
 		return
 
-	for pid in TroopManager.troops_by_province:
-		var stack = TroopManager.troops_by_province[pid]
-		var static_stack = stack.filter(func(t): return not t.is_moving)
-		if static_stack.is_empty():
+	var static_stacks = {}  # { province_id: [TroopData, ...] }
+
+	for troop in TroopManager.troops:
+		if troop.is_moving:
 			continue
 
-		var base_pos = MapManager.province_centers.get(pid, Vector2.ZERO)
-		_draw_stack_labels(static_stack, base_pos)
+		var pid = troop.province_id
+		if not static_stacks.has(pid):
+			static_stacks[pid] = []
+		static_stacks[pid].append(troop)
 
-	# 2. Draw Moving Troops (Individual)
+	for pid in static_stacks:
+		var stack = static_stacks[pid]
+		var base_pos = MapManager.province_centers.get(pid, Vector2.ZERO)
+		_draw_stack_labels(stack, base_pos)
+
 	for troop in TroopManager.moving_troops:
 		_draw_stack_labels([troop], troop.position)
 

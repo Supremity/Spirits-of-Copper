@@ -1,7 +1,7 @@
 extends Node
 var DEBUG_MODE = false
 
-enum MapMode { POLITICAL, POPULATION, GDP, ETHNICITY } 
+enum MapMode { POLITICAL, POPULATION, GDP, ETHNICITY }
 
 signal province_hovered(province_id: int, country_name: String)
 signal country_clicked(country_name: String)
@@ -32,11 +32,11 @@ var province_to_country: Dictionary = {}
 var country_to_provinces: Dictionary = {}
 var province_objects: Dictionary[int, Province] = {}
 
-var adjacency_list: Dictionary = {}  # Stores {ID: [Neighbor_ID_1, Neighbor_ID_2, ...]}
+var adjacency_list: Dictionary = {}
 var current_hovered_pid: int = -1
 var last_hovered_pid: int = -1
 var original_hover_color: Color
-var province_centers: Dictionary = {}  # Stores {ID: Vector2(x, y)}
+var province_centers: Dictionary = {}
 
 # This will look like: {"french_empire": [101, 102, 103], "canada": [1, 2, 5]}
 var global_claims_registry: Dictionary = {}
@@ -343,36 +343,33 @@ func get_province_at_pos(pos: Vector2, map_sprite: Sprite2D = null) -> int:
 	if not id_map_image:
 		return 0
 
+	var size = id_map_image.get_size()
 	var x: int
 	var y: int
-	var size = id_map_image.get_size()
 
 	if map_sprite:
 		var local = map_sprite.to_local(pos)
-		var sprite_size = map_sprite.texture.get_size()
+		var tex_size = map_sprite.texture.get_size()
 
-		# If sprite is centered, offset the local position to be top-left based
 		if map_sprite.centered:
-			local += sprite_size / 2.0
+			local += tex_size / 2.0
 
-		# --- INFINITE SCROLL MATH ---
-		x = int(local.x) % int(sprite_size.x)
-		if x < 0:
-			x += int(sprite_size.x)
+		x = posmod(int(local.x), int(tex_size.x))
 		y = int(local.y)
-
 	else:
 		x = int(pos.x)
 		y = int(pos.y)
 
-	# Y is not infinite, so we strictly check bounds
 	if y < 0 or y >= size.y or x < 0 or x >= size.x:
 		return 0
 
-	var c = id_map_image.get_pixel(x, y)
-	var r = int(round(c.r * 255.0))
-	var g = int(round(c.g * 255.0))
-	return r + (g * 256)
+	var pixel_index = (y * size.x + x) * 3
+	var data = id_map_image.get_data()
+
+	var r = data[pixel_index]  # Red byte (0-255)
+	var g = data[pixel_index + 1]  # Green byte (0-255)
+
+	return r + (g << 8)  # Using bit-shift (<< 8) is slightly faster than (g * 256)
 
 
 func handle_hover(global_pos: Vector2, map_sprite: Sprite2D) -> void:
@@ -844,12 +841,14 @@ func update_map_view(mode: MapMode) -> void:
 	if mode == MapMode.POPULATION or mode == MapMode.GDP:
 		for p in province_objects.values():
 			var val = p.population if mode == MapMode.POPULATION else p.gdp
-			if val > max_val: max_val = float(val)
+			if val > max_val:
+				max_val = float(val)
 
 	# 2. Single loop to update the lookup image
 	for pid in province_objects.keys():
-		if pid <= 1: continue # Skip borders/sea
-		
+		if pid <= 1:
+			continue  # Skip borders/sea
+
 		var province = province_objects[pid]
 		var final_color: Color
 
@@ -864,12 +863,13 @@ func update_map_view(mode: MapMode) -> void:
 				final_color = country_colors.get(province.country, Color.GRAY)
 
 		state_color_image.set_pixel(pid, 0, final_color)
-		
+
 	state_color_texture.update(state_color_image)
-	
+
 
 func _calculate_heat(value: float, max_value: float, power: float = 1.0) -> Color:
-	if value <= 0: return Color(0.1, 0.1, 0.1)
+	if value <= 0:
+		return Color(0.1, 0.1, 0.1)
 	var intensity = clamp(pow(value / max_value, power), 0.0, 1.0)
 	if intensity < 0.5:
 		return Color.DARK_CYAN.lerp(Color.YELLOW, intensity * 2.0)
@@ -890,6 +890,7 @@ func show_countries_map() -> void:
 		state_color_image.set_pixel(pid, 0, country_color)
 
 	state_color_texture.update(state_color_image)
+
 
 func province_updated():
 	if GameState.industry_building:
@@ -1329,7 +1330,7 @@ func _country_exists_on_map(c_name: String) -> bool:
 func release_country(country_name: String) -> void:
 	for obj in province_objects.values():
 		if obj.claims.has(country_name):
-			var troops = TroopManager.troops_by_province.get(obj.id, [])
+			var troops = province_objects.get(obj.id).troops_here
 			for troop in troops.duplicate():
 				if is_instance_valid(troop):
 					TroopManager.remove_troop(troop)
@@ -1389,6 +1390,10 @@ func annex_country(target_country_name: String) -> void:
 
 	#playerobj.reset_manpower()
 	print("ANNEXATION COMPLETE: ", player, " has taken all of ", target_country_name)
+
+
+func get_province(pid: int) -> Province:
+	return province_objects.get(pid, null)
 
 
 func _build_global_registry():
