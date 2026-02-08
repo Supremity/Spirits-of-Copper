@@ -5,6 +5,7 @@ var countries: Dictionary[String, CountryData] = {}
 var player_country: CountryData
 
 var _hour_process_index: int = 0
+@export var clock: GameClock
 @export var hours_per_full_country_tick: int = 5
 
 
@@ -25,14 +26,14 @@ func _on_hour_passed() -> void:
 		var country_obj: CountryData = countries[c_name]
 
 		country_obj.process_hour()
-		if !country_obj.is_player:
-			AiManager.ai_tick(country_obj)
 
 		_hour_process_index += 1
 		processed += 1
 
 	if _hour_process_index >= total:
 		_hour_process_index = 0
+		
+	AiManager.run_ai_cycle()
 
 
 func _on_day_passed() -> void:
@@ -43,7 +44,6 @@ func _on_day_passed() -> void:
 	for c_name: String in countries:
 		var country_obj: CountryData = countries[c_name]
 		country_obj.process_day()
-	MapManager.country_to_provinces
 
 
 func initialize_countries() -> void:
