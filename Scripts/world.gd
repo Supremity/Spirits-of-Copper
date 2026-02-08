@@ -101,7 +101,6 @@ func _create_ghost_map(offset: Vector2, p_material: ShaderMaterial) -> void:
 	$MapContainer.add_child(ghost)
 
 
-
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
@@ -114,38 +113,39 @@ func _input(event: InputEvent) -> void:
 
 func save_game(slot: String):
 	var save = SaveGame.new()
-	
-	# Use duplicate() WITHOUT 'true'. 
+
+	# Use duplicate() WITHOUT 'true'.
 	# This copies the list of pointers to your Resources, which is what ResourceSaver needs.
-	
+
 	# --- COUNTRY DATA ---
 	save.countries = CountryManager.countries.duplicate()
 	if CountryManager.player_country:
 		save.player_country_name = CountryManager.player_country.country_name
-	
+
 	# --- MAP DATA ---
 	save.province_objects = MapManager.province_objects.duplicate()
 	save.province_to_country = MapManager.province_to_country.duplicate()
 	save.country_to_provinces = MapManager.country_to_provinces.duplicate()
-	
+
 	# --- TROOP DATA ---
 	save.troops = TroopManager.troops.duplicate()
 	save.moving_troops = TroopManager.moving_troops.duplicate()
 	save.troops_by_province = TroopManager.troops_by_province.duplicate()
 	save.troops_by_country = TroopManager.troops_by_country.duplicate()
-	
+
 	# Ensure directory exists
 	if not DirAccess.dir_exists_absolute("res://saves/"):
 		DirAccess.make_dir_absolute("res://saves/")
-		
+
 	var path = "res://saves/" + slot + ".tres"
 	var error = ResourceSaver.save(save, path)
-	
+
 	if error == OK:
 		print("Game State saved successfully to: ", path)
 	else:
 		printerr("Save failed! Error code: ", error)
-	
+
+
 func load_game(save_name: String):
 	var path = "res://saves/" + save_name + ".tres"
 
@@ -155,11 +155,7 @@ func load_game(save_name: String):
 		return
 
 	# --- 2. Load WITHOUT cache ---
-	var save := ResourceLoader.load(
-		path,
-		"",
-		ResourceLoader.CACHE_MODE_IGNORE
-	) as SaveGame
+	var save := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as SaveGame
 
 	if not save:
 		push_error("Failed to load SaveGame resource!")
@@ -179,7 +175,6 @@ func load_game(save_name: String):
 		if country is CountryData:
 			country._is_loading = true
 			CountryManager.countries[c_name] = country
-
 
 	CountryManager.set_player_country(save.player_country_name)
 

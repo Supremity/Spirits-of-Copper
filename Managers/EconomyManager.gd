@@ -4,6 +4,7 @@ extends Node
 # Format: { province_id: { "type": "factory", "days": 20, "daily_cost": 50, "country": CountryData } }
 var construction_queue: Dictionary = {}
 
+
 func process_economy_day():
 	var finished_projects = []
 
@@ -16,7 +17,7 @@ func process_economy_day():
 		if country.money >= cost:
 			country.money -= cost
 			project["days"] -= 1
-			
+
 			# 2. Check for completion
 			if project["days"] <= 0:
 				finished_projects.append(pid)
@@ -28,25 +29,25 @@ func process_economy_day():
 	for pid in finished_projects:
 		construction_queue.erase(pid)
 
-func start_construction(pid: int, type: String, total_days: int, daily_cost: float, country: CountryData):
+
+func start_construction(
+	pid: int, type: String, total_days: int, daily_cost: float, country: CountryData
+):
 	var province = MapManager.province_objects[pid]
-	
+
 	# Set the province enum to BUILDING state immediately
 	if type == "factory":
 		province.factory = province.FACTORY_BUILDING
 	elif type == "port":
 		province.port = province.PORT_BUILDING
-	
+
 	if country == CountryManager.player_country:
 		MusicManager.play_sfx(MusicManager.SFX.BUILD)
 
 	construction_queue[pid] = {
-		"type": type,
-		"days": total_days,
-		"daily_cost": daily_cost,
-		"country": country
+		"type": type, "days": total_days, "daily_cost": daily_cost, "country": country
 	}
-	
+
 
 func _complete_construction(pid: int, project: Dictionary):
 	var province = MapManager.province_objects[pid]
@@ -65,8 +66,10 @@ func _complete_construction(pid: int, project: Dictionary):
 			MusicManager.play_sfx(MusicManager.SFX.CLAPPING)
 		MapManager.province_updated()
 
+
 func is_province_building(pid: int) -> bool:
 	return construction_queue.has(pid)
+
 
 func get_progress_string(pid: int) -> String:
 	if construction_queue.has(pid):

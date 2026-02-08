@@ -20,22 +20,23 @@ func _process(delta: float) -> void:
 
 ## TroopManager.gd
 
+
 func _update_moving_troop(troop: TroopData, _delta: float) -> void:
-	# We no longer calculate position here. 
+	# We no longer calculate position here.
 	# We only check if the logical time has expired.
-	
+
 	if GameState.current_world.clock.paused:
 		return
 
 	var start_time = troop.get_meta("start_time", 0.0)
 	var duration = troop.get_meta("duration", 0.0)
-	
+
 	# Use the same 'visual clock' the shader uses
 	# Assuming GameState or similar tracks total unpaused game seconds
 	var current_game_time = GameState.current_world.clock.total_game_seconds
-	
+
 	var progress = (current_game_time - start_time) / duration
-	
+
 	# Update meta so _draw() knows where to put labels
 	troop.set_meta("progress", clamp(progress, 0.0, 1.0))
 
@@ -67,15 +68,15 @@ func _start_next_leg(troop: TroopData) -> void:
 
 	var target_pos = MapManager.province_centers.get(next_pid, troop.position)
 	var dist = troop.position.distance_to(target_pos)
-	
-	var base_speed = 1.0 
+
+	var base_speed = 1.0
 	var speed_mod = troop.country_obj.troop_speed_modifier if troop.country_obj else 1.0
 	var duration = dist / (base_speed * speed_mod)
 	troop.target_position = target_pos
 	troop.set_meta("start_pos", troop.position)
 	troop.set_meta("duration", duration)
 	troop.set_meta("start_time", GameState.current_world.clock.total_game_seconds)
-	
+
 	troop.is_moving = true
 
 	if not moving_troops.has(troop):
@@ -98,6 +99,7 @@ func _arrive_at_leg_end(troop: TroopData) -> void:
 			_auto_merge_in_province(troop.province_id, troop.country_name)
 	else:
 		_start_next_leg(troop)
+
 
 func _stop_troop(troop: TroopData) -> void:
 	moving_troops.erase(troop)
@@ -283,7 +285,11 @@ func _create_new_split_troop(original: TroopData, specific_divisions: Array) -> 
 	var pos = original.position
 
 	var new_troop = load("res://Scripts/TroopData.gd").new(
-		original.country_name, original.province_id, 0, pos, TroopManager.get_flag(original.country_name)
+		original.country_name,
+		original.province_id,
+		0,
+		pos,
+		TroopManager.get_flag(original.country_name)
 	)
 
 	# FIX: Ensure the new split troop knows which country it belongs to

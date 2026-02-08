@@ -30,7 +30,8 @@ var label_country_sidemenu: Label = $Control/SidemenuBG/Sidemenu/PanelContainer/
 var actions_container: VBoxContainer = $Control/SidemenuBG/Sidemenu/ScrollContainer/ActionsList
 @onready var progress_bar: ProgressBar = $Control/Topbar/MarginContainer2/ColorRect/ProgressBar
 @onready var troop_container: PanelContainer = $Control/TroopContainer
-@onready var relations_hbox: HBoxContainer = $Control/SidemenuBG/Sidemenu/PanelContainer/VBoxContainer/RelationsHbox
+@onready
+var relations_hbox: HBoxContainer = $Control/SidemenuBG/Sidemenu/PanelContainer/VBoxContainer/RelationsHbox
 
 # Use the class_name of your action scene if available, or load strictly as packed scene
 @export var action_scene: PackedScene
@@ -108,6 +109,7 @@ var menu_actions = {
 func _enter_tree() -> void:
 	GameState.game_ui = self
 
+
 func _ready() -> void:
 	pos_open = sidemenu.position
 	pos_closed = Vector2(pos_open.x - sidemenu.size.x, pos_open.y)
@@ -173,7 +175,9 @@ func toggle_menu(context := Context.PLAYER_COUNTRY) -> void:
 		sidemenu_flag.texture = nation_flag.texture
 		open_menu(context, Category.GENERAL)
 
+
 var custom_font = load("res://font/Google_Sans/GoogleSans-VariableFont_GRAD,opsz,wght.ttf")
+
 
 func open_menu(context: Context, category: Category) -> void:
 	if (
@@ -183,66 +187,82 @@ func open_menu(context: Context, category: Category) -> void:
 		return
 	current_context = context
 	current_category = category
-	
+
 	if current_category == Category.GENERAL:
-			for child in relations_hbox.get_children():
-				child.queue_free()
-			
-			var player = CountryManager.player_country
-			var target = selected_country
+		for child in relations_hbox.get_children():
+			child.queue_free()
 
-			if player and target and player != target:
-				relations_hbox.visible = true
-				
-				# 1. FAR LEFT: Player Flag
-				relations_hbox.add_child(_get_simple_flag(player.country_name))
+			# 1. FAR LEFT: Player Flag
 
-				# 2. SPACER (Justify-Between)
-				var spacer1 = Control.new()
-				spacer1.size_flags_horizontal = Control.SIZE_EXPAND_FILL 
-				relations_hbox.add_child(spacer1)
-				
-				# 3. CENTER: Dual Opinions
-				var our_val = player.get_relation_with(target.country_name)
-				var their_val = target.get_relation_with(player.country_name)
-				
-				# "Our view"
-				relations_hbox.add_child(_create_styled_label(str(our_val), 20, our_val))
-				
-				# Visual Divider
-				var mid_icon = _create_styled_label(" ↔ ", 20, 50) # Neutral color for divider
-				mid_icon.modulate.a = 0.4
-				relations_hbox.add_child(mid_icon)
-				
-				# "Their view"
-				relations_hbox.add_child(_create_styled_label(str(their_val), 20, their_val))
+			# 2. SPACER (Justify-Between)
 
-				# 4. SECOND SPACER
-				var spacer2 = Control.new()
-				spacer2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				relations_hbox.add_child(spacer2)
+			# 3. CENTER: Dual Opinions
 
-				# 5. FAR RIGHT: Target Flag
-				relations_hbox.add_child(_get_simple_flag(target.country_name))
-			else:
-				relations_hbox.visible = false
+			# "Our view"
+
+			# Visual Divider
+
+			# "Their view"
+
+			# 4. SECOND SPACER
+
+			# 5. FAR RIGHT: Target Flag
+		var player = CountryManager.player_country
+		var target = selected_country
+
+		if player and target and player != target:
+			relations_hbox.visible = true
+
+			# 1. FAR LEFT: Player Flag
+			relations_hbox.add_child(_get_simple_flag(player.country_name))
+
+			# 2. SPACER (Justify-Between)
+			var spacer1 = Control.new()
+			spacer1.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			relations_hbox.add_child(spacer1)
+
+			# 3. CENTER: Dual Opinions
+			var our_val = player.get_relation_with(target.country_name)
+			var their_val = target.get_relation_with(player.country_name)
+
+			# "Our view"
+			relations_hbox.add_child(_create_styled_label(str(our_val), 20, our_val))
+
+			# Visual Divider
+			var mid_icon = _create_styled_label(" ↔ ", 20, 50)  # Neutral color for divider
+			mid_icon.modulate.a = 0.4
+			relations_hbox.add_child(mid_icon)
+
+			# "Their view"
+			relations_hbox.add_child(_create_styled_label(str(their_val), 20, their_val))
+
+			# 4. SECOND SPACER
+			var spacer2 = Control.new()
+			spacer2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			relations_hbox.add_child(spacer2)
+
+			# 5. FAR RIGHT: Target Flag
+			relations_hbox.add_child(_get_simple_flag(target.country_name))
+		else:
+			relations_hbox.visible = false
 	_build_action_list()
 
 	if !is_open:
 		MusicManager.play_sfx(MusicManager.SFX.OPEN_MENU)
 		slide_in()
 
+
 func _create_styled_label(text_content: String, size: int, score_ref: int) -> Label:
 	var l = Label.new()
 	l.text = text_content
-	
+
 	# Apply the Custom Font
 	if custom_font:
 		l.add_theme_font_override("font", custom_font)
-	
+
 	# Apply Font Size
 	l.add_theme_font_size_override("font_size", size)
-	
+
 	# Apply Color based on score_ref
 	if score_ref >= 70:
 		l.modulate = Color.SPRING_GREEN
@@ -250,8 +270,9 @@ func _create_styled_label(text_content: String, size: int, score_ref: int) -> La
 		l.modulate = Color.ORANGE_RED
 	else:
 		l.modulate = Color.WHITE
-		
+
 	return l
+
 
 func _get_simple_flag(c_name: String) -> TextureRect:
 	var tr = TextureRect.new()
@@ -260,6 +281,8 @@ func _get_simple_flag(c_name: String) -> TextureRect:
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	return tr
+
+
 func _on_tab_changed(new_category_index: int) -> void:
 	current_category = new_category_index as Category
 	_build_action_list()
@@ -290,11 +313,10 @@ func _build_action_list() -> void:
 	label_category.text = Category.keys()[current_category].capitalize()
 
 	for item in (menu_actions[current_context] as Dictionary[int, Array]).get(current_category, []):
-		
 		if item.func == "_request_access":
 			if CountryManager.player_country.allowedCountries.has(selected_country.country_name):
 				continue
-		
+
 		var new_btn = action_scene.instantiate()
 		var call_ref = Callable(self, item.func)
 		if item.func == "_conscript":

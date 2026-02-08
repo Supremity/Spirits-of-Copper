@@ -31,6 +31,7 @@ var troop_multimesh: MultiMeshInstance2D
 var _last_cam_pos := Vector2.INF
 var _last_cam_zoom := Vector2.INF
 
+
 # --- Lifecycle ---
 func _ready() -> void:
 	z_index = 20  # Keep renderer high
@@ -38,10 +39,12 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if !map_sprite: return
+	if !map_sprite:
+		return
 
 	var cam := get_viewport().get_camera_2d()
-	if not cam: return
+	if not cam:
+		return
 
 	# Camera/Zoom checks
 	var zoom_changed := cam.zoom != _last_cam_zoom
@@ -136,6 +139,7 @@ void fragment() {
 
 ## CustomRenderer.gd
 
+
 func _update_multimesh_buffer():
 	var mm = troop_multimesh.multimesh
 	var total_troops = TroopManager.troops.size()
@@ -145,19 +149,27 @@ func _update_multimesh_buffer():
 	var idx = 0
 	var player_country = CountryManager.player_country.country_name
 	var selected_troops = TroopManager.troop_selection.selected_troops
-	
+
 	for pid in TroopManager.troops_by_province:
 		var stack = TroopManager.troops_by_province[pid]
 		var static_stack = stack.filter(func(t): return not t.is_moving)
-		if static_stack.is_empty(): continue
-		
+		if static_stack.is_empty():
+			continue
+
 		var base_pos = MapManager.province_centers.get(pid, Vector2.ZERO)
-		idx = _write_stack_to_multimesh(static_stack, base_pos, idx, player_country, selected_troops)
+		idx = _write_stack_to_multimesh(
+			static_stack, base_pos, idx, player_country, selected_troops
+		)
 
 	for troop in TroopManager.moving_troops:
-		idx = _write_stack_to_multimesh([troop], troop.position, idx, player_country, selected_troops)
+		idx = _write_stack_to_multimesh(
+			[troop], troop.position, idx, player_country, selected_troops
+		)
 
-func _write_stack_to_multimesh(stack: Array, base_pos: Vector2, idx: int, player: String, selected: Array) -> int:
+
+func _write_stack_to_multimesh(
+	stack: Array, base_pos: Vector2, idx: int, player: String, selected: Array
+) -> int:
 	var mm = troop_multimesh.multimesh
 	var scaled_offset := STACKING_OFFSET_Y * _current_inv_zoom
 	var start_y = (stack.size() - 1) * scaled_offset * 0.5
@@ -166,7 +178,7 @@ func _write_stack_to_multimesh(stack: Array, base_pos: Vector2, idx: int, player
 	for i in range(stack.size()):
 		var troop = stack[i]
 		var vertical_pos = base_pos + Vector2(0, start_y - (i * scaled_offset))
-		
+
 		var col = COLORS.border_other
 		if troop.country_name == player:
 			col = COLORS.border_selected if selected.has(troop) else COLORS.border_default
@@ -177,6 +189,7 @@ func _write_stack_to_multimesh(stack: Array, base_pos: Vector2, idx: int, player
 			mm.set_instance_color(idx, col)
 			idx += 1
 	return idx
+
 
 func _draw() -> void:
 	if !map_sprite or map_width <= 0:
@@ -191,13 +204,14 @@ func _draw() -> void:
 
 func _draw_troops() -> void:
 	if _current_inv_zoom > 1.5:
-		return 
+		return
 
 	for pid in TroopManager.troops_by_province:
 		var stack = TroopManager.troops_by_province[pid]
 		var static_stack = stack.filter(func(t): return not t.is_moving)
-		if static_stack.is_empty(): continue
-		
+		if static_stack.is_empty():
+			continue
+
 		var base_pos = MapManager.province_centers.get(pid, Vector2.ZERO)
 		_draw_stack_labels(static_stack, base_pos)
 
@@ -205,18 +219,20 @@ func _draw_troops() -> void:
 	for troop in TroopManager.moving_troops:
 		_draw_stack_labels([troop], troop.position)
 
+
 func _draw_stack_labels(stack: Array, base_pos: Vector2) -> void:
 	var scaled_offset := STACKING_OFFSET_Y * _current_inv_zoom
 	var start_y = (stack.size() - 1) * scaled_offset * 0.5
-	
+
 	for i in range(stack.size()):
 		var troop = stack[i]
 		var vertical_pos = base_pos + Vector2(0, start_y - (i * scaled_offset))
-		
+
 		for m in [-1, 0, 1]:
 			var d_pos = vertical_pos + Vector2(map_width * m, 0) + map_sprite.position
 			if _screen_rect.has_point(d_pos):
 				_draw_troop(troop, d_pos)
+
 
 func _draw_troop(troop: TroopData, pos: Vector2) -> void:
 	var t := Transform2D(0, Vector2(_current_inv_zoom, _current_inv_zoom), 0, pos)
@@ -315,7 +331,6 @@ func _draw_active_movements() -> void:
 		draw_line(start, current, COLORS.movement_active, 1.5)
 
 
-
 func _update_screen_rect():
 	var canvas_xform := get_canvas_transform()
 	var viewport_rect := get_viewport_rect()
@@ -369,17 +384,10 @@ func _draw_cities() -> void:
 			)
 
 			draw_string(
-				_font,
-				offset,
-				city_name,
-				HORIZONTAL_ALIGNMENT_LEFT,
-				-1,
-				base_font_size,
-				Color.WHITE
+				_font, offset, city_name, HORIZONTAL_ALIGNMENT_LEFT, -1, base_font_size, Color.WHITE
 			)
 
 	draw_set_transform_matrix(Transform2D())
-
 
 
 func draw_battles():

@@ -16,9 +16,11 @@ var master_sfx_mult: float = 1.0
 
 enum Section { SAVE, AUDIO, SETTINGS, EXIT }
 
+
 func _ready() -> void:
 	visible = false
 	_build_ui()
+
 
 func toggle_menu() -> void:
 	visible = !visible
@@ -28,7 +30,9 @@ func toggle_menu() -> void:
 		_switch_section(Section.SAVE)
 		MusicManager.play_sfx(MusicManager.SFX.OPEN_MENU)
 
+
 #region --- UI Construction ---
+
 
 func _build_ui() -> void:
 	# Dimmer background
@@ -40,12 +44,12 @@ func _build_ui() -> void:
 	# Main Window centered
 	main_panel = PanelContainer.new()
 	main_panel.custom_minimum_size = Vector2(750, 500)
-	
+
 	# This ensures it stays in the middle
 	main_panel.set_anchors_preset(Control.PRESET_CENTER)
 	main_panel.set_anchor_and_offset(SIDE_LEFT, 0.5, -375)
 	main_panel.set_anchor_and_offset(SIDE_TOP, 0.5, -250)
-	
+
 	var style = StyleBoxFlat.new()
 	style.bg_color = COLOR_BG
 	style.border_width_top = 4
@@ -84,17 +88,21 @@ func _build_ui() -> void:
 	content_area.add_theme_constant_override("separation", 25)
 	content_margin.add_child(content_area)
 
+
 func _add_tab_btn(parent: Node, txt: String, sec: Section) -> void:
 	var b = Button.new()
 	b.text = txt
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	if custom_font: b.add_theme_font_override("font", custom_font)
+	if custom_font:
+		b.add_theme_font_override("font", custom_font)
 	b.pressed.connect(_switch_section.bind(sec))
 	parent.add_child(b)
+
 
 #endregion
 
 #region --- Audio Logic using your Maps ---
+
 
 func _draw_audio_menu() -> void:
 	_add_header("Audio Mix")
@@ -114,8 +122,12 @@ func _draw_audio_menu() -> void:
 	_add_sub_header(list, "Music Themes")
 	for track_key in MusicManager.music_volume_map.keys():
 		var track_name = MusicManager.MUSIC.keys()[track_key].capitalize().replace("_", " ")
-		_add_map_slider_row(list, track_name, MusicManager.music_volume_map[track_key], 2.0, 
-			func(v): 
+		_add_map_slider_row(
+			list,
+			track_name,
+			MusicManager.music_volume_map[track_key],
+			2.0,
+			func(v):
 				MusicManager.music_volume_map[track_key] = v
 				# Update current playing track volume immediately
 				if MusicManager.current_track_type == track_key:
@@ -129,64 +141,85 @@ func _draw_audio_menu() -> void:
 	for sfx_key in MusicManager.sfx_volume_map.keys():
 		# Converts SFX.TROOP_MOVE to "Troop Move"
 		var sfx_name = MusicManager.SFX.keys()[sfx_key].capitalize().replace("_", " ")
-		_add_map_slider_row(list, sfx_name, MusicManager.sfx_volume_map[sfx_key], 2.0, 
+		_add_map_slider_row(
+			list,
+			sfx_name,
+			MusicManager.sfx_volume_map[sfx_key],
+			2.0,
 			func(v): MusicManager.sfx_volume_map[sfx_key] = v
 		)
+
+
 #endregion
 
 #region --- Helpers ---
 
-func _switch_section(sec: Section) -> void:
-	for c in content_area.get_children(): c.queue_free()
-	
-	match sec:
-		Section.AUDIO: _draw_audio_menu()
-		Section.SAVE: _draw_save_menu() # Updated
-		Section.EXIT: _draw_exit_confirm()
 
-func _add_map_slider_row(parent: Node, label: String, current_val: float, max_v: float, callback: Callable) -> void:
+func _switch_section(sec: Section) -> void:
+	for c in content_area.get_children():
+		c.queue_free()
+
+	match sec:
+		Section.AUDIO:
+			_draw_audio_menu()
+		Section.SAVE:
+			_draw_save_menu()  # Updated
+		Section.EXIT:
+			_draw_exit_confirm()
+
+
+func _add_map_slider_row(
+	parent: Node, label: String, current_val: float, max_v: float, callback: Callable
+) -> void:
 	var row_vbox = VBoxContainer.new()
-	
+
 	var lbl = Label.new()
 	lbl.text = label
 	lbl.add_theme_font_size_override("font_size", 13)
 	lbl.modulate = Color(0.8, 0.8, 0.8)
-	if custom_font: lbl.add_theme_font_override("font", custom_font)
+	if custom_font:
+		lbl.add_theme_font_override("font", custom_font)
 
 	var hbox = HBoxContainer.new()
 	var slider = HSlider.new()
 	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	slider.min_value = 0.0
-	slider.max_value = max_v # Allow going up to 200% volume for quiet files
+	slider.max_value = max_v  # Allow going up to 200% volume for quiet files
 	slider.step = 0.01
 	slider.value = current_val
-	
+
 	var val_text = Label.new()
 	val_text.custom_minimum_size = Vector2(40, 0)
 	val_text.text = str(int((current_val / max_v) * 100)) + "%"
-	
+
 	slider.value_changed.connect(callback)
 	slider.value_changed.connect(func(v): val_text.text = str(int((v / max_v) * 100)) + "%")
-	
+
 	hbox.add_child(slider)
 	hbox.add_child(val_text)
 	row_vbox.add_child(lbl)
 	row_vbox.add_child(hbox)
 	parent.add_child(row_vbox)
 
+
 func _add_sub_header(parent: Node, txt: String) -> void:
 	var l = Label.new()
 	l.text = txt
 	l.modulate = COLOR_ACCENT
-	if custom_font: l.add_theme_font_override("font", custom_font)
+	if custom_font:
+		l.add_theme_font_override("font", custom_font)
 	parent.add_child(l)
+
+
 func _add_header(txt: String) -> void:
 	var l = Label.new()
 	l.text = txt
-	if custom_font: l.add_theme_font_override("font", custom_font)
+	if custom_font:
+		l.add_theme_font_override("font", custom_font)
 	l.add_theme_font_size_override("font_size", 24)
 	l.modulate = COLOR_ACCENT
 	content_area.add_child(l)
+
 
 func _draw_exit_confirm() -> void:
 	_add_header("Exit")
@@ -195,9 +228,12 @@ func _draw_exit_confirm() -> void:
 	btn.modulate = Color(1, 0.3, 0.3)
 	btn.pressed.connect(get_tree().quit)
 	content_area.add_child(btn)
+
+
 #endregion
 
 #region --- Save & Load Logic ---
+
 
 func _draw_save_menu() -> void:
 	_add_header("Save & Load Game")
@@ -214,25 +250,26 @@ func _draw_save_menu() -> void:
 
 	var save_btn = Button.new()
 	save_btn.text = "Save New"
-	save_btn.disabled = true # Start disabled
+	save_btn.disabled = true  # Start disabled
 	save_input_hbox.add_child(save_btn)
 
 	# Enable button only if text is not empty
-	line_edit.text_changed.connect(func(new_text): 
-		save_btn.disabled = new_text.strip_edges().is_empty()
+	line_edit.text_changed.connect(
+		func(new_text): save_btn.disabled = new_text.strip_edges().is_empty()
 	)
 
-	save_btn.pressed.connect(func():
-		var file_name = line_edit.text.strip_edges()
-		GameState.current_world.save_game(file_name)
-		_switch_section(Section.SAVE) # Refresh list
+	save_btn.pressed.connect(
+		func():
+			var file_name = line_edit.text.strip_edges()
+			GameState.current_world.save_game(file_name)
+			_switch_section(Section.SAVE)  # Refresh list
 	)
 
 	content_area.add_child(HSeparator.new())
 
 	# --- 2. LOAD SECTION ---
 	_add_sub_header(content_area, "Existing Saves")
-	
+
 	var scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content_area.add_child(scroll)
@@ -257,17 +294,18 @@ func _draw_save_menu() -> void:
 				found_any = true
 				_add_save_row(save_list, file_name.replace(".tres", ""))
 			file_name = dir.get_next()
-		
+
 		if not found_any:
 			var lbl = Label.new()
 			lbl.text = "No save files found."
 			lbl.modulate = Color(0.5, 0.5, 0.5)
 			save_list.add_child(lbl)
 
+
 func _add_save_row(parent: Node, save_name: String) -> void:
 	var hbox = HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 10)
-	
+
 	var lbl = Label.new()
 	lbl.text = save_name
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -276,17 +314,19 @@ func _add_save_row(parent: Node, save_name: String) -> void:
 	var load_btn = Button.new()
 	load_btn.text = "Load"
 	load_btn.custom_minimum_size.x = 80
-	load_btn.pressed.connect(func():
-		GameState.current_world.load_game(save_name)
-		toggle_menu() 
+	load_btn.pressed.connect(
+		func():
+			GameState.current_world.load_game(save_name)
+			toggle_menu()
 	)
-	
+
 	var del_btn = Button.new()
 	del_btn.text = "X"
 	del_btn.modulate = Color(1, 0.4, 0.4)
-	del_btn.pressed.connect(func():
-		DirAccess.remove_absolute("res://saves/" + save_name + ".tres")
-		_switch_section(Section.SAVE) # Refresh
+	del_btn.pressed.connect(
+		func():
+			DirAccess.remove_absolute("res://saves/" + save_name + ".tres")
+			_switch_section(Section.SAVE)  # Refresh
 	)
 
 	hbox.add_child(load_btn)

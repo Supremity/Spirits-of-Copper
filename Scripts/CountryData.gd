@@ -16,7 +16,7 @@ var is_player: bool = false
 
 var relations: Dictionary = {}
 
-var factory_port_daily_cost = 0.2 # The less the better. It's percentage based
+var factory_port_daily_cost = 0.2  # The less the better. It's percentage based
 
 # Economy
 var money: float = 0.0
@@ -48,14 +48,14 @@ var ready_troops: Array[ReadyTroop] = []
 var deploy_pid: int = -1  # ID of province to deploy to
 #endregion
 
-
 # for optimization
 var is_at_war = false
 var war_dirty = true
 var _is_loading := false
 var dirty := true
-var dirty_manpower:= true
+var dirty_manpower := true
 var enemies = []
+
 
 #region --- Inner Classes ---
 class TroopTraining:
@@ -96,8 +96,6 @@ func _init(p_country_name: String = "") -> void:
 	_setup_starting_army()
 
 
-
-
 func process_hour() -> void:
 	if _is_loading:
 		return
@@ -115,11 +113,11 @@ func process_hour() -> void:
 	money += income
 
 	troop_speed_modifier = 1.0 + (army_level * 0.1)
-	
-	if dirty_manpower and !dirty: # Because if dirty. refresh_economic_stats will do it anyways
+
+	if dirty_manpower and !dirty:  # Because if dirty. refresh_economic_stats will do it anyways
 		update_manpower_pool()
-	
-	if war_dirty: # For the AI
+
+	if war_dirty:  # For the AI
 		update_is_at_war()
 
 
@@ -139,13 +137,14 @@ func process_day() -> void:
 
 func _refresh_economic_stats() -> void:
 	if not dirty:
-		return # Already up to date
-		
+		return  # Already up to date
+
 	total_population = CountryManager.get_country_population(country_name)
 	factories_amount = CountryManager.get_factories_amount(country_name)
 	gdp = int(CountryManager.get_country_gdp(country_name) * total_population * 0.000001)
 	update_manpower_pool()
 	self.dirty = false
+
 
 #endregion
 
@@ -294,6 +293,7 @@ func demobilize_troop(troop: TroopData, count: int = -1) -> void:
 		ready_troops.append(reserve)
 	dirty_manpower = true
 
+
 ## Enhanced upkeep: Reserves cost 25% of active troops
 func calculate_army_upkeep() -> float:
 	var active_divisions = 0
@@ -371,10 +371,12 @@ func _deploy_initial_force(divisions: Array[DivisionData]) -> void:
 			TroopManager.deploy_specific_divisions(country_name, current_batch, target_pid)
 			current_batch = []  # Reset for next stack
 
+
 func update_is_at_war():
 	is_at_war = not WarManager.get_enemies_of(self.country_name).is_empty()
 	enemies = WarManager.get_enemies_of(self.country_name)
 	war_dirty = false
+
 
 func _process_reinforcements():
 	var all_my_troops = TroopManager.get_troops_for_country(country_name)
@@ -393,12 +395,12 @@ func _process_reinforcements():
 					money -= (template["cost"] * 0.05)
 					manpower -= men_needed
 					div.hp = min(div.max_hp, div.hp + 5.0)
-					
-					
-					
+
+
 func set_relation_with(other_country_name: String, value: int) -> void:
 	other_country_name = other_country_name.to_lower()
 	relations[other_country_name] = clampi(value, 0, 100)
+
 
 func get_relation_with(other_country_name: String) -> int:
 	other_country_name = other_country_name.to_lower()

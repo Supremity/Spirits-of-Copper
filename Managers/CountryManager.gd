@@ -32,7 +32,7 @@ func _on_hour_passed() -> void:
 
 	if _hour_process_index >= total:
 		_hour_process_index = 0
-		
+
 	AiManager.run_ai_cycle()
 
 
@@ -89,7 +89,8 @@ func set_player_country(country_name: String) -> void:
 
 
 func add_country(country_name: String) -> CountryData:
-	if country_name == "sea": return
+	if country_name == "sea":
+		return
 	var c_name_lower = country_name.to_lower()
 
 	# 1. Check if it already exists
@@ -100,19 +101,22 @@ func add_country(country_name: String) -> CountryData:
 	# 2. Check if the flag exists before proceeding
 	var flag = TroopManager.get_flag(c_name_lower)
 	if flag == null:
-		push_error("CountryManager: Cannot add '%s'. No flag found at res://assets/flags/" % country_name)
+		push_error(
+			"CountryManager: Cannot add '%s'. No flag found at res://assets/flags/" % country_name
+		)
 		return null
 
 	# 3. If flag exists, create and store the country
 	var new_country := CountryData.new(country_name)
-	
+
 	# NOTE Z21: Relations should be based on political affinity and stuff
 	for existing_name in countries.keys():
 		new_country.set_relation_with(existing_name, 50)
 		countries[existing_name].set_relation_with(c_name_lower, 50)
-	
+
 	countries[c_name_lower] = new_country
 	return new_country
+
 
 func mark_country_dirty(country_name: String) -> void:
 	if country_name == "" or country_name == "sea":
@@ -158,6 +162,7 @@ func get_factories_amount(country_name: String) -> int:
 			count += 1
 	return count
 
+
 # NOTE(pol): We should keep track of the manpower used instead of recalculating
 # In CountryManager.gd (or wherever this static function lives)
 static func get_country_used_manpower(country_obj: CountryData) -> int:
@@ -187,10 +192,11 @@ static func get_country_used_manpower(country_obj: CountryData) -> int:
 static func _get_manpower_from_template(type: String) -> int:
 	var stats = DivisionData.TEMPLATES.get(type, DivisionData.TEMPLATES["infantry"])
 	return stats["manpower"]
-	
+
+
 func _cleanup_empty_countries() -> void:
 	var to_remove: Array[String] = []
-	
+
 	for c_name in countries.keys():
 		var provinces = MapManager.country_to_provinces.get(countries[c_name].country_name, [])
 		if provinces.is_empty():

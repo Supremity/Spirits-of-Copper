@@ -19,11 +19,11 @@ var max_province_id: int = 0
 
 var country_colors: Dictionary = {}
 
-var color_to_pop_map: Dictionary = {}  
+var color_to_pop_map: Dictionary = {}
 var color_to_city_map: Dictionary = {}
 var color_to_ethnic_map: Dictionary = {}
 var color_to_claim_map: Dictionary = {}
-var ethnic_name_to_color: Dictionary = {}  
+var ethnic_name_to_color: Dictionary = {}
 var gdp_map: Dictionary = {}
 
 var province_to_country: Dictionary = {}
@@ -38,8 +38,6 @@ var province_centers: Dictionary = {}  # Stores {ID: Vector2(x, y)}
 
 # This will look like: {"french_empire": [101, 102, 103], "canada": [1, 2, 5]}
 var global_claims_registry: Dictionary = {}
-
-
 
 var all_cities = []
 
@@ -56,7 +54,6 @@ const CACHE_FOLDER = "res://map_data/"
 
 
 func load_country_data() -> void:
-	# NOTE Z21 this can all be done in 1 function like load_json("countries.json", color_to_country_map)
 	_load_country_colors()
 	_load_population_json()
 	_load_city_json()
@@ -132,89 +129,102 @@ func _try_load_cached_data() -> bool:
 func initialize_map(
 	region_tex: Texture2D,
 	culture_tex: Texture2D,
-	population_tex: Texture2D,
+	pop_tex: Texture2D,
 	city_tex: Texture2D,
 	gdp_tex,
-	ethnicity_tex,
+	eth_tex,
 	claims_tex
 ) -> void:
 	var r_img = region_tex.get_image()
 	var c_img = culture_tex.get_image()
-	var p_img = population_tex.get_image()
-	var city_img = city_tex.get_image()
-	var gdp_img = gdp_tex.get_image()
-	var ethnicity_img = ethnicity_tex.get_image()
-	var claims_img = claims_tex.get_image()
 
 	var w = r_img.get_width()
 	var h = r_img.get_height()
 
-	# Safety check for the crash you saw
-	var pw = p_img.get_width()
-	var ph = p_img.get_height()
-
 	id_map_image = Image.create(w, h, false, Image.FORMAT_RGB8)
-	var unique_regions = {}
+
+	var found_regions = {}  # Stores { "ColorString": ProvinceID }
 	var next_id = 2
+
+	# Pre-fetch data images so we don't pass textures around
+	var data_images = {
+		"pop": pop_tex.get_image(),
+		"city": city_tex.get_image(),
+		"gdp": gdp_tex.get_image(),
+		"eth": eth_tex.get_image(),
+		"claims": claims_tex.get_image(),
+		"culture": c_img  # Needed for sea/country check
+	}
 
 	for y in range(h):
 		for x in range(w):
-			var c_color = c_img.get_pixel(x, y)
 			var r_color = r_img.get_pixel(x, y)
-			var is_sea_pixel = _is_sea(c_color)
 
-			# var is_sea_grid = _is_sea_grid(c_color)
-
-			# FIX: Generate a key based on the actual color in the region map (r_color)
-			# We add a prefix so that a land province and sea province with the
-			# same hex color won't accidentally merge.
-			var hex = r_color.to_html(false)
-			var key = ("S_" if is_sea_pixel else "L_") + hex
-
-			# Check for Borders/Grid (ID 1)
-			if r_color == Color.BLACK:
+			# 1. Handle Borders immediately
+			if r_color.a == 0 or r_color == Color.BLACK:
 				_write_id(x, y, 1)
 				continue
 
-			# If this is a new region (Unique Sea Zone or Land Province)
-			if not unique_regions.has(key):
-				unique_regions[key] = next_id
+			# 2. Check if we have seen this region color before
+			# Note: We use the hex string as the dictionary key
+			var key = r_color.to_html(false)
 
-				var province = Province.new()
-				province.id = next_id
+			if key in found_regions:
+				# We know this province, just paint the ID map
+				_write_id(x, y, found_regions[key])
+			else:
+				# 3. NEW PROVINCE FOUND!
+				# Register it and sample stats only ONCE at this (x,y)
+				var new_pid = next_id
+				found_regions[key] = new_pid
 
-				if is_sea_pixel:
-					# SEA LOGIC: Unique ID, but 0 stats
-					province.type = province.SEA
-					province.country = "sea"
-					province.population = 0
-					province.gdp = 0
-					province.city = ""
-				else:
-					# LAND LOGIC
-					province.type = province.LAND
-					province.country = _identify_country(c_color)
+				_create_province_from_pixel(new_pid, x, y, r_color, data_images)
 
-					var p_color = p_img.get_pixel(min(x, pw - 1), min(y, ph - 1))
-					var city_color = city_img.get_pixel(min(x, pw - 1), min(y, ph - 1))
-					var gdp_color = gdp_img.get_pixel(min(x, pw - 1), min(y, ph - 1))
-					var ethnicity_color = ethnicity_img.get_pixel(min(x, pw - 1), min(y, ph - 1))
-					var claims_color = claims_img.get_pixel(min(x, pw - 1), min(y, ph - 1))
-					province.population = _get_pop_from_color(p_color)
-					province.city = _get_city_from_color(city_color)
-					province.ethnicity = _get_name_from_color(ethnicity_color, color_to_ethnic_map)
-					province.claims = _get_claims_from_color(claims_color, color_to_claim_map)
-					if len(province.city) > 0:  # Cities by default have factories
-						province.factory = Province.FACTORY_BUILT
-					province.gdp = _get_gdp_from_color(gdp_color)
-
-				province_objects[next_id] = province
-				province_to_country[next_id] = province.country
+				_write_id(x, y, new_pid)
 				next_id += 1
 
-			# Write the unique ID to your id_map_image
-			_write_id(x, y, unique_regions[key])
 	max_province_id = next_id - 1
+	_finalize_map_processing()
+
+
+func _create_province_from_pixel(
+	pid: int, x: int, y: int, r_color: Color, images: Dictionary
+) -> void:
+	var province = Province.new()
+	province.id = pid
+
+	# Check Sea/Land using Culture Map at (x,y)
+	var c_color = images.culture.get_pixel(x, y)
+
+	if _is_sea(c_color):
+		province.type = Province.SEA
+		province.country = "sea"
+		# Sea has 0 stats, skip other lookups
+	else:
+		province.type = Province.LAND
+		province.country = _identify_country(c_color)
+
+		var sx = min(x, images.pop.get_width() - 1)
+		var sy = min(y, images.pop.get_height() - 1)
+
+		province.population = _get_pop_from_color(images.pop.get_pixel(sx, sy))
+		province.gdp = _get_gdp_from_color(images.gdp.get_pixel(sx, sy))
+		province.city = _get_city_from_color(images.city.get_pixel(sx, sy))
+		province.ethnicity = _get_name_from_color(images.eth.get_pixel(sx, sy), color_to_ethnic_map)
+		province.claims = _get_claims_from_color(
+			images.claims.get_pixel(sx, sy), color_to_claim_map
+		)
+
+		if len(province.city) > 0:
+			province.factory = Province.FACTORY_BUILT
+
+	# Store Logic
+	province_objects[pid] = province
+	province_to_country[pid] = province.country
+
+
+func _finalize_map_processing():
+	# post-processing
 	_calculate_province_centroids()
 	_build_country_to_provinces()
 	_build_adjacency_list()
@@ -482,9 +492,9 @@ func _province_build_industry(pid: int, player_name: String) -> void:
 		if province.factory != province.NO_FACTORY:
 			print("Cannot build: Factory slot is busy or full.")
 			return
-			
+
 		EconomyManager.start_construction(pid, "factory", 10, 150.0, country)
-		
+
 		_cleanup_interaction_state()
 		show_industry_country(player_name)
 
@@ -492,11 +502,11 @@ func _province_build_industry(pid: int, player_name: String) -> void:
 		if province.port != province.NO_PORT:
 			print("Cannot build: Port slot is busy or full.")
 			return
-			
+
 		# 3. Sea check for Ports
 		if pid in get_provinces_near_sea(player_name):
 			EconomyManager.start_construction(pid, "port", 10, 150.0, country)
-			
+
 			_cleanup_interaction_state()
 			show_industry_country(player_name)
 		else:
@@ -587,20 +597,24 @@ func _build_adjacency_list() -> void:
 
 	# Helper function to ensure bidirectional recording
 	var add_connection = func(a: int, b: int):
-		if a == b or a <= 1 or b <= 1: return
-		
+		if a == b or a <= 1 or b <= 1:
+			return
+
 		# A -> B
-		if not unique_neighbors.has(a): unique_neighbors[a] = {}
+		if not unique_neighbors.has(a):
+			unique_neighbors[a] = {}
 		unique_neighbors[a][b] = true
-		
+
 		# B -> A (The "Force" step)
-		if not unique_neighbors.has(b): unique_neighbors[b] = {}
+		if not unique_neighbors.has(b):
+			unique_neighbors[b] = {}
 		unique_neighbors[b][a] = true
 
 	for y in range(h):
 		for x in range(w):
 			var pid = _get_pid_fast(x, y)
-			if pid <= 1: continue
+			if pid <= 1:
+				continue
 
 			# 4-directional neighbors
 			var dirs = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
@@ -608,13 +622,14 @@ func _build_adjacency_list() -> void:
 			for d in dirs:
 				var nx = x + d.x
 				var ny = y + d.y
-				if nx < 0 or ny < 0 or nx >= w or ny >= h: continue
+				if nx < 0 or ny < 0 or nx >= w or ny >= h:
+					continue
 
 				var neighbor = _get_pid_fast(nx, ny)
 
 				if neighbor > 1 and neighbor != pid:
 					add_connection.call(pid, neighbor)
-				
+
 				elif neighbor == 1:
 					var across = _scan_across_border(nx, ny, pid)
 					if across > 1 and across != pid:
@@ -946,6 +961,7 @@ func province_updated():
 	if GameState.industry_building:
 		show_industry_country(CountryManager.player_country.country_name)
 
+
 func show_industry_country(country_name: String) -> void:
 	if not country_to_provinces.has(country_name):
 		push_warning("MapManager: Country " + country_name + " not found.")
@@ -956,24 +972,24 @@ func show_industry_country(country_name: String) -> void:
 
 	for pid in provinces:
 		var province = province_objects[pid]
-		var color = Color.WHITE # Default color
+		var color = Color.WHITE  # Default color
 
 		if province.city.length() > 0:
 			color = Color.YELLOW
-		
+
 		elif province.factory == province.FACTORY_BUILT:
 			color = Color.GREEN
 		elif province.factory == province.FACTORY_BUILDING:
-			color = Color.ORANGE # Show progress
-			
+			color = Color.ORANGE  # Show progress
+
 		elif province.port == province.PORT_BUILT:
 			color = Color.BLUE
 		elif province.port == province.PORT_BUILDING:
-			color = Color.CYAN # Show progress
-			
+			color = Color.CYAN  # Show progress
+
 		elif pid in provinces_near_sea:
 			color = Color.LIGHT_SKY_BLUE
-		
+
 		state_color_image.set_pixel(pid, 0, color)
 
 	state_color_texture.update(state_color_image)
@@ -1003,7 +1019,7 @@ func transfer_ownership(pid: int, new_owner_name: String) -> void:
 	province_to_country[pid] = new_owner_name
 
 	var new_color = country_colors.get(new_owner_name, Color.GRAY)
-	
+
 	CountryManager.mark_country_dirty(old_owner_name)
 	CountryManager.mark_country_dirty(new_owner_name)
 	_update_lookup(pid, new_color)
@@ -1336,36 +1352,38 @@ func get_border_provinces(country_name: String) -> Array[int]:
 
 	return border_provinces
 
+
 func get_all_releasables(my_country: String) -> Array:
 	var releasables = []
-	
+
 	# 1. Get a list of all province IDs I currently own
 	var my_provinces = []
 	for obj in province_objects.values():
 		# Using 'country' as per your Province resource
 		if obj.country == my_country:
 			my_provinces.append(obj.id)
-			
+
 	# 2. Check every country in the registry
 	for potential_country in global_claims_registry.keys():
-		if potential_country == my_country: 
+		if potential_country == my_country:
 			continue
-		
+
 		var required_provinces = global_claims_registry[potential_country]
 		var has_all_provinces = true
-		
+
 		# 3. Verify I own every province they claim
 		for p_id in required_provinces:
 			if not p_id in my_provinces:
 				has_all_provinces = false
 				break
-		
+
 		if has_all_provinces:
 			# 4. Only add if they aren't already on the map
 			if not _country_exists_on_map(potential_country):
 				releasables.append(potential_country)
-				
+
 	return releasables
+
 
 func _country_exists_on_map(c_name: String) -> bool:
 	for obj in province_objects.values():
@@ -1455,7 +1473,7 @@ func generate_type_mask() -> ImageTexture:
 
 	var w := id_map_image.get_width()
 	var h := id_map_image.get_height()
-	
+
 	var type_img := Image.create_empty(w, h, false, Image.FORMAT_L8)
 	var uncertain_pixels: Array[Vector2i] = []
 
@@ -1476,23 +1494,25 @@ func generate_type_mask() -> ImageTexture:
 	# --- PASS 2: Neighbor Check for Borders ---
 	for pos in uncertain_pixels:
 		var touches_land := false
-		
+
 		# 8-way check (includes diagonals)
 		for dy in range(-1, 2):
 			for dx in range(-1, 2):
-				if dx == 0 and dy == 0: continue
+				if dx == 0 and dy == 0:
+					continue
 
 				var nx: int = pos.x + dx
 				var ny: int = pos.y + dy
 
 				if nx >= 0 and nx < w and ny >= 0 and ny < h:
 					var nid = _get_pid_fast(nx, ny)
-					if nid > 1: # Ignore other border pixels
+					if nid > 1:  # Ignore other border pixels
 						var n_prov = province_objects.get(nid)
 						if n_prov and n_prov.type != 0:
 							touches_land = true
 							break
-			if touches_land: break
+			if touches_land:
+				break
 
 		var final_color = Color.WHITE if touches_land else Color.BLACK
 		type_img.set_pixel(pos.x, pos.y, final_color)

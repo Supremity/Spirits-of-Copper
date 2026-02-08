@@ -15,7 +15,7 @@ const COLOR_WARNING = Color(0.9, 0.7, 0.2)
 #region --- Nodes ---
 var main_container: MarginContainer
 var category_hbox: HBoxContainer
-var laws_grid: VBoxContainer # Changed to VBox for a cleaner list feel
+var laws_grid: VBoxContainer  # Changed to VBox for a cleaner list feel
 
 # Header & Stats
 var header_label: Label
@@ -37,31 +37,38 @@ var current_country: CountryData
 var _update_timer: float = 0.0
 #endregion
 
+
 func _ready() -> void:
 	visible = false
 	#_build_ui()
 
+
 func open_menu(country: CountryData) -> void:
 	current_country = country
 	_build_ui()
-	_switch_category(Category.MILITARY) # Default to Military
+	_switch_category(Category.MILITARY)  # Default to Military
 	_refresh_full_data()
 	show()
+
 
 func close_menu() -> void:
 	hide()
 
+
 func _process(delta: float) -> void:
-	if not visible or not current_country: return
+	if not visible or not current_country:
+		return
 	money_display.text = "$%s" % _format_money(current_country.money)
 	pp_label.text = "%.1f PP" % current_country.political_power
-	
+
 	_update_timer += delta
 	if _update_timer > 1.0:
 		_update_timer = 0.0
 		_refresh_army_counts()
 
+
 #region --- UI Construction ---
+
 
 func _build_ui() -> void:
 	main_container = MarginContainer.new()
@@ -98,6 +105,7 @@ func _build_ui() -> void:
 	_build_left_column(split)
 	_build_right_column(split)
 
+
 func _build_header(parent: VBoxContainer) -> void:
 	var header_hbox = HBoxContainer.new()
 	flag_rect = TextureRect.new()
@@ -105,7 +113,7 @@ func _build_header(parent: VBoxContainer) -> void:
 	flag_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	flag_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	flag_rect.texture = TroopManager.get_flag(current_country.country_name)
-	
+
 	var title_vbox = VBoxContainer.new()
 	header_label = Label.new()
 	header_label.add_theme_font_size_override("font_size", 28)
@@ -126,6 +134,7 @@ func _build_header(parent: VBoxContainer) -> void:
 	parent.add_child(header_hbox)
 	parent.add_child(HSeparator.new())
 
+
 func _build_left_column(parent: HBoxContainer) -> void:
 	var left_col = VBoxContainer.new()
 	left_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -142,7 +151,7 @@ func _build_left_column(parent: HBoxContainer) -> void:
 	left_col.add_child(HSeparator.new())
 	_create_section_header(left_col, "Army Logistics")
 	manpower_display = _create_stat_row(left_col, "Active Personnel", "0")
-	
+
 	# Composition
 	var comp_vbox = VBoxContainer.new()
 	comp_vbox.add_theme_constant_override("separation", 4)
@@ -150,6 +159,7 @@ func _build_left_column(parent: HBoxContainer) -> void:
 	comp_tank = _create_simple_row(comp_vbox, "Armor")
 	comp_artillery = _create_simple_row(comp_vbox, "Artillery")
 	left_col.add_child(comp_vbox)
+
 
 func _build_right_column(parent: HBoxContainer) -> void:
 	var right_col = VBoxContainer.new()
@@ -161,7 +171,7 @@ func _build_right_column(parent: HBoxContainer) -> void:
 	category_hbox = HBoxContainer.new()
 	category_hbox.add_theme_constant_override("separation", 5)
 	right_col.add_child(category_hbox)
-	
+
 	_add_category_button("MILITARY", Category.MILITARY)
 	_add_category_button("ECONOMY", Category.ECONOMY)
 	_add_category_button("COUNTRY", Category.COUNTRY)
@@ -179,9 +189,11 @@ func _build_right_column(parent: HBoxContainer) -> void:
 	laws_grid.add_theme_constant_override("separation", 10)
 	scroll.add_child(laws_grid)
 
+
 #endregion
 
 #region --- Category Management ---
+
 
 func _add_category_button(label: String, cat: Category) -> void:
 	var btn = Button.new()
@@ -190,9 +202,10 @@ func _add_category_button(label: String, cat: Category) -> void:
 	btn.pressed.connect(_switch_category.bind(cat))
 	category_hbox.add_child(btn)
 
+
 func _switch_category(cat: Category) -> void:
 	current_category = cat
-	
+
 	# Update Button Visuals
 	for i in category_hbox.get_child_count():
 		category_hbox.get_child(i).button_pressed = (i == cat)
@@ -203,12 +216,17 @@ func _switch_category(cat: Category) -> void:
 
 	# Populate based on selection
 	match current_category:
-		Category.MILITARY: _populate_military()
-		Category.ECONOMY:  _populate_economy()
-		Category.COUNTRY:  _populate_country()
-		Category.RELEASABLES: _populate_releasables(current_country.country_name)
-	
+		Category.MILITARY:
+			_populate_military()
+		Category.ECONOMY:
+			_populate_economy()
+		Category.COUNTRY:
+			_populate_country()
+		Category.RELEASABLES:
+			_populate_releasables(current_country.country_name)
+
 	_update_law_buttons_visuals()
+
 
 func _populate_military() -> void:
 	_add_law_option("Volunteer Only", 0.005, 0.0, 0, "Professional army.")
@@ -217,17 +235,20 @@ func _populate_military() -> void:
 	_add_law_option("Service by Requirement", 0.02, 0.30, 150, "All eligible adults.")
 	_add_law_option("All Adult Serve", 0.4, 0.50, 150, "Scraping the barrel.")
 
+
 func _populate_economy() -> void:
 	var lbl = Label.new()
 	lbl.text = "Economy laws coming soon..."
 	lbl.add_theme_color_override("font_color", COLOR_TEXT_DIM)
 	laws_grid.add_child(lbl)
 
+
 func _populate_country() -> void:
 	var lbl = Label.new()
 	lbl.text = "Country decisions coming soon..."
 	lbl.add_theme_color_override("font_color", COLOR_TEXT_DIM)
 	laws_grid.add_child(lbl)
+
 
 func _populate_releasables(player_country: String) -> void:
 	for child in laws_grid.get_children():
@@ -239,19 +260,21 @@ func _populate_releasables(player_country: String) -> void:
 		var lbl = Label.new()
 		lbl.text = "No nations to release."
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5)) # COLOR_TEXT_DIM
+		lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))  # COLOR_TEXT_DIM
 		laws_grid.add_child(lbl)
 		return
 
 	for country_id in releasables:
 		_add_releasable_option(country_id)
 
+
 #endregion
+
 
 func _add_releasable_option(country_id: String) -> void:
 	var btn_panel = PanelContainer.new()
-	btn_panel.custom_minimum_size = Vector2(0, 55) # Slimmer height for HBox layout
-	
+	btn_panel.custom_minimum_size = Vector2(0, 55)  # Slimmer height for HBox layout
+
 	# 1. Styling
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.12, 0.12, 0.14)
@@ -315,15 +338,16 @@ func _add_releasable_option(country_id: String) -> void:
 	btn_play.text = "Play As"
 	btn_play.custom_minimum_size = Vector2(80, 30)
 	btn_play.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	
+
 	# Optional: Give 'Play As' a slightly blue-ish tint to distinguish it
 	btn_play.add_theme_color_override("font_hover_color", Color(0.5, 0.8, 1.0))
-	
+
 	btn_play.pressed.connect(_on_release_and_play_pressed.bind(country_id))
 	h_btns.add_child(btn_play)
 
 	laws_grid.add_child(btn_panel)
-	
+
+
 func _on_release_pressed(country_id: String) -> void:
 	if current_country.political_power >= 50:
 		current_country.political_power -= 50
@@ -333,16 +357,18 @@ func _on_release_pressed(country_id: String) -> void:
 	else:
 		Console.print_error("Not enough Political Power!")
 
+
 func _on_release_and_play_pressed(country_id: String) -> void:
 	if current_country.political_power >= 50:
 		# 1. Release the land
 		MapManager.release_country(country_id)
 		CountryManager.set_player_country(country_id)
 		Console.print_info("Switched playing as: " + country_id)
-		
+
 		_populate_releasables(country_id)
 	else:
 		Console.print_error("Not enough Political Power!")
+
 
 #region --- Logic & Data Refresh ---
 func _refresh_full_data() -> void:
@@ -572,26 +598,27 @@ func _add_law_option(
 
 #endregion
 
-
 #region --- Interactions ---
+
 
 func _on_releasable_gui_input(event: InputEvent, panel: PanelContainer) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var country_id = panel.get_meta("country_id")
 		var cost = panel.get_meta("cost")
-		
+
 		# Assuming you have a global 'PlayerData' or similar for Political Power
 		if current_country.political_power >= cost:
 			current_country.political_power -= cost
 			MapManager.release_country(country_id)
-			
+
 			# Refresh the UI since the list might change after a release
 			_populate_releasables(current_country.country_name)
-			
+
 			print("Successfully released ", country_id)
 		else:
 			print("Not enough Political Power!")
 			# Optional: Play a "buzz" error sound or shake the panel
+
 
 func _on_law_gui_input(event: InputEvent, btn: PanelContainer) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:

@@ -317,7 +317,7 @@ func add_war_silent(a: CountryData, b: CountryData) -> bool:
 
 	wars[a][b] = true
 	wars[b][a] = true
-	
+
 	a.war_dirty = true
 	b.war_dirty = true
 
@@ -391,7 +391,7 @@ func _check_country_collapse(country_name: String, victor_name: String):
 func _handle_total_collapse(fallen_name: String, victor_name: String) -> void:
 	var loser := CountryManager.get_country(fallen_name)
 	var winner := CountryManager.get_country(victor_name)
-	
+
 	# NOTE Z21: Fixes some bug that makes this function run multiple times. Idk how to fix it
 	if !wars.has(loser):
 		return
@@ -413,7 +413,7 @@ func _handle_total_collapse(fallen_name: String, victor_name: String) -> void:
 
 		if c.allowedCountries.has(fallen_name):
 			c.allowedCountries.erase(fallen_name)
-	
+
 	var player_involved := loser.is_player or winner.is_player
 	if player_involved:
 		MusicManager.play_sfx(MusicManager.SFX.POPUP)

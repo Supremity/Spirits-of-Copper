@@ -1,7 +1,6 @@
 extends Node
 class_name AIManager
 
-
 var world_tension: float = 0.0
 
 var current_country: CountryData = null
@@ -10,15 +9,16 @@ var blackboard := {}
 var memory := {}
 
 
-
 func run_ai_cycle() -> void:
 	# Call once per day / turn / simulation step
 	for country in CountryManager.countries.values():
 		_process_country(country)
 
+
 # ============================================================
 # COUNTRY PROCESSING
 # ============================================================
+
 
 func _process_country(country: CountryData) -> void:
 	_bind_country(country)
@@ -33,19 +33,24 @@ func _process_country(country: CountryData) -> void:
 
 	_unbind_country()
 
+
 # ============================================================
 # CONTEXT BINDING
 # ============================================================
 
+
 func _bind_country(country: CountryData) -> void:
 	current_country = country
+
 
 func _unbind_country() -> void:
 	current_country = null
 
+
 # ============================================================
 # PERCEPTION
 # ============================================================
+
 
 func _perceive() -> void:
 	if not current_country:
@@ -59,9 +64,11 @@ func _perceive() -> void:
 	# - World tension
 	pass
 
+
 # ============================================================
 # MEMORY SYSTEM
 # ============================================================
+
 
 func _update_memory() -> void:
 	if not current_country:
@@ -74,9 +81,11 @@ func _update_memory() -> void:
 	# - Past successes & failures
 	pass
 
+
 # ============================================================
 # REASONING
 # ============================================================
+
 
 func _reason() -> void:
 	if not current_country:
@@ -88,9 +97,11 @@ func _reason() -> void:
 	# - "Now is a bad time for war"
 	pass
 
+
 # ============================================================
 # INTENT FORMATION
 # ============================================================
+
 
 func _form_intent() -> void:
 	if not current_country:
@@ -100,9 +111,11 @@ func _form_intent() -> void:
 	# (Expansion, defense, delay, preparation, etc.)
 	pass
 
+
 # ============================================================
 # PLANNING
 # ============================================================
+
 
 func _plan() -> void:
 	if not current_country:
@@ -112,9 +125,11 @@ func _plan() -> void:
 	# GOAP / Utility AI / scripted planners
 	pass
 
+
 # ============================================================
 # ACTION EXECUTION
 # ============================================================
+
 
 func _act() -> void:
 	if not current_country:
@@ -125,9 +140,11 @@ func _act() -> void:
 	_manage_movement()
 	_manage_diplomacy()
 
+
 # ============================================================
 # LEARNING / ADAPTATION
 # ============================================================
+
 
 func _learn() -> void:
 	if not current_country:
@@ -136,41 +153,53 @@ func _learn() -> void:
 	# Adjust heuristics and biases
 	pass
 
+
 # ============================================================
 # SUBSYSTEMS (EMPTY BY DESIGN)
 # ============================================================
 
+
 func _manage_recruitment() -> void:
 	pass
+
 
 func _manage_deployment() -> void:
 	pass
 
+
 func _manage_movement() -> void:
 	pass
 
+
 func _manage_diplomacy() -> void:
 	pass
+
 
 # ============================================================
 # ADVANCED / OPTIONAL SYSTEMS
 # ============================================================
 
+
 func _predict_enemy_moves() -> void:
 	pass
+
 
 func _evaluate_risk() -> float:
 	return 0.0
 
+
 func _manage_deception() -> void:
 	pass
+
 
 func _handle_internal_politics() -> void:
 	pass
 
+
 # ============================================================
 # WORLD INTERACTION
 # ============================================================
+
 
 func increase_world_tension(amount: float) -> void:
 	world_tension = clamp(world_tension + amount, 0.0, 1.0)
