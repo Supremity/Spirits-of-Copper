@@ -10,6 +10,7 @@ var flag_cache: Dictionary = {}  # { country_name: texture }
 
 var troop_selection: TroopSelection
 
+const TroopDataScript = preload("res://Scripts/TroopData.gd") 
 
 func _process(delta: float) -> void:
 	for troop in moving_troops:
@@ -283,7 +284,7 @@ func _split_and_send_troop(troop: TroopData, target_pids: Array, paths: Dictiona
 func _create_new_split_troop(original: TroopData, specific_divisions: Array) -> TroopData:
 	var pos = original.position
 
-	var new_troop = load("res://Scripts/TroopData.gd").new(
+	var new_troop = TroopDataScript.new(
 		original.country_name,
 		original.province_id,
 		0,
@@ -321,7 +322,7 @@ func create_troop(country: String, divs: int, prov_id: int) -> TroopData:
 
 	var pos = MapManager.province_centers.get(prov_id, Vector2.ZERO)
 
-	var troop = load("res://Scripts/TroopData.gd").new(
+	var troop = TroopDataScript.new(
 		country, prov_id, divs, pos, flag_cache.get(country)
 	)
 
@@ -554,7 +555,7 @@ func deploy_specific_divisions(
 	var pos = MapManager.province_centers.get(prov_id, Vector2.ZERO)
 
 	# 1. Create the container (TroopData) with 0 divisions initially
-	var troop = load("res://Scripts/TroopData.gd").new(
+	var troop = TroopDataScript.new(
 		country, prov_id, 0, pos, flag_cache.get(country)
 	)
 
@@ -578,7 +579,6 @@ func deploy_specific_divisions(
 
 	return troop
 
-
 func get_flag(country: String) -> Texture2D:
 	country = country.to_lower()
 	
@@ -587,7 +587,7 @@ func get_flag(country: String) -> Texture2D:
 
 	var formats = ["png", "webp", "svg", "jpg", "jpeg", "tga"]
 	var base_path = "res://assets/flags/%s_flag." % country
-	
+			
 	for ext in formats:
 		var full_path = base_path + ext
 		if ResourceLoader.exists(full_path):

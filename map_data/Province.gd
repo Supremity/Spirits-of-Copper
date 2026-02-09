@@ -34,12 +34,9 @@ func get_raw_state() -> Dictionary:
 		if prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
 			var val = get(prop.name)
 			
-			# DO NOT save actual Objects that belong to other Managers
-			# Instead, we just save their names/IDs to re-link later
 			if prop.name == "country_obj": 
 				continue 
 			
-			# Recursive save for nested "owned" objects (like Divisions)
 			if val is Object and val.has_method("get_raw_state"):
 				data[prop.name] = val.get_raw_state()
 			elif val is Array:
@@ -47,7 +44,6 @@ func get_raw_state() -> Dictionary:
 			else:
 				data[prop.name] = val
 	
-	# Metadata is essential for your visual positions
 	var meta_dict = {}
 	for m_key in get_meta_list():
 		meta_dict[m_key] = get_meta(m_key)
