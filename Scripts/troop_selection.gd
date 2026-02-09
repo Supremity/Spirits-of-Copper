@@ -109,10 +109,7 @@ func _perform_selection() -> void:
 	var flag_size = Vector2(FLAG_WIDTH_BASE, FLAG_HEIGHT_BASE) * inv_zoom
 	var pad = PADDING_BASE * inv_zoom
 
-	for t in TroopManager.troops:
-		if t.country_name.to_lower() != CountryManager.player_country.country_name:
-			continue
-
+	for t in CountryManager.player_country.troops_country:
 		var label = str(t.divisions_count)
 		var font_size := CustomRenderer.LAYOUT.font_size
 		var text_size = (
@@ -205,6 +202,17 @@ func _perform_path_assignment() -> void:
 	if path_pids.is_empty():
 		return
 
+
+	# =========================================================
+	# PRE-CALC: Map each division to its owning troop (O(1))
+	# =========================================================
+	var div_owner_map: Dictionary = {}
+	for t in selected_troops:
+		for div in t.stored_divisions:
+			div_owner_map[div] = t
+	# =========================================================
+
+
 	# 1. Cast the moving pool correctly
 	var ui_selected = GameState.game_ui.selected_division_objects.duplicate()
 	var moving_pool: Array[DivisionData] = []
@@ -223,7 +231,6 @@ func _perform_path_assignment() -> void:
 		if owner:
 			var origin_id = owner.province_id
 			if not pool_by_origin.has(origin_id):
-				# Initialize as a typed array
 				var new_list: Array[DivisionData] = []
 				pool_by_origin[origin_id] = new_list
 			pool_by_origin[origin_id].append(div)
@@ -231,7 +238,6 @@ func _perform_path_assignment() -> void:
 	var all_assignments = []
 
 	for origin_id in pool_by_origin:
-		# 3. Cast the origin batch when retrieving it
 		var origin_batch = pool_by_origin[origin_id] as Array[DivisionData]
 
 		var template = null
@@ -257,22 +263,30 @@ func _perform_path_assignment() -> void:
 			var target_pid = path_pids[province_idx]
 			var count_needed = divs_per_target + (1 if province_idx < remainder else 0)
 
-			# 4. Initialize the specific batch as a typed array
 			var final_divs: Array[DivisionData] = []
+
 			for i in range(count_needed):
 				if current_batch_idx < origin_batch.size():
 					var div = origin_batch[current_batch_idx]
-					_remove_division_from_current_owner(div)
+
+					# O(1) removal instead of scanning all troops
+					if div_owner_map.has(div):
+						var owner_troop = div_owner_map[div]
+						owner_troop.stored_divisions.erase(div)
+						div_owner_map.erase(div)
+					# =============================================
+
 					final_divs.append(div)
 					current_batch_idx += 1
 
 			if final_divs.is_empty():
 				continue
 
-			# This will now succeed because final_divs is Array[DivisionData]
 			var new_troop = TroopManager._create_new_split_troop(template, final_divs)
-
-			all_assignments.append({"troop": new_troop, "province_id": target_pid})
+			all_assignments.append({
+				"troop": new_troop,
+				"province_id": target_pid
+			})
 
 	TroopManager.command_move_assigned(all_assignments)
 	_cleanup_empty_troops()

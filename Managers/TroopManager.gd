@@ -351,12 +351,11 @@ func _auto_merge_in_province(province_id: int, country: String) -> void:
 		return
 
 	var province = MapManager.province_objects.get(province_id)
-	var local_troops = province.troops_here
 	var candidates: Array = []
 
 	# 1. Collect Valid Candidates
-	for t in local_troops:
-		if t.country_name == country and not t.is_moving:
+	for t in province.troops_here:
+		if t.country_name == country and not t.is_moving and t.path.is_empty():
 			candidates.append(t)
 
 	if candidates.size() <= 1:
