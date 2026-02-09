@@ -579,28 +579,25 @@ func deploy_specific_divisions(
 	return troop
 
 
-# Used by popup for now
 func get_flag(country: String) -> Texture2D:
-	# Normalize the key
 	country = country.to_lower()
-
-	# If already cached → return it
+	
 	if flag_cache.has(country):
 		return flag_cache[country]
 
-	# Build the file path
-	var path = "res://assets/flags/%s_flag.png" % country
+	var formats = ["png", "webp", "svg", "jpg", "jpeg", "tga"]
+	var base_path = "res://assets/flags/%s_flag." % country
+	
+	for ext in formats:
+		var full_path = base_path + ext
+		if ResourceLoader.exists(full_path):
+			var tex := load(full_path) as Texture2D
+			if tex:
+				flag_cache[country] = tex
+				return tex
 
-	# Load if exists
-	if ResourceLoader.exists(path):
-		var tex := load(path)
-		flag_cache[country] = tex
-		return tex
-
-	# Fallback texture (optional)
-	print("Flag not found for country:", country)
+	print("Flag not found for country: ", country)
 	return null
-
 
 func find_troop_owning_division(div_to_find: DivisionData) -> TroopData:
 	for t in troops:
