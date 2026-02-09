@@ -4,7 +4,6 @@ var AUTO_MERGE = true
 
 var troops: Array = []
 var moving_troops: Array = []
-var troops_by_country: Dictionary = {}  # { country_name: [TroopData, ...] }
 
 var path_cache: Dictionary = {}  # { start_id: { target_id: path_array } }
 var flag_cache: Dictionary = {}  # { country_name: texture }
@@ -426,9 +425,9 @@ func _add_troop_to_indexes(troop: TroopData) -> void:
 	MapManager.province_objects[pid].troops_here.append(troop)
 
 	# Country Index
-	if not troops_by_country.has(country):
-		troops_by_country[country] = []
-	troops_by_country[country].append(troop)
+	if not CountryManager.countries.has(country):
+		CountryManager.countries[country].troops_country = []
+	CountryManager.countries[country].troops_country.append(troop)
 
 
 ## Removes a troop reference from all data structures (master, moving, indexes).
@@ -440,7 +439,7 @@ func remove_troop(troop: TroopData) -> void:
 	if province:
 		province.troops_here.erase(troop)
 
-	var country_list = troops_by_country.get(troop.country_name)
+	var country_list = CountryManager.countries[troop.country_name].troops_country
 	if country_list:
 		country_list.erase(troop)
 
@@ -523,10 +522,11 @@ func _sanitize_path_for_troop(path: Array, start_pid: int) -> Array:
 	return p
 
 
-# extra helper functions. Not made by AI
+# Note z21: this function is redundant now
 func get_troops_for_country(country):
-	return troops_by_country.get(country, [])
-
+	if CountryManager.countries.has(country):
+		return CountryManager.countries[country].troops_country
+	return []
 
 func get_troops_in_province(province_id):
 	return MapManager.get_province(province_id).troops_here

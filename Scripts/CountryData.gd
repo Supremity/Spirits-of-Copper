@@ -1,6 +1,8 @@
 extends Resource
 class_name CountryData
 
+
+
 var economy_law_penalty: float = 0.0  # 0.10 means 10% income loss
 var army_composition_cache: Dictionary = {"infantry": 0, "tank": 0, "artillery": 0}
 #region --- Configuration & Constants ---
@@ -45,6 +47,9 @@ var troop_speed_modifier: float = 1.0
 var allowedCountries: Array[String] = []
 var ongoing_training: Array[TroopTraining] = []
 var ready_troops: Array[ReadyTroop] = []
+
+var troops_country: Array[TroopData] = []
+
 var deploy_pid: int = -1  # ID of province to deploy to
 #endregion
 

@@ -242,6 +242,6 @@ func _purge_game_state():
 	CountryManager.countries.clear()
 	TroopManager.troops.clear()
 	TroopManager.moving_troops.clear()
-	TroopManager.troops_by_country.clear()
+	#TroopManager.troops_by_country.clear()
 	for p in MapManager.province_objects.values():
 		p.troops_here = []
