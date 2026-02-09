@@ -207,80 +207,6 @@ func _get_cached_path(start_id: int, target_id: int, allowed_countries: Array[St
 	return path
 
 
-func _split_and_send_troop(troop: TroopData, target_pids: Array, paths: Dictionary) -> void:
-	var num_targets = target_pids.size()
-	var total_divs = troop.divisions_count
-
-	if num_targets == 0 or total_divs < num_targets:
-		return
-
-	# 1. Sort targets by distance to move the "heaviest" part of the stack the shortest distance
-	var target_distances: Array = []
-	for pid in target_pids:
-		var dist = MapManager.heuristic(troop.province_id, pid)
-		target_distances.append({"pid": pid, "dist": dist})
-	target_distances.sort_custom(func(a, b): return a.dist < b.dist)
-
-	# 2. Calculate distribution
-	@warning_ignore("integer_division")
-	var base_count = total_divs / num_targets
-	var remainder = total_divs % num_targets
-
-	var original_used = false
-	var current_div_index = 0
-
-	# We duplicate the array reference so we can slice it safely
-	var all_divisions = troop.stored_divisions.duplicate()
-
-	for i in range(num_targets):
-		var pid = target_distances[i].pid
-
-		# Determine how many divisions go to this specific target
-		var count_for_this_leg = base_count
-		if i < remainder:
-			count_for_this_leg += 1
-
-		# SLICE: Take the specific objects for this batch
-		var divisions_for_this_leg: Array[DivisionData] = []
-		for d in range(count_for_this_leg):
-			if current_div_index < all_divisions.size():
-				divisions_for_this_leg.append(all_divisions[current_div_index])
-				current_div_index += 1
-
-		var troop_to_move: TroopData
-
-		if not original_used:
-			# The original troop instance stays alive and takes the first batch
-			troop_to_move = troop
-			troop_to_move.stored_divisions = divisions_for_this_leg
-			original_used = true
-		else:
-			# Create a brand new TroopData for the other batches
-			# This function must handle country_obj assignment!
-			troop_to_move = _create_new_split_troop(troop, divisions_for_this_leg)
-
-		# 3. Assign movement
-		if pid == troop_to_move.province_id:
-			# This part of the split is staying in the current province
-			troop_to_move.path.clear()
-			_stop_troop(troop_to_move)
-			if AUTO_MERGE:
-				_auto_merge_in_province(pid, troop_to_move.country_name)
-		else:
-			# This part of the split is moving to a new target
-			var path = paths.get(pid)
-			if path and path.size() > 0:
-				var new_path = path.duplicate()
-				# If the path starts with current province, remove it
-				if new_path[0] == troop_to_move.province_id:
-					new_path.pop_front()
-
-				troop_to_move.path = new_path
-				_start_next_leg(troop_to_move)
-			else:
-				_stop_troop(troop_to_move)
-
-
 func _create_new_split_troop(original: TroopData, specific_divisions: Array) -> TroopData:
 	var pos = original.position
 
@@ -312,39 +238,6 @@ func _create_new_split_troop(original: TroopData, specific_divisions: Array) -> 
 	return new_troop
 
 
-func create_troop(country: String, divs: int, prov_id: int) -> TroopData:
-	if divs <= 0:
-		return null
-
-	if not flag_cache.has(country):
-		var path = "res://assets/flags/%s_flag.png" % country.to_lower()
-		flag_cache[country] = load(path) if ResourceLoader.exists(path) else null
-
-	var pos = MapManager.province_centers.get(prov_id, Vector2.ZERO)
-
-	var troop = TroopDataScript.new(
-		country, prov_id, divs, pos, flag_cache.get(country)
-	)
-
-	# FIX: Assign the country object reference
-	troop.country_obj = CountryManager.get_country(country)
-
-	# Initialize runtime metadata
-	troop.set_meta("start_pos", pos)
-	troop.set_meta("time_left", 0.0)
-	troop.set_meta("progress", 0.0)
-	troop.is_moving = false
-	troop.path = []
-	troop.province_id = prov_id
-
-	troops.append(troop)
-	_add_troop_to_indexes(troop)
-
-	if AUTO_MERGE:
-		_auto_merge_in_province(prov_id, country)
-
-	return troop
-
 
 func _auto_merge_in_province(province_id: int, country: String) -> void:
 	if not AUTO_MERGE:
@@ -355,8 +248,9 @@ func _auto_merge_in_province(province_id: int, country: String) -> void:
 
 	# 1. Collect Valid Candidates
 	for t in province.troops_here:
-		if t.country_name == country and not t.is_moving and t.path.is_empty():
-			candidates.append(t)
+		if t.country_name == country:
+			if not t.is_moving and t.path.is_empty() and not moving_troops.has(t):
+				candidates.append(t)
 
 	if candidates.size() <= 1:
 		return

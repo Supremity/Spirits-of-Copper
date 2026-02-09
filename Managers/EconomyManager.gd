@@ -70,7 +70,6 @@ func _complete_construction(pid: int, project: Dictionary):
 func is_province_building(pid: int) -> bool:
 	return construction_queue.has(pid)
 
-
 func get_progress_string(pid: int) -> String:
 	if construction_queue.has(pid):
 		var p = construction_queue[pid]

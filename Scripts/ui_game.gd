@@ -281,13 +281,7 @@ func _get_simple_flag(c_name: String) -> TextureRect:
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	return tr
-
-
-func _on_tab_changed(new_category_index: int) -> void:
-	current_category = new_category_index as Category
-	_build_action_list()
-	MusicManager.play_sfx(MusicManager.SFX.HOVERED)
-
+	
 
 func _on_menu_button_button_up(_menu_index: int) -> void:
 	current_category = _menu_index as Category
