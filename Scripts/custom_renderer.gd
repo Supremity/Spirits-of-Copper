@@ -13,7 +13,6 @@ const COLORS = {
 	"path_inactive": Color(0.5, 0.5, 0.5)
 }
 
-const LAYOUT = {"flag_width": 24.0, "flag_height": 20.0, "min_text_width": 16.0, "font_size": 16}
 
 const ZOOM_LIMITS = {"min_scale": 0.05, "max_scale": 0.5}
 const STACKING_OFFSET_Y := 20.0
@@ -80,7 +79,7 @@ func _setup_multimesh():
 	mm.use_custom_data = true
 
 	var q_mesh = QuadMesh.new()
-	q_mesh.size = Vector2(LAYOUT.flag_width + LAYOUT.min_text_width, LAYOUT.flag_height)
+	q_mesh.size = Vector2(LAYOUT.box_w + LAYOUT.box_w * 0.1, LAYOUT.box_h + LAYOUT.box_h * 0.1) 
 	mm.mesh = q_mesh
 
 	# SHADER: Using modern Godot 4.5 canvas_item logic
@@ -89,46 +88,37 @@ func _setup_multimesh():
 	mat.shader.code = """
 shader_type canvas_item;
 
-uniform float game_time; // Set this from GDScript every frame
+uniform float game_time;
 
 void vertex() {
-    // 1. Extract data from INSTANCE_CUSTOM
     vec2 start_pos = INSTANCE_CUSTOM.xy;
     float start_time = INSTANCE_CUSTOM.z;
     float duration = INSTANCE_CUSTOM.w;
-
-    // 2. Calculate Progress
     float progress = 1.0;
     if (duration > 0.0) {
-        // Use the uniform game_time so it stays in sync with your logic
         progress = clamp((game_time - start_time) / duration, 0.0, 1.0);
     }
-
-    // 3. Get the Target Position
-    // In a CanvasItem shader, the MODEL_MATRIX[3].xy gives you 
-    // the position of the current instance in world space.
     vec2 target_pos = vec2(MODEL_MATRIX[3][0], MODEL_MATRIX[3][1]);
-    
-    // 4. Calculate the Offset
-    // If progress is 0.0, offset is the full distance from target back to start.
-    // If progress is 1.0, offset is vec2(0,0).
     vec2 offset = (start_pos - target_pos) * (1.0 - progress);
-    
-    // Applying the offset to the VERTEX moves the instance visually
     VERTEX += offset;
 }
 
 void fragment() {
-    // Your existing border logic...
+    // We adjust the border based on the zoom factor
     float zoom = max(0.4, COLOR.a);
-    float tx = 0.05 * zoom;
-    float ty = 0.1 * zoom;
-    bool is_border = UV.x < tx || UV.x > (1.0 - tx) || UV.y < ty || UV.y > (1.0 - ty);
+    
+    // Use smaller, more precise values for a wide rectangle
+    // For a 64x32 rect, these values keep the border looking uniform
+    float border_width = 0.04 * zoom; 
+    float border_height = 0.08 * zoom;
+
+    bool is_border = UV.x < border_width || UV.x > (1.0 - border_width) || 
+                     UV.y < border_height || UV.y > (1.0 - border_height);
     
     if (is_border) {
-        COLOR = COLOR; 
+        COLOR = vec4(COLOR.rgb, 1.0); // The selection/country color
     } else {
-        COLOR = vec4(0.0, 0.0, 0.0, 0.8); 
+        COLOR = vec4(0.0, 0.0, 0.0, 0.85); // Your black background
     }
 }
 	"""
@@ -210,8 +200,8 @@ func _draw() -> void:
 	_draw_path_preview()
 	_draw_active_movements()
 	_draw_selection_box()
-	_draw_troops()
 	_draw_cities()
+	_draw_troops()
 	draw_battles()
 
 
@@ -253,33 +243,76 @@ func _draw_stack_labels(stack: Array, base_pos: Vector2) -> void:
 				_draw_troop(troop, d_pos)
 
 
+const HP_COLORS = {
+	"bg": Color(0.1, 0.1, 0.1, 0.9),
+	"healthy": Color(0.1, 0.9, 0.1),
+	"damaged": Color(0.9, 0.8, 0.1),
+	"critical": Color(0.9, 0.1, 0.1)
+}
+const LAYOUT = {
+	"box_w": 64.0,       # Wide rectangle
+	"box_h": 32.0,       # Shorter height
+	"hp_bar_h": 4.0,     # Visible strip at the bottom
+	"font_size": 18
+}
+# Add this to your variables or constants
+var show_division_icon: bool = false 
+
 func _draw_troop(troop: TroopData, pos: Vector2) -> void:
 	var t := Transform2D(0, Vector2(_current_inv_zoom, _current_inv_zoom), 0, pos)
 	draw_set_transform_matrix(t)
 
-	var total_w = LAYOUT.flag_width + LAYOUT.min_text_width
-	var total_h = LAYOUT.flag_height
-	var top_left = Vector2(-total_w / 2.0, -total_h / 2.0)
+	var w = LAYOUT.box_w
+	var h = LAYOUT.box_h
+	var hp_h = LAYOUT.hp_bar_h
+	var top_left = Vector2(-w / 2.0, -h / 2.0)
+	
+	# --- 1. THE MAIN PLATE ---
+	# Solid dark background
+	var plate_rect = Rect2(top_left, Vector2(w, h - hp_h))
+	draw_rect(plate_rect, Color(0.08, 0.08, 0.08, 0.95), true)
 
-	# Draw Text (Right side)
+	# --- 2. LEFT SLOT (Flag OR Icon) ---
+	var slot_size = (h - hp_h) - 4.0 # Padding of 2px top/bottom
+	var slot_pos = top_left + Vector2(3, 2)
+	var slot_rect = Rect2(slot_pos, Vector2(slot_size, slot_size))
+
+	if show_division_icon:
+		# MODE A: Division Icon
+		var type = troop.get_main_type()
+		var icon_tex = load("res://assets/icons/hoi4/%s.png" % type)
+		if icon_tex:
+			draw_texture_rect(icon_tex, slot_rect, false)
+	else:
+		# MODE B: Country Flag
+		var flag_tex = TroopManager.get_flag(troop.country_name)
+		if flag_tex:
+			draw_texture_rect(flag_tex, slot_rect, false)
+
+	# --- 3. THE NUMBER (Right Side) ---
 	var label = str(troop.divisions_count)
-	# Use the base font size; the transform handles the zoom-scaling for us!
-	var font_size := LAYOUT.font_size
-	var text_size := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
-
-	# Position text relative to the flag's right edge
-	var text_area_x = top_left.x + LAYOUT.flag_width
-	var tx = text_area_x + (LAYOUT.min_text_width - text_size.x) * 0.5
-	var ty = text_size.y * 0.3  # Vertical center relative to (0,0)
-
-	var flag_rect = Rect2(top_left, Vector2(LAYOUT.flag_width, total_h)).grow(-1.0)
-	draw_texture_rect(TroopManager.get_flag(troop.country_name), flag_rect, false)
-
-	draw_string(
-		_font, Vector2(tx, ty), label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, COLORS.text
+	var font_size = 18
+	var text_size = _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+	
+	# Position the number centered in the remaining space on the right
+	var text_pos = Vector2(
+		top_left.x + slot_size + (w - slot_size - text_size.x) / 2.0 + 2, 
+		top_left.y + (h - hp_h + text_size.y * 0.35) / 2.0
 	)
+	
+	draw_string_outline(_font, text_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 3, Color.BLACK)
+	draw_string(_font, text_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)
 
-	# 3. Reset transform so other things draw correctly
+	# --- 4. THE HP BAR ---
+	var hp_pct = troop.get_average_hp_percent()
+	var hp_bg_rect = Rect2(top_left + Vector2(0, h - hp_h), Vector2(w, hp_h))
+	draw_rect(hp_bg_rect, Color(0, 0, 0, 1.0), true)
+	
+	if hp_pct > 0:
+		# Use your HP_COLORS constant if available, otherwise fallback
+		var hp_col = HP_COLORS.healthy if hp_pct > 0.5 else HP_COLORS.critical
+		draw_rect(Rect2(hp_bg_rect.position, Vector2(w * hp_pct, hp_h)), hp_col, true)
+
 	draw_set_transform_matrix(Transform2D())
 
 

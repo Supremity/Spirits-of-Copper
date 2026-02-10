@@ -47,6 +47,19 @@ func _adjust_divisions_to_match_count(target_count: int):
 			stored_divisions.append(DivisionData.new())
 	elif target_count < current:
 		stored_divisions.resize(target_count)
+		
+func get_average_hp_percent() -> float:
+	if stored_divisions.is_empty(): return 0.0
+	var total_hp = 0.0
+	var total_max = 0.0
+	for div in stored_divisions:
+		total_hp += div.hp
+		total_max += div.max_hp
+	return total_hp / total_max if total_max > 0 else 0.0
+
+func get_main_type() -> String:
+	if stored_divisions.is_empty(): return "infantry"
+	return stored_divisions[0].type
 
 
 
