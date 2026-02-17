@@ -553,7 +553,7 @@ func update_province_troop_state(pid):
 	if prov_obj.troops_here.is_empty():
 		update_province_color(pid, prov_obj.country)
 	else:
-		_update_lookup(pid, get_lighter_country_color(prov_obj.country, 0.1))
+		_update_lookup(pid, get_lighter_country_color(prov_obj.country, 0.3))
 
 func _update_lookup(pid: int, color: Color) -> void:
 	state_color_image.set_pixel(pid, 0, color)
