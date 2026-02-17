@@ -5,8 +5,8 @@ class_name CustomRenderer
 const COLORS = {
 	"background": Color(0, 0, 0, 0.8),
 	"text": Color(1, 1, 1, 1),
-	"border_default": Color(0, 1, 0, 1),
-	"border_selected": Color(0.8, 0.8, 0.8),
+	"border_default": Color(1.0, 1.0, 1.0, 1.0),
+	"border_selected": Color(0, 1, 0),
 	"border_other": Color(0, 0, 0, 1),
 	"movement_active": Color(0, 1, 0, 0.8),
 	"path_active": Color(1, 0.2, 0.2),
@@ -79,7 +79,7 @@ func _setup_multimesh():
 	mm.use_custom_data = true
 
 	var q_mesh = QuadMesh.new()
-	q_mesh.size = Vector2(LAYOUT.box_w + LAYOUT.box_w * 0.1, LAYOUT.box_h + LAYOUT.box_h * 0.1) 
+	q_mesh.size = Vector2(LAYOUT.box_w + LAYOUT.box_w * 0.15, LAYOUT.box_h + LAYOUT.box_h * 0.15) 
 	mm.mesh = q_mesh
 
 	# SHADER: Using modern Godot 4.5 canvas_item logic
@@ -252,7 +252,7 @@ const HP_COLORS = {
 const LAYOUT = {
 	"box_w": 64.0,       # Wide rectangle
 	"box_h": 32.0,       # Shorter height
-	"hp_bar_h": 4.0,     # Visible strip at the bottom
+	"hp_bar_h": 3.0,     # Visible strip at the bottom
 	"font_size": 18
 }
 # Add this to your variables or constants
