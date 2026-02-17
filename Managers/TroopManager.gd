@@ -89,7 +89,9 @@ func _arrive_at_leg_end(troop: TroopData) -> void:
 		return
 
 	var arrived_pid = int(troop.path.pop_front())
+	
 	_move_troop_to_province_logically(troop, arrived_pid)
+	MapManager.update_province_troop_state(arrived_pid)
 
 	WarManager.resolve_province_arrival(arrived_pid, troop)
 
@@ -209,6 +211,7 @@ func _get_cached_path(start_id: int, target_id: int, allowed_countries: Array[St
 
 func _create_new_split_troop(original: TroopData, specific_divisions: Array) -> TroopData:
 	var pos = original.position
+	MapManager.update_province_troop_state(original.province_id)
 
 	var new_troop = TroopDataScript.new(
 		original.country_name,
@@ -217,7 +220,6 @@ func _create_new_split_troop(original: TroopData, specific_divisions: Array) -> 
 		pos,
 		TroopManager.get_flag(original.country_name)
 	)
-
 	# FIX: Ensure the new split troop knows which country it belongs to
 	new_troop.country_obj = original.country_obj
 
@@ -348,6 +350,10 @@ func _move_troop_to_province_logically(troop: TroopData, new_pid: int) -> void:
 		old_province.troops_here.erase(troop)
 
 	troop.province_id = new_pid
+	
+	MapManager.update_province_troop_state(old_pid)
+	MapManager.update_province_troop_state(new_pid)
+
 
 	var new_province = MapManager.get_province(new_pid)
 	if new_province:

@@ -543,6 +543,17 @@ func get_province_with_radius(center: Vector2, map_sprite: Sprite2D, radius: int
 
 	return -1
 
+func get_lighter_country_color (country: String, amount: float = 0.5) -> Color:
+	var country_color: Color = country_colors.get(country)
+	return country_color.lightened(amount)
+
+
+func update_province_troop_state(pid):
+	var prov_obj = province_objects[pid]
+	if prov_obj.troops_here.is_empty():
+		update_province_color(pid, prov_obj.country)
+	else:
+		_update_lookup(pid, get_lighter_country_color(prov_obj.country, 0.1))
 
 func _update_lookup(pid: int, color: Color) -> void:
 	state_color_image.set_pixel(pid, 0, color)

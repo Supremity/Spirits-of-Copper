@@ -374,6 +374,7 @@ func _deploy_initial_force(divisions: Array[DivisionData]) -> void:
 		if current_batch.size() >= stack_size or i == divisions.size() - 1:
 			var target_pid = deploy_targets.pick_random()
 			TroopManager.deploy_specific_divisions(country_name, current_batch, target_pid)
+			MapManager.update_province_troop_state(target_pid)
 			current_batch = []  # Reset for next stack
 
 
