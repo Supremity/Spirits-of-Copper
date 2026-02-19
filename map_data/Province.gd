@@ -16,7 +16,7 @@ enum {
 @export var country: String
 @export var city: String
 @export var population: int = 0
-@export var ethnicity: String
+@export var ethnicity = {}
 @export var factory: int = NO_FACTORY
 @export var port: int = NO_PORT
 @export var gdp: int = 1000

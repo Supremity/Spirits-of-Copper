@@ -20,13 +20,7 @@ var state_color_texture: ImageTexture
 var max_province_id: int = 0
 
 var country_colors: Dictionary = {}
-
-var color_to_pop_map: Dictionary = {}
-var color_to_city_map: Dictionary = {}
-var color_to_ethnic_map: Dictionary = {}
-var color_to_claim_map: Dictionary = {}
-var ethnic_name_to_color: Dictionary = {}
-var gdp_map: Dictionary = {}
+var map_data: Dictionary = {}
 
 var province_to_country: Dictionary = {}
 var country_to_provinces: Dictionary = {}
@@ -38,7 +32,6 @@ var last_hovered_pid: int = -1
 var original_hover_color: Color
 var province_centers: Dictionary = {}
 
-# This will look like: {"french_empire": [101, 102, 103], "canada": [1, 2, 5]}
 var global_claims_registry: Dictionary = {}
 
 var all_cities = []
@@ -48,20 +41,10 @@ const CACHE_FOLDER = "res://map_data/"
 
 @export var region_texture: Texture2D
 @export var culture_texture: Texture2D
-@export var population_texture: Texture2D
-@export var city_texture: Texture2D
-@export var gdp_texture: Texture2D
-@export var ethnicity_texture: Texture2D
-@export var claims_texture: Texture2D
-
 
 func load_country_data() -> void:
 	_load_country_colors()
-	_load_population_json()
-	_load_city_json()
-	_load_gdp_json()
-	_load_ethnic_json()
-	_load_claims_json()
+	_load_map_data_json("res://map_data/full_map_data.json")
 	var dir = DirAccess.open("res://")
 	if dir and not dir.dir_exists(CACHE_FOLDER):
 		dir.make_dir_recursive(CACHE_FOLDER)
@@ -73,29 +56,15 @@ func load_country_data() -> void:
 
 	var region = region_texture if region_texture else preload("res://maps/regions.png")
 	var culture = culture_texture if culture_texture else preload("res://maps/cultures.png")
-	var population = (
-		population_texture if population_texture else preload("res://maps/population_color_map.png")
-	)
-	var city = city_texture if city_texture else preload("res://maps/city_colors.png")
-	var gdp_data = gdp_texture if gdp_texture else preload("res://maps/gdp_data.png")
-	var ethnicity = (
-		ethnicity_texture if ethnicity_texture else preload("res://maps/ethnicities.png")
-	)
-	var claims = claims_texture if claims_texture else preload("res://maps/claims.png")
 
-	_generate_and_save(region, culture, population, city, gdp_data, ethnicity, claims)
+	_generate_and_save(region, culture)
 
 
 func _generate_and_save(
 	region: Texture2D,
 	culture: Texture2D,
-	population: Texture2D,
-	city: Texture2D,
-	gdp_data: Texture2D,
-	ethnicity: Texture2D,
-	claims: Texture2D
 ) -> void:
-	initialize_map(region, culture, population, city, gdp_data, ethnicity, claims)
+	initialize_map(region, culture)
 
 	var map_data := MapData.new()
 	map_data.province_centers = province_centers.duplicate()
@@ -131,11 +100,6 @@ func _try_load_cached_data() -> bool:
 func initialize_map(
 	region_tex: Texture2D,
 	culture_tex: Texture2D,
-	pop_tex: Texture2D,
-	city_tex: Texture2D,
-	gdp_tex,
-	eth_tex,
-	claims_tex
 ) -> void:
 	var r_img = region_tex.get_image()
 	var c_img = culture_tex.get_image()
@@ -150,11 +114,6 @@ func initialize_map(
 
 	# Pre-fetch data images so we don't pass textures around
 	var data_images = {
-		"pop": pop_tex.get_image(),
-		"city": city_tex.get_image(),
-		"gdp": gdp_tex.get_image(),
-		"eth": eth_tex.get_image(),
-		"claims": claims_tex.get_image(),
 		"culture": c_img  # Needed for sea/country check
 	}
 
@@ -205,17 +164,14 @@ func _create_province_from_pixel(
 	else:
 		province.type = Province.LAND
 		province.country = _identify_country(c_color)
+		
+		var province_data = get_data_for_color(r_color)
 
-		var sx = min(x, images.pop.get_width() - 1)
-		var sy = min(y, images.pop.get_height() - 1)
-
-		province.population = _get_pop_from_color(images.pop.get_pixel(sx, sy))
-		province.gdp = _get_gdp_from_color(images.gdp.get_pixel(sx, sy))
-		province.city = _get_city_from_color(images.city.get_pixel(sx, sy))
-		province.ethnicity = _get_name_from_color(images.eth.get_pixel(sx, sy), color_to_ethnic_map)
-		province.claims = _get_claims_from_color(
-			images.claims.get_pixel(sx, sy), color_to_claim_map
-		)
+		province.population = province_data.population
+		province.gdp = province_data.gdp
+		province.city = province_data.city
+		province.ethnicity = province_data.ethnicity
+		province.claims = province_data.claims
 
 		if len(province.city) > 0:
 			province.factory = Province.FACTORY_BUILT
@@ -868,8 +824,8 @@ func update_map_view(mode: MapMode) -> void:
 				final_color = _calculate_heat(province.population, max_val, 0.5)
 			MapMode.GDP:
 				final_color = _calculate_heat(province.gdp, max_val, 0.7)
-			MapMode.ETHNICITY:
-				final_color = ethnic_name_to_color.get(province.ethnicity, Color.BLACK)
+			#MapMode.ETHNICITY:
+				#final_color = ethnic_name_to_color.get(province.ethnicity, Color.BLACK)
 			MapMode.POLITICAL:
 				final_color = country_colors.get(province.country, Color.GRAY)
 
@@ -989,273 +945,51 @@ func _load_country_colors() -> void:
 			continue
 		country_colors[country_name] = Color8(rgb[0], rgb[1], rgb[2])
 
-
-func _load_population_json() -> void:
-	var path = "res://map_data/population_color_map.json"
-	if not FileAccess.file_exists(path):
-		push_error("Population JSON missing!")
+func _load_map_data_json(file_path):
+	if not FileAccess.file_exists(file_path):
+		printerr("Error: Map data file not found at ", file_path)
 		return
 
-	var file = FileAccess.open(path, FileAccess.READ)
-	var json_data = JSON.parse_string(file.get_as_text())
-	if json_data is Dictionary:
-		color_to_pop_map = json_data
+	var file = FileAccess.open(file_path, FileAccess.READ)
+	var json_text = file.get_as_text()
+	file.close()
 
+	var json = JSON.new()
+	var error = json.parse(json_text)
 
-func _get_pop_from_color(c: Color) -> int:
-	var r = int(round(c.r * 255.0))
-	var g = int(round(c.g * 255.0))
-	var b = int(round(c.b * 255.0))
-
-	var exact_key = "(%d, %d, %d)" % [r, g, b]
-
-	# 1. Try Exact Match
-	if color_to_pop_map.has(exact_key):
-		return color_to_pop_map[exact_key]
-
-	# 2. Try match without spaces (common JSON difference)
-	var tight_key = "(%d,%d,%d)" % [r, g, b]
-	if color_to_pop_map.has(tight_key):
-		return color_to_pop_map[tight_key]
-
-	# 3. Fuzzy Match (Only if exact fails)
-	# We look for the color in our map with the smallest RGB distance
-	var best_match = 0
-	var min_dist = 999999.0
-
-	for color_str in color_to_pop_map.keys():
-		var target_rgb = _parse_color_string(color_str)
-		var dist = (Vector3(r, g, b) - target_rgb).length_squared()
-
-		if dist < min_dist:
-			min_dist = dist
-			best_match = color_to_pop_map[color_str]
-
-	# If the closest color is reasonably similar, use it
-	if min_dist < 100:  # Threshold for "close enough"
-		return best_match
-
-	return 0
-
+	if error == OK:
+		if typeof(json.data) == TYPE_DICTIONARY:
+			map_data = json.data
+			print("Map data loaded successfully. Total regions: ", map_data.size())
+		else:
+			printerr("Error: JSON top-level is not a Dictionary.")
+	else:
+		printerr("JSON Parse Error: ", json.get_error_message(), " at line ", json.get_error_line())
+	pass
 
 func _parse_color_string(s: String) -> Vector3:
 	var cleaned = s.replace("(", "").replace(")", "").replace(" ", "")
 	var parts = cleaned.split(",")
 	return Vector3(float(parts[0]), float(parts[1]), float(parts[2]))
 
+func get_data_for_color(pixel_color: Color) -> Dictionary:
+	var r = int(round(pixel_color.r * 255))
+	var g = int(round(pixel_color.g * 255))
+	var b = int(round(pixel_color.b * 255))
+	
+	var key = "(%d, %d, %d)" % [r, g, b]
+	
+	if map_data.has(key):
+		return map_data[key]
+	
+	return {} # Return empty if not found
 
-func _load_city_json() -> void:
-	var path = "res://map_data/city_colors.json"  # Ensure path is correct
-	if not FileAccess.file_exists(path):
-		push_error("City JSON missing!")
-		return
-
-	var file = FileAccess.open(path, FileAccess.READ)
-	var json_data = JSON.parse_string(file.get_as_text())
-	if json_data is Dictionary:
-		color_to_city_map = json_data
-
-
-func _load_claims_json() -> void:
-	var path = "res://map_data/claims.json"  # Ensure path is correct
-	if not FileAccess.file_exists(path):
-		push_error("City JSON missing!")
-		return
-
-	var file = FileAccess.open(path, FileAccess.READ)
-	var json_data = JSON.parse_string(file.get_as_text())
-	if json_data is Dictionary:
-		color_to_claim_map = json_data
-
-
-func _get_city_from_color(c: Color) -> String:
-	var r = int(round(c.r * 255.0))
-	var g = int(round(c.g * 255.0))
-	var b = int(round(c.b * 255.0))
-
-	var exact_key = "(%d, %d, %d)" % [r, g, b]
-
-	# 1. Try Exact Match
-	if color_to_city_map.has(exact_key):
-		return color_to_city_map[exact_key]
-
-	# 2. Try match without spaces
-	var tight_key = "(%d,%d,%d)" % [r, g, b]
-	if color_to_city_map.has(tight_key):
-		return color_to_city_map[tight_key]
-
-	# 3. Fuzzy Match
-	var best_match = "Unknown"
-	var min_dist = 999999.0
-
-	for color_str in color_to_city_map.keys():
-		var target_rgb = _parse_color_string(color_str)
-		var dist = (Vector3(r, g, b) - target_rgb).length_squared()
-
-		if dist < min_dist:
-			min_dist = dist
-			best_match = color_to_city_map[color_str]
-
-	# Threshold check: 100 distance squared is very close
-	if min_dist < 100:
-		return best_match
-
-	return ""
-
-
-func _load_gdp_json() -> void:
-	var path = "res://map_data/gdp_data.json"
-	if not FileAccess.file_exists(path):
-		push_error("GDP JSON missing!")
-		return
-
-	var file = FileAccess.open(path, FileAccess.READ)
-	var json_data = JSON.parse_string(file.get_as_text())
-	if json_data is Dictionary:
-		gdp_map = json_data
-
-
-func _load_ethnic_json() -> void:
-	var path = "res://map_data/ethnicities.json"
-
-	if not FileAccess.file_exists(path):
-		push_error("Ethnic JSON missing at: " + path)
-		return
-
-	var file = FileAccess.open(path, FileAccess.READ)
-	var json_data = JSON.parse_string(file.get_as_text())
-
-	if json_data is Dictionary:
-		color_to_ethnic_map = json_data
-
-		# --- BUILD THE REVERSE LOOKUP ---
-		# We do this once here so show_ethnic_map() is super fast
-		ethnic_name_to_color.clear()
-		for color_key in color_to_ethnic_map.keys():
-			var ethnicity_name = color_to_ethnic_map[color_key]
-
-			# Use your existing _parse_color_string to get a Vector3(R, G, B)
-			var rgb_vec = _parse_color_string(color_key)
-
-			# Convert to Godot Color (0.0 to 1.0 range)
-			var final_color = Color(rgb_vec.x / 255.0, rgb_vec.y / 255.0, rgb_vec.z / 255.0)
-
-			# Map the NAME to the COLOR
-			ethnic_name_to_color[ethnicity_name] = final_color
-
-		print("Successfully loaded ", color_to_ethnic_map.size(), " ethnicities.")
-	else:
-		push_error("Ethnic JSON format is invalid (Expected Dictionary)")
-
-
-func _get_name_from_color(c: Color, data_map: Dictionary) -> String:
-	var r = int(round(c.r * 255.0))
-	var g = int(round(c.g * 255.0))
-	var b = int(round(c.b * 255.0))
-
-	var exact_key = "(%d, %d, %d)" % [r, g, b]
-
-	# 1. Try Exact Match
-	if data_map.has(exact_key):
-		return data_map[exact_key]
-
-	# 2. Try match without spaces (tight format)
-	var tight_key = "(%d,%d,%d)" % [r, g, b]
-	if data_map.has(tight_key):
-		return data_map[tight_key]
-
-	# 3. Fuzzy Match
-	var best_match = ""
-	var min_dist = 999999.0
-
-	for color_str in data_map.keys():
-		var target_rgb = _parse_color_string(color_str)
-		var dist = (Vector3(r, g, b) - target_rgb).length_squared()
-
-		if dist < min_dist:
-			min_dist = dist
-			best_match = data_map[color_str]
-
-	# Threshold check
-	if min_dist < 100:
-		return best_match
-
-	return "Unknown"
-
-
-func _get_claims_from_color(c: Color, data_map: Dictionary) -> Array:
-	var r = int(round(c.r * 255.0))
-	var g = int(round(c.g * 255.0))
-	var b = int(round(c.b * 255.0))
-
-	# Define possible key formats (Standard, Tight, and No-Bracket)
-	var formats = ["(%d, %d, %d)" % [r, g, b], "(%d,%d,%d)" % [r, g, b], "%d,%d,%d" % [r, g, b]]
-
-	# 1. Try Exact Matches
-	for key in formats:
-		if data_map.has(key):
-			return _force_array(data_map[key])
-
-	# 2. Fuzzy Match
-	var best_data = null
-	var min_dist = 999999.0
-	var current_vec = Vector3(r, g, b)
-
-	for color_str in data_map.keys():
-		var target_rgb = _parse_color_string(color_str)
-		var dist = (current_vec - target_rgb).length_squared()
-
-		if dist < min_dist:
-			min_dist = dist
-			best_data = data_map[color_str]
-
-	# Threshold check (10 units distance)
-	if min_dist < 100 and best_data != null:
-		return _force_array(best_data)
-
-	return []  # Return empty array if no claim found
-
-
-# Helper to ensure we never return a single String when an Array is expected
 func _force_array(data) -> Array:
 	if data is Array:
 		return data
 	elif data is String:
 		return [data]  # Wrap the single country in a list
 	return []
-
-
-func _get_gdp_from_color(c: Color) -> int:
-	var r = int(round(c.r * 255.0))
-	var g = int(round(c.g * 255.0))
-	var b = int(round(c.b * 255.0))
-
-	var exact_key = "(%d, %d, %d)" % [r, g, b]
-
-	if gdp_map.has(exact_key):
-		return int(gdp_map[exact_key])
-
-	var tight_key = "(%d,%d,%d)" % [r, g, b]
-	if gdp_map.has(tight_key):
-		return int(gdp_map[tight_key])
-
-	var best_gdp = 0
-	var min_dist = 999999.0
-
-	for color_str in gdp_map.keys():
-		var target_rgb = _parse_color_string(color_str)
-		# Using Euclidean distance squared to find the closest color
-		var dist = (Vector3(r, g, b) - target_rgb).length_squared()
-
-		if dist < min_dist:
-			min_dist = dist
-			best_gdp = int(gdp_map[color_str])
-
-	if min_dist < 200:
-		return best_gdp
-
-	return 0
-
 
 func get_provinces_near_sea(country_name: String) -> Array[int]:
 	var provinces = country_to_provinces.get(country_name, [])
