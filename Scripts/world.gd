@@ -117,7 +117,6 @@ func save_game_rebel(slot: String):
 		"countries": {},
 		"troops": [],
 		"map_state": {
-			"province_to_country": MapManager.province_to_country.duplicate(),
 			"country_to_provinces": MapManager.country_to_provinces.duplicate(),
 			"provinces": {} # Start empty
 		}
@@ -154,7 +153,6 @@ func load_game_rebel(slot: String):
 
 	# 2. RESTORE MAP & PROVINCES
 	if data.has("map_state"):
-		MapManager.province_to_country = data["map_state"]["province_to_country"]
 		MapManager.country_to_provinces = data["map_state"]["country_to_provinces"]
 		
 		var p_data_map = data["map_state"]["provinces"]

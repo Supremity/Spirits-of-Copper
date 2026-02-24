@@ -194,7 +194,7 @@ class Battle:
 
 		for n in MapManager.adjacency_list[from_pid]:
 			# Retreat logic: Must be owned by self and not currently under attack
-			if MapManager.province_to_country[n] == country:
+			if MapManager.province_objects[n].country == country:
 				return n
 		return -1
 
@@ -276,7 +276,7 @@ func apply_casualties(pid: int, country: String, damage_amount: float):
 
 
 func resolve_province_arrival(pid: int, troop: TroopData):
-	var target_country = MapManager.province_to_country.get(pid)
+	var target_country = MapManager.province_objects.get(pid).country
 
 	if target_country != troop.country_name and is_at_war_names(troop.country_name, target_country):
 		var enemies = TroopManager.get_province_strength(pid, target_country)

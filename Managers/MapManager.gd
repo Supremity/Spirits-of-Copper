@@ -22,7 +22,6 @@ var max_province_id: int = 0
 var country_colors: Dictionary = {}
 var map_data: Dictionary = {}
 
-var province_to_country: Dictionary = {}
 var country_to_provinces: Dictionary = {}
 var province_objects: Dictionary[int, Province] = {}
 
@@ -69,7 +68,6 @@ func _generate_and_save(
 	var map_data := MapData.new()
 	map_data.province_centers = province_centers.duplicate()
 	map_data.adjacency_list = adjacency_list.duplicate(true)
-	map_data.province_to_country = province_to_country.duplicate()
 	map_data.country_to_provinces = country_to_provinces.duplicate()
 	map_data.max_province_id = max_province_id
 	map_data.id_map_image = id_map_image.duplicate()
@@ -87,7 +85,6 @@ func _try_load_cached_data() -> bool:
 
 	province_centers = loaded.province_centers
 	adjacency_list = loaded.adjacency_list
-	province_to_country = loaded.province_to_country
 	country_to_provinces = loaded.country_to_provinces
 	max_province_id = loaded.max_province_id
 	id_map_image = loaded.id_map_image
@@ -178,13 +175,11 @@ func _create_province_from_pixel(
 
 	# Store Logic
 	province_objects[pid] = province
-	province_to_country[pid] = province.country
 
 
 func _finalize_map_processing():
 	# post-processing
 	_calculate_province_centroids()
-	_build_country_to_provinces()
 	_build_adjacency_list()
 	_build_lookup_texture()
 
@@ -202,21 +197,6 @@ func draw_province_centroids(image: Image, color: Color = Color(0, 1, 0, 1)) -> 
 		# stay inside bounds
 		if x >= 0 and x < image.get_width() and y >= 0 and y < image.get_height():
 			image.set_pixel(x, y, color)
-
-
-func _build_country_to_provinces():
-	var result: Dictionary = {}
-
-	for pid in province_to_country.keys():
-		var country: String = province_to_country[pid]
-
-		if not result.has(country):
-			result[country] = []
-
-		result[country].append(pid)
-
-	country_to_provinces = result
-	return
 
 
 func _write_id(x: int, y: int, pid: int) -> void:
@@ -364,7 +344,7 @@ func _get_contextual_highlight(pid: int) -> Color:
 		return Color.TRANSPARENT
 
 	var player_name = CountryManager.player_country.country_name
-	var is_player_owned = province_to_country.get(pid) == player_name
+	var is_player_owned = province_objects[pid].country == player_name
 
 	if not is_player_owned:
 		return Color.TRANSPARENT
@@ -409,7 +389,7 @@ func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 		return
 
 	var player_country_name = CountryManager.player_country.country_name
-	var is_player_owned = province_to_country.get(pid) == player_country_name
+	var is_player_owned = province_objects[pid].country == player_country_name
 
 	if GameState.choosing_deploy_city:
 		if is_player_owned:
@@ -426,7 +406,7 @@ func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 			show_countries_map()
 
 	if TroopManager.troop_selection.selected_troops.is_empty():  # Prevent menu from spawning when selecting troops (annoying)
-		country_clicked.emit(province_to_country.get(pid, ""))
+		country_clicked.emit(province_objects[pid].country)
 
 
 func _execute_deployment(pid: int, player_name: String) -> void:
@@ -479,25 +459,20 @@ func _cleanup_interaction_state() -> void:
 
 
 # To probe around and still register a click if we hit province/coutnry border
+const PROBE_OFFSETS = [
+	Vector2(0, 0), Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1), Vector2(1, 1), Vector2(1, -1), Vector2(-1, 1), Vector2(-1, -1)
+]
 func get_province_with_radius(center: Vector2, map_sprite: Sprite2D, radius: int) -> int:
-	var offsets = [
-		Vector2(0, 0),
-		Vector2(radius, 0),
-		Vector2(-radius, 0),
-		Vector2(0, radius),
-		Vector2(0, -radius),
-		Vector2(radius, radius),
-		Vector2(radius, -radius),
-		Vector2(-radius, radius),
-		Vector2(-radius, -radius),
-	]
+	var r = float(radius)
 
-	for off in offsets:
-		var pid = get_province_at_pos(center + off, map_sprite)
+	for off in PROBE_OFFSETS:
+		var pos = center + off * r
+		var pid = get_province_at_pos(pos, map_sprite)
 		if pid > 1:
 			return pid
 
 	return -1
+
 
 func get_lighter_country_color (country: String, amount: float = 0.5) -> Color:
 	var country_color: Color = country_colors.get(country)
@@ -898,7 +873,7 @@ func show_industry_country(country_name: String) -> void:
 
 
 func transfer_ownership(pid: int, new_owner_name: String) -> void:
-	var old_owner_name = province_to_country.get(pid, "")
+	var old_owner_name = province_objects[pid].country
 
 	if old_owner_name == new_owner_name:
 		return
@@ -918,7 +893,7 @@ func transfer_ownership(pid: int, new_owner_name: String) -> void:
 	if not pid in country_to_provinces[new_owner_name]:
 		country_to_provinces[new_owner_name].append(pid)
 
-	province_to_country[pid] = new_owner_name
+	province_objects[pid].country = new_owner_name
 
 	var new_color = country_colors.get(new_owner_name, Color.GRAY)
 
@@ -1008,6 +983,24 @@ func get_provinces_near_sea(country_name: String) -> Array[int]:
 	return provinces_near_sea
 
 
+func get_provincesID_for_country(country: String) -> Array:
+	var provinces := []
+
+	for province in province_objects.values():
+		if province.country == country:
+			provinces.append(province.id)
+
+	return provinces
+
+func get_provincesOBJ_for_country(country: String) -> Array:
+	var provinces := []
+
+	for province in province_objects.values():
+		if province.country == country:
+			provinces.append(province)
+
+	return provinces
+
 ## Returns an array of province IDs that are on the border of a different country
 func get_border_provinces(country_name: String) -> Array[int]:
 	var border_provinces: Array[int] = []
@@ -1023,10 +1016,10 @@ func get_border_provinces(country_name: String) -> Array[int]:
 
 		# Check neighbors of this province
 		for neighbor_id in province_data.neighbors:
-			var neighbor_owner = province_to_country.get(neighbor_id, "unknown")
+			var neighbor_owner = province_objects.get(neighbor_id, "unknown")
 
 			# If the neighbor is owned by someone else (and isn't sea/neutral)
-			if neighbor_owner != country_name:
+			if neighbor_owner.country != country_name:
 				border_provinces.append(prov_id)
 				break  # Move to next province once we know this one is a border
 
@@ -1109,7 +1102,7 @@ func get_provinces_bordering_enemy(country_name: String, enemy_name: String) -> 
 	for prov_id in my_provinces:
 		var province_data: Province = province_objects.get(prov_id)
 		for neighbor_id in province_data.neighbors:
-			if province_to_country.get(neighbor_id) == enemy_name:
+			if province_objects[neighbor_id].country == enemy_name:
 				specific_borders.append(prov_id)
 				break
 

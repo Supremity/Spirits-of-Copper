@@ -8,9 +8,9 @@
 [ext_resource type="Script" uid="uid://bko55up7cjg3g" path="res://Scripts/custom_renderer.gd" id="5_o06y3"]
 [ext_resource type="Script" uid="uid://dx8iwvng5oypc" path="res://Scripts/troop_selection.gd" id="6_5ukr8"]
 [ext_resource type="Script" uid="uid://cnm2s5owh7ec3" path="res://Scripts/game_clock.gd" id="6_o06y3"]
-[ext_resource type="Script" uid="uid://cdspipsa2vbk5" path="res://Scripts/decision_tree_ui.gd" id="9_5v1tr"]
+[ext_resource type="Script" path="res://Scripts/decision_tree_ui.gd" id="9_5v1tr"]
 [ext_resource type="Script" uid="uid://dmywidiiomun4" path="res://Scenes/peace_process_ui.gd" id="10_0fj1v"]
-[ext_resource type="Script" uid="uid://d00ogcoh5s68w" path="res://Scenes/country_manage_ui.gd" id="11_ikia7"]
+[ext_resource type="Script" path="res://Scenes/country_manage_ui.gd" id="11_ikia7"]
 [ext_resource type="Script" uid="uid://dgg5vvwt2yua6" path="res://Scenes/menu.gd" id="12_7yui6"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_fo5ed"]

@@ -60,7 +60,7 @@ func _process_hover(map_pos: Vector2):
 
 		# 3. Apply NEW hover visual (if it's a valid land province belonging to the loser)
 		if hovered_pid > 1:
-			var owner = MapManager.province_to_country.get(hovered_pid, "")
+			var owner = MapManager.province_objects.get(hovered_pid, "").country
 			if owner == current_loser.country_name:
 				_update_map_visual(hovered_pid, Color(1.5, 1.5, 1.5))
 				Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
@@ -75,7 +75,7 @@ func _process_click(map_pos: Vector2):
 	if pid <= 1:
 		return
 
-	var owner_name = MapManager.province_to_country.get(pid, "")
+	var owner_name = MapManager.province_objects.get(pid, "").country
 	if owner_name != current_loser.country_name:
 		return
 
@@ -197,13 +197,12 @@ func _create_styled_button(btn_text: String, accent_color: Color) -> Button:
 
 func _on_annex_all_pressed():
 	provinces_to_take.clear()
-	# Iterate through MapManager to find all provinces belonging to loser
-	for pid in MapManager.province_to_country.keys():
-		if MapManager.province_to_country[pid] == current_loser.country_name:
-			provinces_to_take.append(pid)
-			_update_map_visual(pid, COLOR_SELECT)
+	
+	for province in MapManager.province_objects.values():
+		if province.country == current_loser.country_name:
+			provinces_to_take.append(province.id)
+			_update_map_visual(province.id, COLOR_SELECT)
 	_update_summary()
-
 
 func _on_clear_selection_pressed():
 	for pid in provinces_to_take:
@@ -213,7 +212,7 @@ func _on_clear_selection_pressed():
 
 
 func _reset_province_visual_immediate(pid: int):
-	var owner = MapManager.province_to_country[pid]
+	var owner = MapManager.province_objects[pid].country
 	var original_color = MapManager.country_colors.get(owner, Color.WHITE)
 	_update_map_visual(pid, original_color)
 
@@ -240,8 +239,8 @@ func _update_summary():
 
 	# Calculate percentage for flavor
 	var total_loser_provinces = 0
-	for p in MapManager.province_to_country.values():
-		if p == current_loser.country_name:
+	for p in MapManager.province_objects.duplicate():
+		if p.country == current_loser.country_name:
 			total_loser_provinces += 1
 
 	if total_loser_provinces > 0:
@@ -280,7 +279,7 @@ func _reset_province_visual(pid: int):
 		_update_map_visual(pid, Color(0.0, 1.0, 1.0))
 	else:
 		# Otherwise, revert to the original country color
-		var country = MapManager.province_to_country[pid]
+		var country = MapManager.province_objects[pid].country
 		if country != "sea":
 			var original_color = MapManager.country_colors[country]
 			_update_map_visual(pid, original_color)
