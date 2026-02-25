@@ -197,12 +197,13 @@ func _create_styled_button(btn_text: String, accent_color: Color) -> Button:
 
 func _on_annex_all_pressed():
 	provinces_to_take.clear()
-	
+
 	for province in MapManager.province_objects.values():
 		if province.country == current_loser.country_name:
 			provinces_to_take.append(province.id)
 			_update_map_visual(province.id, COLOR_SELECT)
 	_update_summary()
+
 
 func _on_clear_selection_pressed():
 	for pid in provinces_to_take:

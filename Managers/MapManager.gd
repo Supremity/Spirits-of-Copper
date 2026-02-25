@@ -41,6 +41,7 @@ const CACHE_FOLDER = "res://map_data/"
 @export var region_texture: Texture2D
 @export var culture_texture: Texture2D
 
+
 func load_country_data() -> void:
 	_load_country_colors()
 	_load_map_data_json("res://map_data/full_map_data.json")
@@ -110,9 +111,7 @@ func initialize_map(
 	var next_id = 2
 
 	# Pre-fetch data images so we don't pass textures around
-	var data_images = {
-		"culture": c_img  # Needed for sea/country check
-	}
+	var data_images = {"culture": c_img}  # Needed for sea/country check
 
 	for y in range(h):
 		for x in range(w):
@@ -161,7 +160,7 @@ func _create_province_from_pixel(
 	else:
 		province.type = Province.LAND
 		province.country = _identify_country(c_color)
-		
+
 		var province_data = get_data_for_color(r_color)
 
 		province.population = province_data.population
@@ -460,8 +459,18 @@ func _cleanup_interaction_state() -> void:
 
 # To probe around and still register a click if we hit province/coutnry border
 const PROBE_OFFSETS = [
-	Vector2(0, 0), Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1), Vector2(1, 1), Vector2(1, -1), Vector2(-1, 1), Vector2(-1, -1)
+	Vector2(0, 0),
+	Vector2(1, 0),
+	Vector2(-1, 0),
+	Vector2(0, 1),
+	Vector2(0, -1),
+	Vector2(1, 1),
+	Vector2(1, -1),
+	Vector2(-1, 1),
+	Vector2(-1, -1)
 ]
+
+
 func get_province_with_radius(center: Vector2, map_sprite: Sprite2D, radius: int) -> int:
 	var r = float(radius)
 
@@ -474,7 +483,7 @@ func get_province_with_radius(center: Vector2, map_sprite: Sprite2D, radius: int
 	return -1
 
 
-func get_lighter_country_color (country: String, amount: float = 0.5) -> Color:
+func get_lighter_country_color(country: String, amount: float = 0.5) -> Color:
 	var country_color: Color = country_colors.get(country)
 	return country_color.lightened(amount)
 
@@ -485,6 +494,7 @@ func update_province_troop_state(pid):
 		update_province_color(pid, prov_obj.country)
 	else:
 		_update_lookup(pid, get_lighter_country_color(prov_obj.country, 0.3))
+
 
 func _update_lookup(pid: int, color: Color) -> void:
 	state_color_image.set_pixel(pid, 0, color)
@@ -800,7 +810,7 @@ func update_map_view(mode: MapMode) -> void:
 			MapMode.GDP:
 				final_color = _calculate_heat(province.gdp, max_val, 0.7)
 			#MapMode.ETHNICITY:
-				#final_color = ethnic_name_to_color.get(province.ethnicity, Color.BLACK)
+			#final_color = ethnic_name_to_color.get(province.ethnicity, Color.BLACK)
 			MapMode.POLITICAL:
 				final_color = country_colors.get(province.country, Color.GRAY)
 
@@ -920,6 +930,7 @@ func _load_country_colors() -> void:
 			continue
 		country_colors[country_name] = Color8(rgb[0], rgb[1], rgb[2])
 
+
 func _load_map_data_json(file_path):
 	if not FileAccess.file_exists(file_path):
 		printerr("Error: Map data file not found at ", file_path)
@@ -942,22 +953,25 @@ func _load_map_data_json(file_path):
 		printerr("JSON Parse Error: ", json.get_error_message(), " at line ", json.get_error_line())
 	pass
 
+
 func _parse_color_string(s: String) -> Vector3:
 	var cleaned = s.replace("(", "").replace(")", "").replace(" ", "")
 	var parts = cleaned.split(",")
 	return Vector3(float(parts[0]), float(parts[1]), float(parts[2]))
 
+
 func get_data_for_color(pixel_color: Color) -> Dictionary:
 	var r = int(round(pixel_color.r * 255))
 	var g = int(round(pixel_color.g * 255))
 	var b = int(round(pixel_color.b * 255))
-	
+
 	var key = "(%d, %d, %d)" % [r, g, b]
-	
+
 	if map_data.has(key):
 		return map_data[key]
-	
-	return {} # Return empty if not found
+
+	return {}  # Return empty if not found
+
 
 func _force_array(data) -> Array:
 	if data is Array:
@@ -965,6 +979,7 @@ func _force_array(data) -> Array:
 	elif data is String:
 		return [data]  # Wrap the single country in a list
 	return []
+
 
 func get_provinces_near_sea(country_name: String) -> Array[int]:
 	var provinces = country_to_provinces.get(country_name, [])
@@ -992,6 +1007,7 @@ func get_provincesID_for_country(country: String) -> Array:
 
 	return provinces
 
+
 func get_provincesOBJ_for_country(country: String) -> Array:
 	var provinces := []
 
@@ -1000,6 +1016,7 @@ func get_provincesOBJ_for_country(country: String) -> Array:
 			provinces.append(province)
 
 	return provinces
+
 
 ## Returns an array of province IDs that are on the border of a different country
 func get_border_provinces(country_name: String) -> Array[int]:

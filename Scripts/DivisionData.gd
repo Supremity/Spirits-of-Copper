@@ -69,12 +69,8 @@ static func create_division(p_type: String) -> DivisionData:
 	div.name = "%s" % [p_type.capitalize()]
 
 	return div
-	
-	
-	
-	
-	
-	
+
+
 func get_raw_state() -> Dictionary:
 	var data = {}
 	for prop in get_property_list():
@@ -88,6 +84,7 @@ func get_raw_state() -> Dictionary:
 			else:
 				data[prop.name] = val
 	return data
+
 
 func _serialize_array(arr: Array) -> Array:
 	var new_arr = []

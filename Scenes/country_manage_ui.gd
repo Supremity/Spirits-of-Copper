@@ -38,7 +38,6 @@ var _update_timer: float = 0.0
 #endregion
 
 
-
 func _ready() -> void:
 	visible = false
 	#_build_ui()

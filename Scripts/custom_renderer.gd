@@ -13,7 +13,6 @@ const COLORS = {
 	"path_inactive": Color(0.5, 0.5, 0.5)
 }
 
-
 const ZOOM_LIMITS = {"min_scale": 0.05, "max_scale": 0.5}
 const STACKING_OFFSET_Y := 20.0
 
@@ -79,7 +78,7 @@ func _setup_multimesh():
 	mm.use_custom_data = true
 
 	var q_mesh = QuadMesh.new()
-	q_mesh.size = Vector2(LAYOUT.box_w + LAYOUT.box_w * 0.15, LAYOUT.box_h + LAYOUT.box_h * 0.15) 
+	q_mesh.size = Vector2(LAYOUT.box_w + LAYOUT.box_w * 0.15, LAYOUT.box_h + LAYOUT.box_h * 0.15)
 	mm.mesh = q_mesh
 
 	# SHADER: Using modern Godot 4.5 canvas_item logic
@@ -249,14 +248,10 @@ const HP_COLORS = {
 	"damaged": Color(0.9, 0.8, 0.1),
 	"critical": Color(0.9, 0.1, 0.1)
 }
-const LAYOUT = {
-	"box_w": 64.0,       # Wide rectangle
-	"box_h": 32.0,       # Shorter height
-	"hp_bar_h": 3.0,     # Visible strip at the bottom
-	"font_size": 18
-}
+const LAYOUT = {"box_w": 64.0, "box_h": 32.0, "hp_bar_h": 3.0, "font_size": 18}  # Wide rectangle  # Shorter height  # Visible strip at the bottom
 # Add this to your variables or constants
-var show_division_icon: bool = false 
+var show_division_icon: bool = false
+
 
 func _draw_troop(troop: TroopData, pos: Vector2) -> void:
 	var t := Transform2D(0, Vector2(_current_inv_zoom, _current_inv_zoom), 0, pos)
@@ -266,14 +261,14 @@ func _draw_troop(troop: TroopData, pos: Vector2) -> void:
 	var h = LAYOUT.box_h
 	var hp_h = LAYOUT.hp_bar_h
 	var top_left = Vector2(-w / 2.0, -h / 2.0)
-	
+
 	# --- 1. THE MAIN PLATE ---
 	# Solid dark background
 	var plate_rect = Rect2(top_left, Vector2(w, h - hp_h))
 	draw_rect(plate_rect, Color(0.08, 0.08, 0.08, 0.95), true)
 
 	# --- 2. LEFT SLOT (Flag OR Icon) ---
-	var slot_size = (h - hp_h) - 4.0 # Padding of 2px top/bottom
+	var slot_size = (h - hp_h) - 4.0  # Padding of 2px top/bottom
 	var slot_pos = top_left + Vector2(3, 2)
 	var slot_rect = Rect2(slot_pos, Vector2(slot_size, slot_size))
 
@@ -293,21 +288,23 @@ func _draw_troop(troop: TroopData, pos: Vector2) -> void:
 	var label = str(troop.divisions_count)
 	var font_size = 18
 	var text_size = _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
-	
+
 	# Position the number centered in the remaining space on the right
 	var text_pos = Vector2(
-		top_left.x + slot_size + (w - slot_size - text_size.x) / 2.0 + 2, 
+		top_left.x + slot_size + (w - slot_size - text_size.x) / 2.0 + 2,
 		top_left.y + (h - hp_h + text_size.y * 0.35) / 2.0
 	)
-	
-	draw_string_outline(_font, text_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 3, Color.BLACK)
+
+	draw_string_outline(
+		_font, text_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 3, Color.BLACK
+	)
 	draw_string(_font, text_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)
 
 	# --- 4. THE HP BAR ---
 	var hp_pct = troop.get_average_hp_percent()
 	var hp_bg_rect = Rect2(top_left + Vector2(0, h - hp_h), Vector2(w, hp_h))
 	draw_rect(hp_bg_rect, Color(0, 0, 0, 1.0), true)
-	
+
 	if hp_pct > 0:
 		# Use your HP_COLORS constant if available, otherwise fallback
 		var hp_col = HP_COLORS.healthy if hp_pct > 0.5 else HP_COLORS.critical

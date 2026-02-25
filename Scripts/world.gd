@@ -116,10 +116,8 @@ func save_game_rebel(slot: String):
 		"player_country": CountryManager.player_country.country_name,
 		"countries": {},
 		"troops": [],
-		"map_state": {
-			"country_to_provinces": MapManager.country_to_provinces.duplicate(),
-			"provinces": {} # Start empty
-		}
+		"map_state":  # Start empty
+		{"country_to_provinces": MapManager.country_to_provinces.duplicate(), "provinces": {}}
 	}
 
 	# CORRECTED: Collect Province Data as Raw Dictionaries
@@ -133,17 +131,19 @@ func save_game_rebel(slot: String):
 
 	# Collect Troops
 	for troop in TroopManager.troops:
-		save_data["troops"].append(troop.get_raw_state())    
+		save_data["troops"].append(troop.get_raw_state())
 
 	var file = FileAccess.open("user://saves/" + slot + ".dat", FileAccess.WRITE)
-	file.store_var(save_data) 
+	file.store_var(save_data)
 	file.close()
 	print("Rebel Save (Corrected) Complete.")
 
+
 func load_game_rebel(slot: String):
 	var path = "user://saves/" + slot + ".dat"
-	if not FileAccess.file_exists(path): return
-	
+	if not FileAccess.file_exists(path):
+		return
+
 	var file = FileAccess.open(path, FileAccess.READ)
 	var data = file.get_var()
 	file.close()
@@ -154,16 +154,16 @@ func load_game_rebel(slot: String):
 	# 2. RESTORE MAP & PROVINCES
 	if data.has("map_state"):
 		MapManager.country_to_provinces = data["map_state"]["country_to_provinces"]
-		
+
 		var p_data_map = data["map_state"]["provinces"]
 		for p_id in p_data_map:
 			# Godot might load keys as Strings or Ints depending on the version
 			# We cast to int to be safe
-			var id_int = int(p_id) 
+			var id_int = int(p_id)
 			if MapManager.province_objects.has(id_int):
 				var p_obj = MapManager.province_objects[id_int]
 				_apply_raw_data(p_obj, p_data_map[p_id])
-				p_obj.troops_here = [] # Clear the old troop list
+				p_obj.troops_here = []  # Clear the old troop list
 
 	# 3. RESTORE COUNTRIES
 	for c_name in data["countries"]:
@@ -175,11 +175,11 @@ func load_game_rebel(slot: String):
 	for t_raw in data["troops"]:
 		var t_obj = load("res://Scripts/TroopData.gd").new()
 		_apply_raw_data(t_obj, t_raw)
-		
+
 		t_obj.country_obj = CountryManager.get_country(t_obj.country_name)
 		TroopManager.troops.append(t_obj)
 		TroopManager._add_troop_to_indexes(t_obj)
-		
+
 		if t_obj.is_moving:
 			TroopManager.moving_troops.append(t_obj)
 		else:
@@ -191,14 +191,14 @@ func load_game_rebel(slot: String):
 	# --- PHASE 5: THE FINAL RE-LINK ---
 	for p_id in MapManager.province_objects:
 		var p_obj = MapManager.province_objects[p_id]
-		
+
 		# Only try to link if there is an owner name
 		if p_obj.country != "" and p_obj.country != null:
 			var found_country = CountryManager.get_country(p_obj.country)
-			
+
 			if found_country != null:
 				# Now this works because we added 'country_obj' to Province.gd
-				p_obj.country_obj = found_country 
+				p_obj.country_obj = found_country
 			else:
 				# If it's a sea province or unclaimed land, set it to null safely
 				p_obj.country_obj = null
@@ -208,14 +208,15 @@ func load_game_rebel(slot: String):
 	CountryManager.set_player_country(data["player_country"])
 	if MapManager.has_method("refresh_all_province_colors"):
 		MapManager.refresh_all_province_colors()
-	
+
 	print("Full Rebel Load Complete. Factories and Ports restored.")
+
 
 # Helper to apply data and metadata safely
 func _apply_raw_data(obj: Object, raw_data: Variant):
-	if raw_data == null: 
+	if raw_data == null:
 		return
-	
+
 	# If it's a Dictionary (The Rebel Way)
 	if raw_data is Dictionary:
 		for key in raw_data:
@@ -224,18 +225,20 @@ func _apply_raw_data(obj: Object, raw_data: Variant):
 					obj.set_meta(m_key, raw_data[key][m_key])
 			else:
 				obj.set(key, raw_data[key])
-	
+
 	# If it's an Object (The Godot Resource Way - Fallback)
 	elif raw_data is Object:
 		for prop in raw_data.get_property_list():
 			if prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
 				obj.set(prop.name, raw_data.get(prop.name))
 
+
 func _purge_game_state():
 	# Clear visuals
 	if has_node("TroopRenderer"):
-		for child in get_node("TroopRenderer").get_children(): child.queue_free()
-	
+		for child in get_node("TroopRenderer").get_children():
+			child.queue_free()
+
 	# Clear Logic
 	CountryManager.countries.clear()
 	TroopManager.troops.clear()

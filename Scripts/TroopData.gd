@@ -22,10 +22,10 @@ var progress: float = 0.0
 
 
 func _init(
-	p_country: String = "", 
-	p_province_id: int = -1, 
-	p_divisions: int = 0, 
-	p_position: Vector2 = Vector2.ZERO, 
+	p_country: String = "",
+	p_province_id: int = -1,
+	p_divisions: int = 0,
+	p_position: Vector2 = Vector2.ZERO,
 	p_flag: Texture2D = null
 ) -> void:
 	if p_country == "":
@@ -47,9 +47,11 @@ func _adjust_divisions_to_match_count(target_count: int):
 			stored_divisions.append(DivisionData.new())
 	elif target_count < current:
 		stored_divisions.resize(target_count)
-		
+
+
 func get_average_hp_percent() -> float:
-	if stored_divisions.is_empty(): return 0.0
+	if stored_divisions.is_empty():
+		return 0.0
 	var total_hp = 0.0
 	var total_max = 0.0
 	for div in stored_divisions:
@@ -57,10 +59,11 @@ func get_average_hp_percent() -> float:
 		total_max += div.max_hp
 	return total_hp / total_max if total_max > 0 else 0.0
 
-func get_main_type() -> String:
-	if stored_divisions.is_empty(): return "infantry"
-	return stored_divisions[0].type
 
+func get_main_type() -> String:
+	if stored_divisions.is_empty():
+		return "infantry"
+	return stored_divisions[0].type
 
 
 func get_raw_state() -> Dictionary:
@@ -69,12 +72,12 @@ func get_raw_state() -> Dictionary:
 		# Only save variables you created
 		if prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
 			var val = get(prop.name)
-			
+
 			# DO NOT save actual Objects that belong to other Managers
 			# Instead, we just save their names/IDs to re-link later
-			if prop.name == "country_obj": 
-				continue 
-			
+			if prop.name == "country_obj":
+				continue
+
 			# Recursive save for nested "owned" objects (like Divisions)
 			if val is Object and val.has_method("get_raw_state"):
 				data[prop.name] = val.get_raw_state()
@@ -82,14 +85,15 @@ func get_raw_state() -> Dictionary:
 				data[prop.name] = _serialize_array(val)
 			else:
 				data[prop.name] = val
-	
+
 	# Metadata is essential for your visual positions
 	var meta_dict = {}
 	for m_key in get_meta_list():
 		meta_dict[m_key] = get_meta(m_key)
 	data["_metadata"] = meta_dict
-	
+
 	return data
+
 
 func _serialize_array(arr: Array) -> Array:
 	var new_arr = []

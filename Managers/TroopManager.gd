@@ -10,7 +10,8 @@ var flag_cache: Dictionary = {}  # { country_name: texture }
 
 var troop_selection: TroopSelection
 
-const TroopDataScript = preload("res://Scripts/TroopData.gd") 
+const TroopDataScript = preload("res://Scripts/TroopData.gd")
+
 
 func _process(delta: float) -> void:
 	for troop in moving_troops:
@@ -89,7 +90,7 @@ func _arrive_at_leg_end(troop: TroopData) -> void:
 		return
 
 	var arrived_pid = int(troop.path.pop_front())
-	
+
 	_move_troop_to_province_logically(troop, arrived_pid)
 	MapManager.update_province_troop_state(arrived_pid)
 
@@ -240,7 +241,6 @@ func _create_new_split_troop(original: TroopData, specific_divisions: Array) -> 
 	return new_troop
 
 
-
 func _auto_merge_in_province(province_id: int, country: String) -> void:
 	if not AUTO_MERGE:
 		return
@@ -350,10 +350,9 @@ func _move_troop_to_province_logically(troop: TroopData, new_pid: int) -> void:
 		old_province.troops_here.erase(troop)
 
 	troop.province_id = new_pid
-	
+
 	MapManager.update_province_troop_state(old_pid)
 	MapManager.update_province_troop_state(new_pid)
-
 
 	var new_province = MapManager.get_province(new_pid)
 	if new_province:
@@ -428,6 +427,7 @@ func get_troops_for_country(country):
 		return CountryManager.countries[country].troops_country
 	return []
 
+
 func get_troops_in_province(province_id):
 	return MapManager.get_province(province_id).troops_here
 
@@ -454,9 +454,7 @@ func deploy_specific_divisions(
 	var pos = MapManager.province_centers.get(prov_id, Vector2.ZERO)
 
 	# 1. Create the container (TroopData) with 0 divisions initially
-	var troop = TroopDataScript.new(
-		country, prov_id, 0, pos, flag_cache.get(country)
-	)
+	var troop = TroopDataScript.new(country, prov_id, 0, pos, flag_cache.get(country))
 
 	# 2. Inject the specific divisions we trained
 	troop.stored_divisions = divisions_to_deploy
@@ -478,15 +476,16 @@ func deploy_specific_divisions(
 
 	return troop
 
+
 func get_flag(country: String) -> Texture2D:
 	country = country.to_lower()
-	
+
 	if flag_cache.has(country):
 		return flag_cache[country]
 
 	var formats = ["png", "webp", "svg", "jpg", "jpeg", "tga"]
 	var base_path = "res://assets/flags/%s_flag." % country
-			
+
 	for ext in formats:
 		var full_path = base_path + ext
 		if ResourceLoader.exists(full_path):
@@ -497,6 +496,7 @@ func get_flag(country: String) -> Texture2D:
 
 	print("Flag not found for country: ", country)
 	return null
+
 
 func find_troop_owning_division(div_to_find: DivisionData) -> TroopData:
 	for t in troops:

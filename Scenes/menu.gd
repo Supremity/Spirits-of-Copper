@@ -261,7 +261,7 @@ func _draw_save_menu() -> void:
 		func():
 			var file_name = line_edit.text.strip_edges()
 			# CALLING YOUR NEW REBEL SAVE FUNCTION
-			GameState.current_world.save_game_rebel(file_name) 
+			GameState.current_world.save_game_rebel(file_name)
 			_switch_section(Section.SAVE)
 	)
 

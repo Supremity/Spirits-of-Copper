@@ -202,7 +202,6 @@ func _perform_path_assignment() -> void:
 	if path_pids.is_empty():
 		return
 
-
 	# =========================================================
 	# PRE-CALC: Map each division to its owning troop (O(1))
 	# =========================================================
@@ -211,7 +210,6 @@ func _perform_path_assignment() -> void:
 		for div in t.stored_divisions:
 			div_owner_map[div] = t
 	# =========================================================
-
 
 	# 1. Cast the moving pool correctly
 	var ui_selected = GameState.game_ui.selected_division_objects.duplicate()
@@ -255,7 +253,7 @@ func _perform_path_assignment() -> void:
 			continue
 
 		@warning_ignore("integer_division")
-		var divs_per_target = int(origin_batch.size() / path_pids.size()) # 
+		var divs_per_target = int(origin_batch.size() / path_pids.size())  #
 		var remainder = origin_batch.size() % path_pids.size()
 		var current_batch_idx = 0
 
@@ -283,10 +281,7 @@ func _perform_path_assignment() -> void:
 				continue
 
 			var new_troop = TroopManager._create_new_split_troop(template, final_divs)
-			all_assignments.append({
-				"troop": new_troop,
-				"province_id": target_pid
-			})
+			all_assignments.append({"troop": new_troop, "province_id": target_pid})
 
 	TroopManager.command_move_assigned(all_assignments)
 	_cleanup_empty_troops()
