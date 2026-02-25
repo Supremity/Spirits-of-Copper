@@ -5,22 +5,7 @@ class_name World
 @onready var camera: Camera2D = $"../Camera2D"
 @onready var troop_renderer: CustomRenderer = $CustomRenderer as CustomRenderer
 
-@export var map_shader: Shader
 @export var clock: GameClock
-
-var water_offset: Vector2 = Vector2.ZERO
-
-
-func _process(_delta: float) -> void:
-	var map_width := MapManager.id_map_image.get_width()
-	if camera.position.x > map_sprite.position.x + map_width:
-		camera.position.x -= map_width
-	elif camera.position.x < map_sprite.position.x - map_width:
-		camera.position.x += map_width
-	if map_sprite.material and !clock.paused:
-		var move_amount = clock.time_scale * 0.001 * _delta
-		water_offset.x += move_amount
-		map_sprite.material.set_shader_parameter("ocean_offset", water_offset)
 
 
 func _enter_tree() -> void:
@@ -34,8 +19,6 @@ func _ready() -> void:
 	clock.hour_passed.connect(CountryManager._on_hour_passed)
 	clock.day_passed.connect(CountryManager._on_day_passed)
 
-	MapManager.load_country_data()
-
 	print("World: Map is ready -> configuring visuals...")
 
 	MapManager.all_cities = MapManager.get_all_cities()
@@ -43,62 +26,13 @@ func _ready() -> void:
 	CountryManager.set_player_country("brazil")
 	# For debugging purposes. Create some troops first
 	MapManager._build_global_registry()
-	var map_width := MapManager.id_map_image.get_width()
-	var map_height := MapManager.id_map_image.get_height()
-
-	var mat := ShaderMaterial.new()
-	mat.shader = map_shader
-	var id_tex := ImageTexture.create_from_image(MapManager.id_map_image)
-	mat.set_shader_parameter("region_id_map", id_tex)
-	mat.set_shader_parameter("state_colors", MapManager.state_color_texture)
-
-	var type_tex = MapManager.generate_type_mask()
-	mat.set_shader_parameter("type_map", type_tex)
-
-	var noise = FastNoiseLite.new()
-	noise.seed = randi()
-
-	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-
-	noise.frequency = 0.005
-
-	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	noise.fractal_octaves = 3
-	noise.fractal_gain = 0.5
-
-	var noise_tex = NoiseTexture2D.new()
-	noise_tex.seamless = true
-	noise_tex.width = 512
-	noise_tex.height = 512
-	noise_tex.noise = noise
-
-	await noise_tex.changed
-	mat.set_shader_parameter("ocean_noise", noise_tex)
-
-	mat.set_shader_parameter("original_texture", map_sprite.texture)
-	mat.set_shader_parameter("sea_speed", 0.00)  # Changed by MainClock
-	mat.set_shader_parameter("tex_size", Vector2(map_width, MapManager.id_map_image.get_height()))
-	mat.set_shader_parameter("country_border_color", Color.BLACK)
-
-	map_sprite.material = mat
-
-	for i in [-2, -1, 1, 2]:
-		_create_ghost_map(Vector2(i * map_width, 0), mat)
 
 	if troop_renderer:
+		var map_width := MapManager.id_map_image.get_width()
 		troop_renderer.map_sprite = map_sprite
 		troop_renderer.map_width = map_width
 	else:
 		push_error("CustomRenderer node not found!")
-
-
-func _create_ghost_map(offset: Vector2, p_material: ShaderMaterial) -> void:
-	var ghost := Sprite2D.new()
-	ghost.texture = map_sprite.texture
-	ghost.centered = map_sprite.centered
-	ghost.material = p_material
-	ghost.position = map_sprite.position + offset
-	add_child(ghost)
 
 
 func _input(event: InputEvent) -> void:

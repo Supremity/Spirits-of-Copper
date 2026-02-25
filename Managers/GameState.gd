@@ -3,6 +3,7 @@ extends Node
 enum IndustryType { DEFAULT = 0, FACTORY = 1, PORT = 2 }
 
 var current_world: World
+var current_map: MapContainer
 
 var choosing_deploy_city := false
 var industry_building := IndustryType.DEFAULT

@@ -33,7 +33,7 @@ func _input(event: InputEvent) -> void:
 
 	# 2. Convert Screen position to Map/World position
 	# We use the World's camera to get the correct global coordinates
-	var world = GameState.current_world
+	var world = GameState.current_map
 	if not world:
 		return
 
@@ -49,7 +49,7 @@ func _input(event: InputEvent) -> void:
 
 func _process_hover(map_pos: Vector2):
 	# 1. Get the PID using your radius logic
-	var pid = get_province_with_radius(map_pos, GameState.current_world.map_sprite, 5)
+	var pid = get_province_with_radius(map_pos, GameState.current_map.map_sprite, 5)
 
 	if pid != hovered_pid:
 		# 2. Reset the visual of the PREVIOUS hovered province
@@ -71,7 +71,7 @@ func _process_hover(map_pos: Vector2):
 
 
 func _process_click(map_pos: Vector2):
-	var pid = get_province_with_radius(map_pos, GameState.current_world.map_sprite, 5)
+	var pid = get_province_with_radius(map_pos, GameState.current_map.map_sprite, 5)
 	if pid <= 1:
 		return
 

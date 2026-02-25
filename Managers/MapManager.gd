@@ -42,7 +42,7 @@ const CACHE_FOLDER = "res://map_data/"
 @export var culture_texture: Texture2D
 
 
-func load_country_data() -> void:
+func load_world_data() -> void:
 	_load_country_colors()
 	_load_map_data_json("res://map_data/full_map_data.json")
 	var dir = DirAccess.open("res://")
