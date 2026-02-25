@@ -26,10 +26,9 @@ func _ready() -> void:
 		1,
 		"Shows the releasables of a country"
 	)
-	
-	Console.add_command(
-		"switch", switch_scene, ["scene"], 1, "Switches scene"
-	)
+
+	Console.add_command("switch", switch_scene, ["scene"], 1, "Switches scene")
+
 
 func switch_scene(scene_name: String) -> void:
 	match scene_name.to_lower():
@@ -40,7 +39,10 @@ func switch_scene(scene_name: String) -> void:
 		"editor", "map_editor":
 			SceneSwitcher.switch_to(SceneSwitcher.Type.EDITOR)
 		_:
-			print("Console Error: Unknown scene '%s'. Try 'world', 'menu', or 'editor'." % scene_name)	
+			print(
+				"Console Error: Unknown scene '%s'. Try 'world', 'menu', or 'editor'." % scene_name
+			)
+
 
 func _show_releasables_country(country):
 	var releasables = MapManager.get_all_releasables(country)

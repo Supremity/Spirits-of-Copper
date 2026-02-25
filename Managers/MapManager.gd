@@ -183,6 +183,7 @@ func _finalize_map_processing():
 	_build_adjacency_list()
 	_build_lookup_texture()
 
+
 func _build_country_to_provinces():
 	var result: Dictionary = {}
 	for province in province_objects.values():
@@ -192,6 +193,7 @@ func _build_country_to_provinces():
 		result[country].append(province.id)
 	country_to_provinces = result
 	return
+
 
 func draw_province_centroids(image: Image, color: Color = Color(0, 1, 0, 1)) -> void:
 	if not image:

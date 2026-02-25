@@ -1,10 +1,6 @@
 extends Node
 
-enum Type {
-	MENU,
-	WORLD,
-	EDITOR
-}
+enum Type { MENU, WORLD, EDITOR }
 
 const SCENE_MAP = {
 	Type.MENU: "res://Scenes/main_menu.tscn",
@@ -15,9 +11,9 @@ const SCENE_MAP = {
 # This keeps the nodes in memory so they are never freed
 var _instances: Dictionary = {}
 
-func switch_to(scene_type: Type) -> void:
 
-	var main := get_tree().current_scene   # This is Main
+func switch_to(scene_type: Type) -> void:
+	var main := get_tree().current_scene  # This is Main
 	var old_world := main.get_node_or_null("World")
 
 	if old_world:
