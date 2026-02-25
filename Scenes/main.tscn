@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://bonl378c51366"]
+
+[ext_resource type="Script" uid="uid://bjvlgraecimcy" path="res://Scenes/main.gd" id="1_kry3j"]
+[ext_resource type="Script" uid="uid://dfiom5fy34v8q" path="res://Scenes/map_container.gd" id="2_21xkr"]
+[ext_resource type="Shader" uid="uid://bnmv2hv80mfw5" path="res://shaders/map_shader.gdshader" id="3_6bp64"]
+[ext_resource type="Script" uid="uid://cvkc8n0kgyk3c" path="res://Scripts/camera_controller.gd" id="4_344ge"]
+[ext_resource type="PackedScene" uid="uid://dl045g47lsfkx" path="res://Scenes/world.tscn" id="5_ynf5e"]
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_fo5ed"]
+load_path = "res://.godot/imported/cultures.png-f9255a05eddadc8a9aa0dedbe091def9.ctex"
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_5ukr8"]
+load_path = "res://.godot/imported/regions.png-75b8193867ba7ee4418b242a7a7efe49.ctex"
+
+[node name="Main" type="Node2D" unique_id=393637971]
+script = ExtResource("1_kry3j")
+
+[node name="MapContainer" type="Node2D" parent="." unique_id=1905968874]
+script = ExtResource("2_21xkr")
+map_shader = ExtResource("3_6bp64")
+
+[node name="CultureSprite" type="Sprite2D" parent="MapContainer" unique_id=889536622]
+texture = SubResource("CompressedTexture2D_fo5ed")
+centered = false
+
+[node name="RegionSprite" type="Sprite2D" parent="MapContainer" unique_id=282385221]
+visible = false
+texture = SubResource("CompressedTexture2D_5ukr8")
+centered = false
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=988399146]
+anchor_mode = 0
+
+[node name="CameraController" type="Node" parent="Camera2D" unique_id=1370763233 node_paths=PackedStringArray("camera")]
+script = ExtResource("4_344ge")
+camera = NodePath("..")
+
+[node name="World" parent="." unique_id=1557365676 instance=ExtResource("5_ynf5e")]
