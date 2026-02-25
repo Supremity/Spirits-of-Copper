@@ -179,9 +179,19 @@ func _create_province_from_pixel(
 func _finalize_map_processing():
 	# post-processing
 	_calculate_province_centroids()
+	_build_country_to_provinces()
 	_build_adjacency_list()
 	_build_lookup_texture()
 
+func _build_country_to_provinces():
+	var result: Dictionary = {}
+	for province in province_objects.values():
+		var country = province.country
+		if not result.has(country):
+			result[country] = []
+		result[country].append(province.id)
+	country_to_provinces = result
+	return
 
 func draw_province_centroids(image: Image, color: Color = Color(0, 1, 0, 1)) -> void:
 	if not image:
