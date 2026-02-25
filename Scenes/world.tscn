@@ -10,7 +10,7 @@
 [ext_resource type="Script" uid="uid://cnm2s5owh7ec3" path="res://Scripts/game_clock.gd" id="6_o06y3"]
 [ext_resource type="Script" path="res://Scripts/decision_tree_ui.gd" id="9_5v1tr"]
 [ext_resource type="Script" uid="uid://dmywidiiomun4" path="res://Scenes/peace_process_ui.gd" id="10_0fj1v"]
-[ext_resource type="Script" path="res://Scenes/country_manage_ui.gd" id="11_ikia7"]
+[ext_resource type="Script" uid="uid://d00ogcoh5s68w" path="res://Scenes/country_manage_ui.gd" id="11_ikia7"]
 [ext_resource type="Script" uid="uid://dgg5vvwt2yua6" path="res://Scenes/menu.gd" id="12_7yui6"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_fo5ed"]
@@ -28,11 +28,27 @@ mesh = SubResource("QuadMesh_o06y3")
 [node name="Main" type="Node2D" unique_id=393637971]
 script = ExtResource("1_o06y3")
 
-[node name="World" type="Node2D" parent="." unique_id=963880977 node_paths=PackedStringArray("clock")]
+[node name="MapContainer" type="Node2D" parent="." unique_id=1905968874]
+
+[node name="CultureSprite" type="Sprite2D" parent="MapContainer" unique_id=889536622]
+texture = SubResource("CompressedTexture2D_fo5ed")
+centered = false
+
+[node name="RegionSprite" type="Sprite2D" parent="MapContainer" unique_id=282385221]
 visible = false
+texture = SubResource("CompressedTexture2D_5ukr8")
+centered = false
+
+[node name="World" type="Node2D" parent="." unique_id=963880977 node_paths=PackedStringArray("clock")]
 script = ExtResource("1_go701")
 map_shader = ExtResource("3_k7acu")
 clock = NodePath("Clock")
+
+[node name="CustomRenderer" type="Node2D" parent="World" unique_id=1712306471]
+script = ExtResource("5_o06y3")
+
+[node name="TroopMultiMesh" type="MultiMeshInstance2D" parent="World/CustomRenderer" unique_id=536788885]
+multimesh = SubResource("MultiMesh_k7acu")
 
 [node name="Clock" type="Node" parent="World" unique_id=388372458]
 script = ExtResource("6_o06y3")
@@ -47,24 +63,8 @@ camera = NodePath("..")
 [node name="TroopSelection" type="Node2D" parent="World" unique_id=406150806]
 script = ExtResource("6_5ukr8")
 
-[node name="MapContainer" type="Node2D" parent="World" unique_id=1905968874]
-
-[node name="CultureSprite" type="Sprite2D" parent="World/MapContainer" unique_id=889536622]
-texture = SubResource("CompressedTexture2D_fo5ed")
-centered = false
-
-[node name="RegionSprite" type="Sprite2D" parent="World/MapContainer" unique_id=282385221]
-visible = false
-texture = SubResource("CompressedTexture2D_5ukr8")
-centered = false
-
-[node name="CustomRenderer" type="Node2D" parent="World/MapContainer" unique_id=1712306471]
-script = ExtResource("5_o06y3")
-
-[node name="TroopMultiMesh" type="MultiMeshInstance2D" parent="World/MapContainer/CustomRenderer" unique_id=536788885]
-multimesh = SubResource("MultiMesh_k7acu")
-
 [node name="ui_game" parent="World" unique_id=968168126 instance=ExtResource("2_fo5ed")]
+visible = false
 
 [node name="DecisionTreeUI" type="CanvasLayer" parent="World" unique_id=316995849]
 script = ExtResource("9_5v1tr")

@@ -1,9 +1,9 @@
 extends Node2D
 class_name World
 
-@onready var map_sprite: Sprite2D = $MapContainer/CultureSprite as Sprite2D
+@onready var map_sprite: Sprite2D = $"../MapContainer/CultureSprite" as Sprite2D
 @onready var camera: Camera2D = $Camera2D as Camera2D
-@onready var troop_renderer: CustomRenderer = $MapContainer/CustomRenderer as CustomRenderer
+@onready var troop_renderer: CustomRenderer = $CustomRenderer as CustomRenderer
 
 @export var map_shader: Shader
 @export var clock: GameClock
@@ -98,7 +98,7 @@ func _create_ghost_map(offset: Vector2, p_material: ShaderMaterial) -> void:
 	ghost.centered = map_sprite.centered
 	ghost.material = p_material
 	ghost.position = map_sprite.position + offset
-	$MapContainer.add_child(ghost)
+	add_child(ghost)
 
 
 func _input(event: InputEvent) -> void:
