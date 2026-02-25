@@ -53,18 +53,10 @@ multimesh = SubResource("MultiMesh_k7acu")
 [node name="Clock" type="Node" parent="World" unique_id=388372458]
 script = ExtResource("6_o06y3")
 
-[node name="Camera2D" type="Camera2D" parent="World" unique_id=988399146]
-anchor_mode = 0
-
-[node name="CameraController" type="Node" parent="World/Camera2D" unique_id=1370763233 node_paths=PackedStringArray("camera")]
-script = ExtResource("4_8j60k")
-camera = NodePath("..")
-
 [node name="TroopSelection" type="Node2D" parent="World" unique_id=406150806]
 script = ExtResource("6_5ukr8")
 
 [node name="ui_game" parent="World" unique_id=968168126 instance=ExtResource("2_fo5ed")]
-visible = false
 
 [node name="DecisionTreeUI" type="CanvasLayer" parent="World" unique_id=316995849]
 script = ExtResource("9_5v1tr")
@@ -77,3 +69,10 @@ script = ExtResource("11_ikia7")
 
 [node name="Menu" type="CanvasLayer" parent="World" unique_id=555147062]
 script = ExtResource("12_7yui6")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=988399146]
+anchor_mode = 0
+
+[node name="CameraController" type="Node" parent="Camera2D" unique_id=1370763233 node_paths=PackedStringArray("camera")]
+script = ExtResource("4_8j60k")
+camera = NodePath("..")

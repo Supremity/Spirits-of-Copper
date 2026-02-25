@@ -2,7 +2,7 @@ extends Node2D
 class_name World
 
 @onready var map_sprite: Sprite2D = $"../MapContainer/CultureSprite" as Sprite2D
-@onready var camera: Camera2D = $Camera2D as Camera2D
+@onready var camera: Camera2D = $"../Camera2D"
 @onready var troop_renderer: CustomRenderer = $CustomRenderer as CustomRenderer
 
 @export var map_shader: Shader
