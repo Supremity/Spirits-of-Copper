@@ -33,6 +33,7 @@ func _ready() -> void:
 		troop_renderer.map_width = map_width
 	else:
 		push_error("CustomRenderer node not found!")
+	
 
 
 func _input(event: InputEvent) -> void:

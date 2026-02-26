@@ -36,6 +36,8 @@ func switch_scene(scene_name: String) -> void:
 			SceneSwitcher.switch_to(SceneSwitcher.Type.WORLD)
 		"menu", "main_menu":
 			SceneSwitcher.switch_to(SceneSwitcher.Type.MENU)
+		"select", "select_country":
+			SceneSwitcher.switch_to(SceneSwitcher.Type.SELECT_COUNTRY)
 		"editor", "map_editor":
 			SceneSwitcher.switch_to(SceneSwitcher.Type.EDITOR)
 		_:

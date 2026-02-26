@@ -1,11 +1,12 @@
 extends Node
 
-enum Type { MENU, WORLD, EDITOR }
+enum Type { MENU, WORLD, EDITOR, SELECT_COUNTRY }
 
 const SCENE_MAP = {
 	Type.MENU: "res://Scenes/main_menu.tscn",
 	Type.WORLD: "res://Scenes/world.tscn",
-	Type.EDITOR: "res://Scenes/game_editor.tscn"
+	Type.EDITOR: "res://Scenes/game_editor.tscn",
+	Type.SELECT_COUNTRY: "res://Scenes/select_country.tscn"
 }
 
 # This keeps the nodes in memory so they are never freed

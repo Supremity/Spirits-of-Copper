@@ -1,0 +1,169 @@
+[gd_scene format=3 uid="uid://ef1nlqkm5anw"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sidebar"]
+bg_color = Color(0.0784314, 0.0901961, 0.101961, 0.94)
+border_width_right = 2
+border_color = Color(0.298039, 0.337255, 0.380392, 1)
+shadow_color = Color(0, 0, 0, 0.5)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
+bg_color = Color(0.14902, 0.172549, 0.192157, 1)
+border_width_bottom = 2
+border_color = Color(0.435294, 0.384314, 0.231373, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_normal"]
+bg_color = Color(0.12549, 0.145098, 0.160784, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.435294, 0.384314, 0.231373, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_hover"]
+bg_color = Color(0.188235, 0.215686, 0.239216, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.878431, 0.764706, 0.521569, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[node name="Select_Country" type="CanvasLayer" unique_id=1704477174]
+
+[node name="MainSidebar" type="PanelContainer" parent="." unique_id=1897680301]
+custom_minimum_size = Vector2(350, 0)
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 350.0
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_sidebar")
+
+[node name="ContentStack" type="VBoxContainer" parent="MainSidebar" unique_id=413635240]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="HeaderPanel" type="PanelContainer" parent="MainSidebar/ContentStack" unique_id=2064348161]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_header")
+
+[node name="CountryName" type="Label" parent="MainSidebar/ContentStack/HeaderPanel" unique_id=892443067]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.878431, 0.764706, 0.521569, 1)
+theme_override_font_sizes/font_size = 22
+text = "SELECT A NATION"
+horizontal_alignment = 1
+vertical_alignment = 1
+uppercase = true
+
+[node name="Padding" type="MarginContainer" parent="MainSidebar/ContentStack" unique_id=1591499796]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="InnerLayout" type="VBoxContainer" parent="MainSidebar/ContentStack/Padding" unique_id=1872563012]
+layout_mode = 2
+theme_override_constants/separation = 25
+
+[node name="FlagFrame" type="ColorRect" parent="MainSidebar/ContentStack/Padding/InnerLayout" unique_id=1645323925]
+custom_minimum_size = Vector2(0, 160)
+layout_mode = 2
+color = Color(0, 0, 0, 0.235294)
+
+[node name="FlagRect" type="TextureRect" parent="MainSidebar/ContentStack/Padding/InnerLayout/FlagFrame" unique_id=493096237]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="StatsCategory" type="VBoxContainer" parent="MainSidebar/ContentStack/Padding/InnerLayout" unique_id=1327425059]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="CategoryLabel" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory" unique_id=153315383]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.501961, 0.552941, 0.607843, 1)
+theme_override_font_sizes/font_size = 14
+text = "NATIONAL STATISTICS"
+
+[node name="HSeparator" type="HSeparator" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory" unique_id=200851428]
+layout_mode = 2
+
+[node name="StatsGrid" type="GridContainer" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory" unique_id=118471220]
+layout_mode = 2
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 15
+columns = 2
+
+[node name="LabelManpower" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=213159062]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Available Manpower"
+
+[node name="ValueManpower" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=1204698391]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.388235, 0.811765, 0.388235, 1)
+text = "0"
+horizontal_alignment = 2
+
+[node name="LabelFactories" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=1961607347]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Industrial Capacity"
+
+[node name="ValueFactories" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=814289439]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="LabelStability" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=2078621418]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "National Stability"
+
+[node name="ValueStability" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=1011449537]
+unique_name_in_owner = true
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 2
+
+[node name="Spacer" type="Control" parent="MainSidebar/ContentStack/Padding/InnerLayout" unique_id=1298944579]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PlayButton" type="Button" parent="MainSidebar/ContentStack/Padding/InnerLayout" unique_id=940213948]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.878431, 0.764706, 0.521569, 1)
+theme_override_colors/font_hover_color = Color(1, 0.92549, 0.784314, 1)
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+text = "PLAY AS NATION"
+
+[node name="FooterNote" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout" unique_id=766451533]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.301961, 0.301961, 0.301961, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
