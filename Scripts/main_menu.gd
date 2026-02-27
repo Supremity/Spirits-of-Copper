@@ -51,14 +51,14 @@ func _check_for_saves() -> void:
 
 # Button Logic
 func _on_new_game_pressed() -> void:
-	print("Starting new campaign in Spirits of Steel...")
+	MapManager.show_countries_map()
 	ConsoleManager.switch_scene("select")
 
 func _on_load_game_pressed() -> void:
 	print("Opening save browser...")
 
 func _on_map_editor_pressed() -> void:
-	print("Opening Map Editor...")
+	ConsoleManager.switch_scene("editor")
 
 func _on_settings_pressed() -> void:
 	print("Opening Settings...")

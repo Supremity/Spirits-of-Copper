@@ -16,7 +16,8 @@ func _ready() -> void:
 	# Prevent signal double-connection
 	if not GameState.main.clock.hour_passed.is_connected(CountryManager._on_hour_passed):
 		GameState.main.clock.hour_passed.connect(CountryManager._on_hour_passed)
-
+	
+	GameState.game_ui.update_topbar_stats()
 	if not _first_time_setup_done:		
 		await get_tree().process_frame
 		initialize_world()

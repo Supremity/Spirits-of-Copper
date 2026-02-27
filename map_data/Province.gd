@@ -24,6 +24,7 @@ enum {
 @export var neighbors: Array[int] = []
 @export var claims = []
 @export var troops_here = []
+@export var r_color = null
 
 var country_obj: CountryData  # (for save/loading stuff)
 

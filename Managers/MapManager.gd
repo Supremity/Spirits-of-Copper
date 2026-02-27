@@ -167,7 +167,8 @@ func _create_province_from_pixel(
 		province.country = _identify_country(c_color)
 
 		var province_data = get_data_for_color(r_color)
-
+		
+		province.r_color = r_color
 		province.population = province_data.population
 		province.gdp = province_data.gdp
 		province.city = province_data.city
