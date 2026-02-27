@@ -13,6 +13,8 @@ var _first_time_setup_done := false
 func _ready() -> void:
 	TroopManager.troop_selection = $TroopSelection as TroopSelection
 
+	# Note z21: Needs to be a better way to do this[
+	CountryManager.set_player_country(CountryManager.player_country.country_name)
 	# Prevent signal double-connection
 	if not GameState.main.clock.hour_passed.is_connected(CountryManager._on_hour_passed):
 		GameState.main.clock.hour_passed.connect(CountryManager._on_hour_passed)
