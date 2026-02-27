@@ -30,7 +30,7 @@ func _process(_delta: float) -> void:
 		_cycle_map_mode()
 
 	if GameState.current_world:
-		var clock := GameState.current_world.clock
+		var clock = GameState.main.clock
 		if Input.is_action_just_pressed("pause_game"):
 			clock.toggle_pause()
 

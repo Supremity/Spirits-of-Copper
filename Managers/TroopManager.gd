@@ -25,7 +25,7 @@ func _update_moving_troop(troop: TroopData, _delta: float) -> void:
 	# We no longer calculate position here.
 	# We only check if the logical time has expired.
 
-	if GameState.current_world.clock.paused:
+	if GameState.main.clock.paused:
 		return
 
 	var start_time = troop.get_meta("start_time", 0.0)
@@ -33,7 +33,7 @@ func _update_moving_troop(troop: TroopData, _delta: float) -> void:
 
 	# Use the same 'visual clock' the shader uses
 	# Assuming GameState or similar tracks total unpaused game seconds
-	var current_game_time = GameState.current_world.clock.total_game_seconds
+	var current_game_time = GameState.main.clock.total_game_seconds
 
 	var progress = (current_game_time - start_time) / duration
 
@@ -76,7 +76,7 @@ func _start_next_leg(troop: TroopData) -> void:
 	troop.target_position = target_pos
 	troop.set_meta("start_pos", troop.position)
 	troop.set_meta("duration", duration)
-	troop.set_meta("start_time", GameState.current_world.clock.total_game_seconds)
+	troop.set_meta("start_time", GameState.main.clock.total_game_seconds)
 
 	troop.is_moving = true
 

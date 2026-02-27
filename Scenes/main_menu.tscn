@@ -1,0 +1,166 @@
+[gd_scene format=3 uid="uid://b01800wvm674n"]
+
+[ext_resource type="Script" uid="uid://bmubx6hdbo3bt" path="res://Scripts/main_menu.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://claivv7l8p5lc" path="res://assets/ui/logo.png" id="2_logo"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_Sidebar"]
+bg_color = Color(0.0431373, 0.0509804, 0.0705882, 0.784314)
+border_width_right = 2
+border_color = Color(0.407843, 0.356863, 0.254902, 1)
+shadow_color = Color(0, 0, 0, 0.470588)
+shadow_size = 15
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_BtnNormal"]
+content_margin_left = 15.0
+bg_color = Color(0.117647, 0.133333, 0.172549, 1)
+border_width_left = 3
+border_color = Color(0.258824, 0.294118, 0.364706, 1)
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_BtnHover"]
+content_margin_left = 22.0
+bg_color = Color(0.180392, 0.207843, 0.270588, 1)
+border_width_left = 5
+border_color = Color(0.811765, 0.658824, 0.270588, 1)
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_BtnDisabled"]
+bg_color = Color(0.0784314, 0.0862745, 0.109804, 1)
+border_width_left = 3
+border_color = Color(0.141176, 0.141176, 0.141176, 1)
+
+[node name="MainMenu" type="CanvasLayer" unique_id=814849826]
+script = ExtResource("1_script")
+
+[node name="ScreenTint" type="ColorRect" parent="." unique_id=330959381]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.156863)
+
+[node name="Sidebar" type="Panel" parent="." unique_id=561745190]
+custom_minimum_size = Vector2(380, 0)
+anchors_preset = 9
+anchor_bottom = 1.0
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_Sidebar")
+
+[node name="MarginContainer" type="MarginContainer" parent="Sidebar" unique_id=1910694743]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 35
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 35
+theme_override_constants/margin_bottom = 30
+
+[node name="Content" type="VBoxContainer" parent="Sidebar/MarginContainer" unique_id=1356848520]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Logo" type="TextureRect" parent="Sidebar/MarginContainer/Content" unique_id=768847060]
+custom_minimum_size = Vector2(0, 140)
+layout_mode = 2
+texture = ExtResource("2_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TitleGroup" type="VBoxContainer" parent="Sidebar/MarginContainer/Content" unique_id=417579387]
+layout_mode = 2
+theme_override_constants/separation = -5
+
+[node name="TitleLabel" type="Label" parent="Sidebar/MarginContainer/Content/TitleGroup" unique_id=1307164412]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.921569, 0.929412, 0.941176, 1)
+theme_override_font_sizes/font_size = 26
+text = "SPIRITS OF STEEL"
+horizontal_alignment = 1
+uppercase = true
+
+[node name="SubtitleLabel" type="Label" parent="Sidebar/MarginContainer/Content/TitleGroup" unique_id=1352522534]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.811765, 0.658824, 0.270588, 1)
+theme_override_font_sizes/font_size = 18
+text = "REBIRTH"
+horizontal_alignment = 1
+uppercase = true
+
+[node name="HSeparator" type="HSeparator" parent="Sidebar/MarginContainer/Content" unique_id=477970776]
+layout_mode = 2
+theme_override_constants/separation = 25
+
+[node name="MenuButtons" type="VBoxContainer" parent="Sidebar/MarginContainer/Content" unique_id=1311929930]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="NewGame" type="Button" parent="Sidebar/MarginContainer/Content/MenuButtons" unique_id=508897360]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_BtnNormal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_BtnHover")
+theme_override_styles/hover = SubResource("StyleBoxFlat_BtnHover")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_BtnDisabled")
+text = "NEW GAME"
+alignment = 0
+
+[node name="LoadGame" type="Button" parent="Sidebar/MarginContainer/Content/MenuButtons" unique_id=2030977609]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_BtnNormal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_BtnHover")
+theme_override_styles/hover = SubResource("StyleBoxFlat_BtnHover")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_BtnDisabled")
+text = "LOAD GAME"
+alignment = 0
+
+[node name="MapEditor" type="Button" parent="Sidebar/MarginContainer/Content/MenuButtons" unique_id=125388762]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_BtnNormal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_BtnHover")
+theme_override_styles/hover = SubResource("StyleBoxFlat_BtnHover")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_BtnDisabled")
+text = "MAP EDITOR"
+alignment = 0
+
+[node name="Settings" type="Button" parent="Sidebar/MarginContainer/Content/MenuButtons" unique_id=1319504610]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_BtnNormal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_BtnHover")
+theme_override_styles/hover = SubResource("StyleBoxFlat_BtnHover")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_BtnDisabled")
+text = "SETTINGS"
+alignment = 0
+
+[node name="Exit" type="Button" parent="Sidebar/MarginContainer/Content/MenuButtons" unique_id=2250828]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_BtnNormal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_BtnHover")
+theme_override_styles/hover = SubResource("StyleBoxFlat_BtnHover")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_BtnDisabled")
+text = "EXIT TO DESKTOP"
+alignment = 0
+
+[node name="Credits" type="Label" parent="Sidebar/MarginContainer" unique_id=1202046303]
+layout_mode = 2
+size_flags_vertical = 8
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 12
+text = "Developed by Z21 & Callmepol"
+horizontal_alignment = 1

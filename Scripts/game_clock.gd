@@ -80,12 +80,12 @@ func increase_speed():
 
 func pause() -> void:
 	paused = true
-	GameState.game_ui.updateProgressBar()
+	#GameState.game_ui.updateProgressBar()
 
 
 func resume() -> void:
 	paused = false
-	GameState.game_ui.updateProgressBar()
+	#GameState.game_ui.updateProgressBar()
 
 
 func toggle_pause() -> void:

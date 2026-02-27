@@ -16,9 +16,8 @@
 custom_aabb = AABB(30, 20, 0, 0, 0, 0)
 mesh = SubResource("QuadMesh_o06y3")
 
-[node name="World" type="Node2D" unique_id=1557365676 node_paths=PackedStringArray("clock")]
+[node name="World" type="Node2D" unique_id=1557365676]
 script = ExtResource("1_i23d3")
-clock = NodePath("Clock")
 
 [node name="CustomRenderer" type="Node2D" parent="." unique_id=1363807819]
 script = ExtResource("2_l60jn")

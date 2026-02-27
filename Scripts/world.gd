@@ -1,11 +1,9 @@
 extends Node2D
 class_name World
 
-@onready var map_sprite: Sprite2D = $"../MapContainer/CultureSprite" as Sprite2D
-@onready var camera: Camera2D = $"../Camera2D"
+@onready var map_sprite: Sprite2D = $"../../MapContainer/CultureSprite" as Sprite2D
+@onready var camera: Camera2D = $"../../Camera2D"
 @onready var troop_renderer: CustomRenderer = $CustomRenderer as CustomRenderer
-
-@export var clock: GameClock
 
 
 func _enter_tree() -> void:
@@ -15,24 +13,30 @@ func _enter_tree() -> void:
 func _ready() -> void:
 	TroopManager.troop_selection = $TroopSelection as TroopSelection
 
-	# TODO(pol): Load CountryManager after map instead of an autoload to avoid this.
-	clock.hour_passed.connect(CountryManager._on_hour_passed)
-	clock.day_passed.connect(CountryManager._on_day_passed)
+	# Prevent signal double-connection
+	if not GameState.main.clock.hour_passed.is_connected(CountryManager._on_hour_passed):
+		GameState.main.clock.hour_passed.connect(CountryManager._on_hour_passed)
 
-	print("World: Map is ready -> configuring visuals...")
-
-	MapManager.all_cities = MapManager.get_all_cities()
-	CountryManager.initialize_countries()
 	CountryManager.set_player_country("brazil")
-	# For debugging purposes. Create some troops first
-	MapManager._build_global_registry()
+	
+	await get_tree().process_frame
+	initialize_world()
+
+func initialize_world():
+	# Safety check for MapManager data
+	if not MapManager.id_map_image:
+		push_error("MapManager image is null during initialization!")
+		return
 
 	if troop_renderer:
-		var map_width := MapManager.id_map_image.get_width()
 		troop_renderer.map_sprite = map_sprite
-		troop_renderer.map_width = map_width
-	else:
-		push_error("CustomRenderer node not found!")
+		troop_renderer.map_width = MapManager.id_map_image.get_width()
+		# Explicitly tell the renderer to boot up
+		troop_renderer.rebuild_troops()
+	
+	# Reset troop positions for the new map instance
+	for t_obj in TroopManager.troops:
+		t_obj.position = MapManager.province_centers.get(t_obj.province_id, Vector2.ZERO)
 	
 
 

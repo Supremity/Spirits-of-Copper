@@ -14,8 +14,8 @@ signal training_finished
 func _ready() -> void:
 	button.pressed.connect(_on_button_pressed)
 	# Assuming GameState is a global singleton
-	if GameState.current_world and GameState.current_world.clock:
-		GameState.current_world.clock.day_passed.connect(refresh_ui)
+	if GameState.current_world and GameState.main.clock:
+		GameState.main.clock.day_passed.connect(refresh_ui)
 
 
 # 1. Standard Setup

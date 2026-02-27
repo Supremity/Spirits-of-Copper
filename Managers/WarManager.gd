@@ -205,7 +205,7 @@ class Battle:
 func _process(delta: float):
 	if active_battles.is_empty():
 		return
-	var current_intensity = delta * GameState.current_world.clock.time_scale
+	var current_intensity = delta * GameState.main.clock.time_scale
 	if current_intensity <= 0:
 		return
 

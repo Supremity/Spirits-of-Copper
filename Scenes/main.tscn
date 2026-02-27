@@ -4,7 +4,8 @@
 [ext_resource type="Script" uid="uid://dfiom5fy34v8q" path="res://Scenes/map_container.gd" id="2_21xkr"]
 [ext_resource type="Shader" uid="uid://bnmv2hv80mfw5" path="res://shaders/map_shader.gdshader" id="3_6bp64"]
 [ext_resource type="Script" uid="uid://cvkc8n0kgyk3c" path="res://Scripts/camera_controller.gd" id="4_344ge"]
-[ext_resource type="PackedScene" uid="uid://dl045g47lsfkx" path="res://Scenes/world.tscn" id="5_ynf5e"]
+[ext_resource type="PackedScene" uid="uid://b01800wvm674n" path="res://Scenes/main_menu.tscn" id="5_kry3j"]
+[ext_resource type="Script" uid="uid://cnm2s5owh7ec3" path="res://Scripts/game_clock.gd" id="6_21xkr"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_fo5ed"]
 load_path = "res://.godot/imported/cultures.png-f9255a05eddadc8a9aa0dedbe091def9.ctex"
@@ -12,8 +13,9 @@ load_path = "res://.godot/imported/cultures.png-f9255a05eddadc8a9aa0dedbe091def9
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_5ukr8"]
 load_path = "res://.godot/imported/regions.png-75b8193867ba7ee4418b242a7a7efe49.ctex"
 
-[node name="Main" type="Node2D" unique_id=393637971]
+[node name="Main" type="Node2D" unique_id=393637971 node_paths=PackedStringArray("clock")]
 script = ExtResource("1_kry3j")
+clock = NodePath("Clock")
 
 [node name="MapContainer" type="Node2D" parent="." unique_id=1905968874]
 script = ExtResource("2_21xkr")
@@ -35,4 +37,9 @@ anchor_mode = 0
 script = ExtResource("4_344ge")
 camera = NodePath("..")
 
-[node name="World" parent="." unique_id=1557365676 instance=ExtResource("5_ynf5e")]
+[node name="Clock" type="Node" parent="." unique_id=266522924]
+script = ExtResource("6_21xkr")
+
+[node name="CurrentScene" type="Node2D" parent="." unique_id=1375684834]
+
+[node name="Main_Menu" parent="CurrentScene" unique_id=2098317825 instance=ExtResource("5_kry3j")]

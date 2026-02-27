@@ -37,30 +37,53 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if !map_sprite:
+	# Use is_instance_valid in case the map sprite is from the deleted scene
+	if !is_instance_valid(map_sprite) or map_width <= 0:
 		return
 
 	var cam := get_viewport().get_camera_2d()
-	if not cam:
-		return
+	if cam:
+		var zoom_changed := cam.zoom != _last_cam_zoom
+		var pos_changed := cam.global_position != _last_cam_pos
 
-	# Camera/Zoom checks
-	var zoom_changed := cam.zoom != _last_cam_zoom
-	var pos_changed := cam.global_position != _last_cam_pos
+		if zoom_changed or pos_changed:
+			var raw_scale := 1.0 / cam.zoom.x
+			_current_inv_zoom = clamp(raw_scale, ZOOM_LIMITS.min_scale, ZOOM_LIMITS.max_scale)
+			_update_screen_rect()
+			_last_cam_zoom = cam.zoom
+			_last_cam_pos = cam.global_position
+	elif _screen_rect.size == Vector2.ZERO:
+		# FALLBACK: If the camera is missing for a frame, draw a giant area 
+		# so troops don't suddenly vanish or fail `has_point` checks
+		_screen_rect = Rect2(-100000, -100000, 200000, 200000)
 
-	if zoom_changed or pos_changed:
-		var raw_scale := 1.0 / cam.zoom.x
-		_current_inv_zoom = clamp(raw_scale, ZOOM_LIMITS.min_scale, ZOOM_LIMITS.max_scale)
-		_update_screen_rect()
-		_last_cam_zoom = cam.zoom
-		_last_cam_pos = cam.global_position
-
-	var shader_clock = GameState.current_world.clock.total_game_seconds
-	troop_multimesh.material.set_shader_parameter("game_time", shader_clock)
-	# Always update the buffer because moving_troops change position every frame
+	# Continue updating even if camera isn't ready
+	if is_instance_valid(troop_multimesh) and troop_multimesh.material:
+		var shader_clock = GameState.main.clock.total_game_seconds
+		troop_multimesh.material.set_shader_parameter("game_time", shader_clock)
+		
 	_update_multimesh_buffer()
 	queue_redraw()
 
+func rebuild_troops():
+	if not map_sprite or map_width <= 0:
+		push_warning("CustomRenderer: Map not ready")
+		return
+
+	if not troop_multimesh:
+		_setup_multimesh()
+
+	var mm = troop_multimesh.multimesh
+	if not mm:
+		_setup_multimesh()
+		mm = troop_multimesh.multimesh
+
+	# Force MultiMesh instance_count to match troops
+	var total_instances = TroopManager.troops.size() + TroopManager.moving_troops.size()
+	mm.instance_count = total_instances
+
+	_update_multimesh_buffer()
+	queue_redraw()
 
 # --- MultiMesh Setup ---
 func _setup_multimesh():
@@ -138,8 +161,9 @@ func _update_multimesh_buffer():
 
 	var idx = 0
 	var player_country = CountryManager.player_country.country_name
-	var selected_troops = TroopManager.troop_selection.selected_troops
-
+	var selected_troops = []
+	if is_instance_valid(TroopManager.troop_selection):
+		selected_troops = TroopManager.troop_selection.selected_troops
 	var stacks_to_draw = {}  # { province_id: [TroopData, ...] }
 
 	for troop in TroopManager.troops:
@@ -329,8 +353,9 @@ func _group_troops_by_visual_position(troops: Array) -> Dictionary:
 
 
 func _draw_selection_box() -> void:
-	if not TroopManager.troop_selection.dragging:
-		return
+	if not is_instance_valid(TroopManager.troop_selection): return
+	if not TroopManager.troop_selection.dragging: return
+	
 	var ts = TroopManager.troop_selection
 	var rect = Rect2(ts.drag_start, ts.drag_end - ts.drag_start).abs()
 	draw_rect(rect, Color(1, 1, 1, 0.3), true)
@@ -338,6 +363,7 @@ func _draw_selection_box() -> void:
 
 
 func _draw_path_preview() -> void:
+	if not is_instance_valid(TroopManager.troop_selection): return
 	if not TroopManager.troop_selection.right_dragging:
 		return
 	var path = TroopManager.troop_selection.right_path
@@ -352,7 +378,7 @@ func _draw_path_preview() -> void:
 
 
 func _draw_active_movements() -> void:
-	var now := GameState.current_world.clock.total_game_seconds
+	var now = GameState.main.clock.total_game_seconds
 
 	for troop in TroopManager.troops:
 		if not troop.is_moving:

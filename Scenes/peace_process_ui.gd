@@ -229,7 +229,7 @@ func open_menu(winner: CountryData, loser: CountryData):
 	var game_ui = get_tree().root.find_child("ui_game", true, false)
 	if game_ui:
 		game_ui.visible = false
-	GameState.current_world.clock.pause()
+	GameState.main.clock.pause()
 	loser_label.text = "Negotations: %s" % loser.country_name
 	GameState.in_peace_process = true
 	_update_summary()
@@ -257,7 +257,7 @@ func _on_confirm_pressed():
 	if game_ui:
 		game_ui.visible = true
 	GameState.in_peace_process = false
-	GameState.current_world.clock.resume()
+	GameState.main.clock.resume()
 
 	self.hide()
 

@@ -27,8 +27,7 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
-	MapManager.load_world_data()
-	clock = GameState.current_world.clock
+	clock = GameState.main.clock
 	var map_width := MapManager.id_map_image.get_width()
 	var map_height := MapManager.id_map_image.get_height()
 

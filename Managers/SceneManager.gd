@@ -9,23 +9,38 @@ const SCENE_MAP = {
 	Type.SELECT_COUNTRY: "res://Scenes/select_country.tscn"
 }
 
-# This keeps the nodes in memory so they are never freed
-var _instances: Dictionary = {}
-
+var _current_type: int = -1
 
 func switch_to(scene_type: Type) -> void:
-	var main := get_tree().current_scene  # This is Main
-	var old_world := main.get_node_or_null("World")
+	if scene_type == _current_type:
+		return
 
-	if old_world:
-		old_world.queue_free()
+	var main := get_tree().current_scene
+	var container := main.get_node("CurrentScene")
 
+	# 1️⃣ Remove and free old scene
+	if container.get_child_count() > 0:
+		var old_scene = container.get_child(0)
+		container.remove_child(old_scene)
+		old_scene.queue_free()   # ← IMPORTANT
+
+	# 2️⃣ Instantiate fresh scene
 	var path = SCENE_MAP.get(scene_type)
-	var packed_scene = load(path)
+	if path == null:
+		push_error("Invalid scene type.")
+		return
 
-	if packed_scene:
-		var new_world = packed_scene.instantiate()
-		new_world.name = "World"
-		main.add_child(new_world)
+	var packed_scene := load(path)
+	if packed_scene == null:
+		push_error("Failed to load scene path: ", path)
+		return
 
-	print("World switched → ", Type.keys()[scene_type])
+	var next_scene = packed_scene.instantiate()
+
+	# 3️⃣ Add to container
+	container.add_child(next_scene)
+	_current_type = scene_type
+	if next_scene.has_method("initialize_world"):
+		next_scene.initialize_world()
+
+	print("Switched to: ", Type.keys()[scene_type])

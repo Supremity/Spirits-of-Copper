@@ -122,12 +122,12 @@ func _ready() -> void:
 
 	KeyboardManager.toggle_menu.connect(toggle_menu)
 
-	GameState.current_world.clock.hour_passed.connect(_on_hour_passed)
+	GameState.main.clock.hour_passed.connect(_on_hour_passed)
 	CountryManager.player_country_changed.connect(_on_player_change)
 	updateProgressBar()
 	update_division_menu()
 	military_extra_panel.visible = false
-	var clock := GameState.current_world.clock
+	var clock = GameState.main.clock
 	clock.hour_passed.connect(_on_time_passed)
 	plus.pressed.connect(clock.increase_speed)
 	minus.pressed.connect(clock.decrease_speed)
@@ -366,11 +366,11 @@ func format_number(value: float) -> String:
 
 
 func _on_time_passed() -> void:
-	label_date.text = GameState.current_world.clock.get_datetime_string()
+	label_date.text = GameState.main.clock.get_datetime_string()
 
 
 func updateProgressBar():
-	var clock = GameState.current_world.clock
+	var clock = GameState.main.clock
 	progress_bar.value = (clock.time_scale / clock.MAX_SPEED) * 100.0
 	var bg_style = progress_bar.get_theme_stylebox("background")
 	if clock.paused:
@@ -504,10 +504,10 @@ func open_manage_country():
 		CountryManager.player_country
 	)
 
-	#GameState.current_world.set_process(false)
-	#GameState.current_world.clock.set_process(false)
+	#GameState.main.set_process(false)
+	#GameState.main.clock.set_process(false)
 	#TroopManager.set_process(false)
-	#GameState.current_world.find_child("CameraController").set_process(false)
+	#GameState.main.find_child("CameraController").set_process(false)
 
 
 # Note (Z21)

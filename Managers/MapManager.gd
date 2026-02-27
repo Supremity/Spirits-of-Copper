@@ -41,6 +41,11 @@ const CACHE_FOLDER = "res://map_data/"
 @export var region_texture: Texture2D
 @export var culture_texture: Texture2D
 
+func _ready():
+	load_world_data()
+	get_all_cities()
+	_build_global_registry()
+	CountryManager.initialize_countries()
 
 func load_world_data() -> void:
 	_load_country_colors()

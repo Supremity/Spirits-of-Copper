@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://3jqreuwgn3ti"]
+[gd_scene format=3 uid="uid://3jqreuwgn3ti"]
 
 [ext_resource type="Script" uid="uid://bmffrhl6hb5bl" path="res://Scripts/division_item.gd" id="1_bl13n"]
 [ext_resource type="Texture2D" uid="uid://une8u7tuv306" path="res://assets/icons/hoi4/infantry.png" id="1_sbw2w"]
@@ -7,19 +7,19 @@
 [ext_resource type="Texture2D" uid="uid://d3q0n2n6hid6x" path="res://assets/icons/star_icon.png" id="6_1h1m1"]
 [ext_resource type="Texture2D" uid="uid://t8131h6o02oi" path="res://assets/icons/hoi4/minecraft.png" id="6_bl13n"]
 
-[node name="DivisionItem" type="Panel"]
+[node name="DivisionItem" type="Panel" unique_id=1555148910]
 custom_minimum_size = Vector2(218, 60)
 offset_right = 218.0
 offset_bottom = 60.0
 script = ExtResource("1_bl13n")
 
-[node name="ColorRect" type="ColorRect" parent="."]
+[node name="ColorRect" type="ColorRect" parent="." unique_id=882665673]
 layout_mode = 0
 offset_right = 218.0
 offset_bottom = 59.0
 color = Color(0.0253638, 0.0253638, 0.025363795, 1)
 
-[node name="TextureRect" type="TextureRect" parent="ColorRect"]
+[node name="TextureRect" type="TextureRect" parent="ColorRect" unique_id=1423050650]
 layout_mode = 0
 offset_left = -13.0
 offset_top = -10.0
@@ -28,7 +28,7 @@ offset_bottom = 35.0
 texture = ExtResource("1_sbw2w")
 expand_mode = 1
 
-[node name="ProgressBar" type="ProgressBar" parent="ColorRect"]
+[node name="ProgressBar" type="ProgressBar" parent="ColorRect" unique_id=1443538472]
 layout_mode = 0
 offset_left = 7.0
 offset_top = 28.0
@@ -36,7 +36,7 @@ offset_right = 49.0
 offset_bottom = 58.0
 theme_override_fonts/font = ExtResource("3_1h1m1")
 
-[node name="label_division" type="Label" parent="ColorRect"]
+[node name="label_division" type="Label" parent="ColorRect" unique_id=1232121290]
 layout_mode = 0
 offset_left = 33.0
 offset_top = 5.0
@@ -45,7 +45,7 @@ offset_bottom = 28.0
 theme_override_fonts/font = ExtResource("3_1h1m1")
 text = "Division 1"
 
-[node name="TextureRect2" type="TextureRect" parent="ColorRect"]
+[node name="TextureRect2" type="TextureRect" parent="ColorRect" unique_id=594573050]
 layout_mode = 0
 offset_left = 149.0
 offset_top = 35.0
@@ -54,7 +54,7 @@ offset_bottom = 55.0
 texture = ExtResource("4_7jmgu")
 expand_mode = 1
 
-[node name="TextureRect3" type="TextureRect" parent="ColorRect"]
+[node name="TextureRect3" type="TextureRect" parent="ColorRect" unique_id=2026666353]
 layout_mode = 0
 offset_left = 146.0
 offset_top = 3.0
@@ -63,7 +63,7 @@ offset_bottom = 24.0
 texture = ExtResource("6_bl13n")
 expand_mode = 1
 
-[node name="label_attack" type="Label" parent="ColorRect"]
+[node name="label_attack" type="Label" parent="ColorRect" unique_id=133343453]
 layout_mode = 0
 offset_left = 181.0
 offset_top = 2.0
@@ -72,7 +72,7 @@ offset_bottom = 25.0
 theme_override_fonts/font = ExtResource("3_1h1m1")
 text = "67"
 
-[node name="label_defense" type="Label" parent="ColorRect"]
+[node name="label_defense" type="Label" parent="ColorRect" unique_id=92399098]
 layout_mode = 0
 offset_left = 183.0
 offset_top = 36.0
@@ -81,7 +81,7 @@ offset_bottom = 59.0
 theme_override_fonts/font = ExtResource("3_1h1m1")
 text = "67"
 
-[node name="TextureRect4" type="TextureRect" parent="ColorRect"]
+[node name="TextureRect4" type="TextureRect" parent="ColorRect" unique_id=2128477910]
 layout_mode = 0
 offset_left = 76.0
 offset_top = 28.0
@@ -90,7 +90,7 @@ offset_bottom = 60.0
 texture = ExtResource("6_1h1m1")
 expand_mode = 1
 
-[node name="label_experience" type="Label" parent="ColorRect"]
+[node name="label_experience" type="Label" parent="ColorRect" unique_id=497812382]
 layout_mode = 0
 offset_left = 109.0
 offset_top = 34.0
