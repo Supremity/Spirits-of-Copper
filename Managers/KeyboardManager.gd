@@ -9,7 +9,7 @@ var _debounce := false
 
 
 func _process(_delta: float) -> void:
-	if Console.is_visible():
+	if Console.is_visible() or !SceneSwitcher.is_world_active():
 		return
 	if Input.is_action_just_pressed("deselect_troops"):
 		if !TroopManager.troop_selection.selected_troops.is_empty():

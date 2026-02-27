@@ -14,7 +14,7 @@ var content_area: VBoxContainer
 var master_music_mult: float = 1.0
 var master_sfx_mult: float = 1.0
 
-enum Section { SAVE, AUDIO, SETTINGS, EXIT }
+enum Section { SAVE, AUDIO, SETTINGS, MENU, EXIT }
 
 
 func _ready() -> void:
@@ -76,6 +76,7 @@ func _build_ui() -> void:
 	_add_tab_btn(side_vbox, "SAVE & LOAD", Section.SAVE)
 	_add_tab_btn(side_vbox, "AUDIO SETTINGS", Section.AUDIO)
 	_add_tab_btn(side_vbox, "GAME SETTINGS", Section.SETTINGS)
+	_add_tab_btn(side_vbox, "RETURN TO MENU", Section.MENU)
 	_add_tab_btn(side_vbox, "EXIT TO DESKTOP", Section.EXIT)
 
 	# Content
@@ -164,6 +165,8 @@ func _switch_section(sec: Section) -> void:
 			_draw_audio_menu()
 		Section.SAVE:
 			_draw_save_menu()  # Updated
+		Section.MENU:
+			ConsoleManager.switch_scene("menu")
 		Section.EXIT:
 			_draw_exit_confirm()
 

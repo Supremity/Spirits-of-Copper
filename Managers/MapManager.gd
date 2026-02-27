@@ -390,6 +390,7 @@ func handle_click_down(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 	TroopManager.troop_selection.deselect_all()
 
 
+
 func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 	if _is_mouse_over_ui() or Console.is_visible():
 		return
@@ -424,6 +425,30 @@ func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 	if TroopManager.troop_selection.selected_troops.is_empty():  # Prevent menu from spawning when selecting troops (annoying)
 		country_clicked.emit(province_objects[pid].country)
 
+
+func highlight_country(country_name: String) -> void:
+	if country_name == "" or country_name == "sea": return
+	
+	var provinces = country_to_provinces.get(country_name, [])
+	var base_color = country_colors.get(country_name, Color.GRAY)
+	var light_color = base_color.lightened(0.2)
+
+	for pid in provinces:
+		_update_lookup(pid, light_color)
+	
+	state_color_texture.update(state_color_image)
+
+## Restores the country to its original data-defined color
+func restore_country_color(country_name: String) -> void:
+	if country_name == "" or country_name == "sea": return
+	
+	var provinces = country_to_provinces.get(country_name, [])
+	var original_color = country_colors.get(country_name, Color.GRAY)
+
+	for pid in provinces:
+		_update_lookup(pid, original_color)
+	
+	state_color_texture.update(state_color_image)
 
 func _execute_deployment(pid: int, player_name: String) -> void:
 	country_clicked.emit(player_name)

@@ -1,5 +1,7 @@
 [gd_scene format=3 uid="uid://ef1nlqkm5anw"]
 
+[ext_resource type="Script" uid="uid://bsjco6uuhmce4" path="res://Scripts/select_country.gd" id="1_3c4wu"]
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sidebar"]
 bg_color = Color(0.0784314, 0.0901961, 0.101961, 0.94)
 border_width_right = 2
@@ -37,6 +39,7 @@ corner_radius_bottom_right = 2
 corner_radius_bottom_left = 2
 
 [node name="Select_Country" type="CanvasLayer" unique_id=1704477174]
+script = ExtResource("1_3c4wu")
 
 [node name="MainSidebar" type="PanelContainer" parent="." unique_id=1897680301]
 custom_minimum_size = Vector2(350, 0)
@@ -112,35 +115,35 @@ theme_override_constants/h_separation = 10
 theme_override_constants/v_separation = 15
 columns = 2
 
-[node name="LabelManpower" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=213159062]
+[node name="LabelGDP" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=213159062]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Available Manpower"
+text = "GDP"
 
-[node name="ValueManpower" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=1204698391]
+[node name="ValueGDP" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=1204698391]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.388235, 0.811765, 0.388235, 1)
 text = "0"
 horizontal_alignment = 2
 
-[node name="LabelFactories" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=1961607347]
+[node name="LabelManpower" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=1961607347]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Industrial Capacity"
+text = "Available Manpower"
 
-[node name="ValueFactories" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=814289439]
+[node name="ValueManpower" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=814289439]
 unique_name_in_owner = true
 layout_mode = 2
 text = "0"
 horizontal_alignment = 2
 
-[node name="LabelStability" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=2078621418]
+[node name="LabelFactories" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=2078621418]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "National Stability"
+text = "Factories"
 
-[node name="ValueStability" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=1011449537]
+[node name="ValueFactories" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout/StatsCategory/StatsGrid" unique_id=1011449537]
 unique_name_in_owner = true
 layout_mode = 2
 text = "100%"
@@ -164,6 +167,7 @@ text = "PLAY AS NATION"
 
 [node name="FooterNote" type="Label" parent="MainSidebar/ContentStack/Padding/InnerLayout" unique_id=766451533]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.301961, 0.301961, 0.301961, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.90359825, 0.90359825, 0.9035982, 1)
+theme_override_font_sizes/font_size = 17
+text = "Press Right Mouse button to Deselect country"
 horizontal_alignment = 1

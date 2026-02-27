@@ -1,17 +1,32 @@
 extends CanvasLayer
 
 const SAVE_DIR = "user://saves/"
+@onready var camera = $"../../Camera2D/CameraController"
 
 func _ready() -> void:
-	# Connect signals
+
+	if SceneSwitcher.has_active_world():
+		%Continue.visible = true
+		%Continue.pressed.connect(_on_continue_pressed)
+	else:
+		%Continue.visible = false
+
+	# 2. Connect other signals
 	%NewGame.pressed.connect(_on_new_game_pressed)
 	%LoadGame.pressed.connect(_on_load_game_pressed)
 	%MapEditor.pressed.connect(_on_map_editor_pressed)
 	%Settings.pressed.connect(_on_settings_pressed)
 	%Exit.pressed.connect(_on_exit_pressed)
 	
-	# Check for existing saves to enable/disable Load button
 	_check_for_saves()
+	
+
+func _process(delta: float) -> void:
+	camera.move_map_around(delta)
+	return
+
+func _on_continue_pressed() -> void:
+	SceneSwitcher.switch_to(SceneSwitcher.Type.WORLD)
 
 func _check_for_saves() -> void:
 	var dir = DirAccess.open("user://")

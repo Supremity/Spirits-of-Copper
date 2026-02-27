@@ -5,11 +5,11 @@ class_name World
 @onready var camera: Camera2D = $"../../Camera2D"
 @onready var troop_renderer: CustomRenderer = $CustomRenderer as CustomRenderer
 
-
 func _enter_tree() -> void:
 	GameState.current_world = self
 
 
+var _first_time_setup_done := false
 func _ready() -> void:
 	TroopManager.troop_selection = $TroopSelection as TroopSelection
 
@@ -17,10 +17,11 @@ func _ready() -> void:
 	if not GameState.main.clock.hour_passed.is_connected(CountryManager._on_hour_passed):
 		GameState.main.clock.hour_passed.connect(CountryManager._on_hour_passed)
 
-	CountryManager.set_player_country("brazil")
+	if not _first_time_setup_done:		
+		await get_tree().process_frame
+		initialize_world()
 	
-	await get_tree().process_frame
-	initialize_world()
+	_first_time_setup_done = true
 
 func initialize_world():
 	# Safety check for MapManager data
@@ -32,6 +33,7 @@ func initialize_world():
 		troop_renderer.map_sprite = map_sprite
 		troop_renderer.map_width = MapManager.id_map_image.get_width()
 		# Explicitly tell the renderer to boot up
+		# note z21: This might all not be needed..
 		troop_renderer.rebuild_troops()
 	
 	# Reset troop positions for the new map instance
