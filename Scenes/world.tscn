@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://dmywidiiomun4" path="res://Scenes/peace_process_ui.gd" id="7_atiji"]
 [ext_resource type="Script" uid="uid://d00ogcoh5s68w" path="res://Scenes/country_manage_ui.gd" id="8_erpf8"]
 [ext_resource type="Script" uid="uid://dgg5vvwt2yua6" path="res://Scenes/menu.gd" id="9_pcjer"]
+[ext_resource type="PackedScene" uid="uid://slfig273474k" path="res://Scenes/BottomHUD.tscn" id="10_0fj1v"]
 
 [sub_resource type="QuadMesh" id="QuadMesh_o06y3"]
 
@@ -44,3 +45,5 @@ script = ExtResource("8_erpf8")
 
 [node name="Menu" type="CanvasLayer" parent="." unique_id=1359108009]
 script = ExtResource("9_pcjer")
+
+[node name="BottomHUD" parent="." unique_id=1645026149 instance=ExtResource("10_0fj1v")]

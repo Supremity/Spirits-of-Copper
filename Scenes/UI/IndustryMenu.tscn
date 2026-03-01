@@ -1,0 +1,61 @@
+[gd_scene format=3 uid="uid://c53ckqq2d1iug"]
+
+[ext_resource type="Script" uid="uid://bn2gsawsiiank" path="res://Scripts/UI/IndustryMenu.gd" id="1_script"]
+
+[node name="IndustryMenu" type="Control" unique_id=1574299277]
+layout_mode = 3
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("1_script")
+
+[node name="MainPanel" type="PanelContainer" parent="." unique_id=88306506]
+custom_minimum_size = Vector2(800, 70)
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -400.0
+offset_top = -90.0
+offset_right = 400.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="Margin" type="MarginContainer" parent="MainPanel" unique_id=138533698]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+
+[node name="Layout" type="HBoxContainer" parent="MainPanel/Margin" unique_id=779326405]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="TitleModule" type="HBoxContainer" parent="MainPanel/Margin/Layout" unique_id=1911054884]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MainPanel/Margin/Layout/TitleModule" unique_id=799272375]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "INDUSTRY"
+uppercase = true
+
+[node name="VSeparator" type="VSeparator" parent="MainPanel/Margin/Layout" unique_id=452668957]
+layout_mode = 2
+
+[node name="ButtonContainer" type="HBoxContainer" parent="MainPanel/Margin/Layout" unique_id=73860542]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="BackBtn" type="Button" parent="MainPanel/Margin/Layout" unique_id=754660239]
+custom_minimum_size = Vector2(80, 32)
+layout_mode = 2
+size_flags_vertical = 4
+text = "BACK"

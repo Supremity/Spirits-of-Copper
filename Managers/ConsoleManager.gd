@@ -80,7 +80,7 @@ func _annex(country_name: String) -> void:
 
 
 func _play_country(country_name: String) -> void:
-	if CountryManager.countries.has(country_name):
+	if CountryManager.countries.has(country_name.to_lower()):
 		CountryManager.set_player_country(country_name)
 		return
 

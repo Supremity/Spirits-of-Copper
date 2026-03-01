@@ -117,8 +117,8 @@ func _ready() -> void:
 
 	GameState.game_ui = self
 
-	MapManager.country_clicked.connect(_on_province_clicked)
-	MapManager.close_sidemenu.connect(close_menu)
+	#MapManager.country_clicked.connect(_on_province_clicked)
+	#MapManager.close_sidemenu.connect(close_menu)
 
 	KeyboardManager.toggle_menu.connect(toggle_menu)
 

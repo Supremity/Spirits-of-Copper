@@ -6,6 +6,7 @@ enum MapMode { POLITICAL, POPULATION, GDP, ETHNICITY }
 signal province_hovered(province_id: int, country_name: String)
 signal country_clicked(country_name: String)
 
+
 # Emitted when a click couldn't be processed (so likely sea or border)
 signal close_sidemenu
 
@@ -423,7 +424,7 @@ func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 			GameState.reset_industry_building()
 			show_countries_map()
 
-	if TroopManager.troop_selection.selected_troops.is_empty():  # Prevent menu from spawning when selecting troops (annoying)
+	if TroopManager.troop_selection.selected_troops.is_empty() and GameState.industry_building == GameState.IndustryType.DEFAULT:  # Prevent menu from spawning when selecting troops (annoying)
 		country_clicked.emit(province_objects[pid].country)
 
 
@@ -489,8 +490,6 @@ func _province_build_industry(pid: int, player_name: String) -> void:
 		else:
 			print("Action Failed: Port must be on a coast!")
 			return
-
-	country_clicked.emit(player_name)
 
 
 func _cleanup_interaction_state() -> void:

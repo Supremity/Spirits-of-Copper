@@ -13,13 +13,15 @@ var _first_time_setup_done := false
 func _ready() -> void:
 	TroopManager.troop_selection = $TroopSelection as TroopSelection
 
-	# Note z21: Needs to be a better way to do this[
-	CountryManager.set_player_country(CountryManager.player_country.country_name)
+	# Note z21: Needs to be a better way to do this
+	if CountryManager.player_country != null:
+		CountryManager.set_player_country(CountryManager.player_country.country_name)
+	else:
+		CountryManager.set_player_country("brazil")
 	# Prevent signal double-connection
 	if not GameState.main.clock.hour_passed.is_connected(CountryManager._on_hour_passed):
 		GameState.main.clock.hour_passed.connect(CountryManager._on_hour_passed)
 	
-	GameState.game_ui.update_topbar_stats()
 	if not _first_time_setup_done:		
 		await get_tree().process_frame
 		initialize_world()
