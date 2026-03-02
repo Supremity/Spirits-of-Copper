@@ -9,7 +9,7 @@ var _hour_process_index: int = 0
 @export var hours_per_full_country_tick: int = 5
 
 
-func _on_hour_passed() -> void:
+func _on_hour_passed(ticks) -> void:
 	if GameState.is_loading_game:
 		return
 

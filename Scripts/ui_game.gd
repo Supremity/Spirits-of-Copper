@@ -122,16 +122,16 @@ func _ready() -> void:
 
 	KeyboardManager.toggle_menu.connect(toggle_menu)
 
-	GameState.main.clock.hour_passed.connect(_on_hour_passed)
 	CountryManager.player_country_changed.connect(_on_player_change)
 	updateProgressBar()
 	update_division_menu()
 	military_extra_panel.visible = false
 	var clock = GameState.main.clock
 	clock.hour_passed.connect(_on_time_passed)
+	clock.speed_changed.connect(updateProgressBar)
 	plus.pressed.connect(clock.increase_speed)
 	minus.pressed.connect(clock.decrease_speed)
-	label_date.text = clock.get_datetime_string()
+#	label_date.text = clock.get_datetime_string()
 
 
 func _on_player_change() -> void:
@@ -349,7 +349,7 @@ func update_topbar_stats() -> void:
 	stats_labels.industry.text = str(CountryManager.player_country.factories_amount)
 
 
-func _on_hour_passed() -> void:
+func _on_hour_passed(_total_ticks) -> void:
 	update_topbar_stats()
 
 
@@ -365,13 +365,14 @@ func format_number(value: float) -> String:
 	return sign_str + str(floori(abs_val))
 
 
-func _on_time_passed() -> void:
+func _on_time_passed(x) -> void:
 	label_date.text = GameState.main.clock.get_datetime_string()
 
 
 func updateProgressBar():
 	var clock = GameState.main.clock
-	progress_bar.value = (clock.time_scale / clock.MAX_SPEED) * 100.0
+	
+	progress_bar.value = clock._get_visual_multiplier()
 	var bg_style = progress_bar.get_theme_stylebox("background")
 	if clock.paused:
 		bg_style.border_color = Color.DARK_RED

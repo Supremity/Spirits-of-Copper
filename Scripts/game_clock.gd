@@ -1,98 +1,153 @@
 extends Node
 class_name GameClock
 
-signal hour_passed
-signal day_passed
+signal hour_passed(total_ticks)
+signal day_passed(date_string)
+signal speed_changed(speed_level)
 
-@export var hours_per_tick := 1  # How many in-game hours pass per tick
-@export var seconds_per_tick := 1.0  # Real seconds per tick
-
+@export_group("Starting Settings")
 @export var start_year := 2010
-@export var start_month := 1  # 1-12
-@export var start_day := 1  # 1-31
+@export var start_month := 1
+@export var start_day := 1
 @export var start_hour := 0
 
-var total_game_seconds: float = 0.0
+# HOI4-Style Speed levels (Seconds to wait between hourly ticks)
+# Speed 5 is 0.0, meaning it runs as fast as your CPU/Frame-rate allows.
+const SPEEDS = {
+	0: -1.0,   # Paused
+	1: 1.0,    # Very Slow (1 tick per second)
+	2: 0.5,    # Slow
+	3: 0.1,    # Normal
+	4: 0.02,   # Fast
+	5: 0.0     # Unlocked (As fast as possible)
+}
 
-var time_scale := MIN_SPEED
-const MIN_SPEED := 0
-const MAX_SPEED := 80.0
+# --- State Variables -
+var time_scale: float = 0.0 # to not break existing code
+var current_speed_level := 0:
+	set(val):
+		current_speed_level = clamp(val, 0, 5)
+		paused = (current_speed_level == 0)
 
-var hour: int = start_hour
-var date_dict: Dictionary = {"year": start_year, "month": start_month, "day": start_day}
-var accumulated_time: float = 0.0
+var total_ticks := 0            # Core Simulation Truth (1 Tick = 1 Hour)
+var total_game_seconds := 0.0   # Visual/Rendering Truth (Smooth float)
+var unix_start_time := 0        # The "Anchor" for all calendar math
+var tick_timer := 0.0
+var paused := true
 
-var paused: bool
-
+func _ready() -> void:
+	# Convert your export variables into a starting Unix timestamp
+	var start_dict = {
+		"year": start_year,
+		"month": start_month,
+		"day": start_day,
+		"hour": start_hour,
+		"minute": 0,
+		"second": 0
+	}
+	unix_start_time = Time.get_unix_time_from_datetime_dict(start_dict)
+	
+	# Start paused by default or set a speed
+	set_speed(0)
 
 func _process(delta: float) -> void:
-	if paused:
+	if paused or current_speed_level == 0:
 		return
 
-	total_game_seconds += delta * time_scale
-	accumulated_time += delta * time_scale
-	while accumulated_time >= seconds_per_tick:
-		accumulated_time -= seconds_per_tick
-		_tick_hour()
+	# 1. Update visual clock (for your CustomRenderer)
+	# This stays smooth even if the simulation ticks are slow.
+	total_game_seconds += delta * _get_visual_multiplier()
+	
+	# 2. Update simulation ticks
+	if current_speed_level == 5:
+		# Speed 5: Run exactly one tick every frame
+		_perform_tick()
+	else:
+		tick_timer += delta
+		var wait_time = SPEEDS[current_speed_level]
+		while tick_timer >= wait_time:
+			tick_timer -= wait_time
+			_perform_tick()
 
+func _perform_tick() -> void:
+	var old_date = get_date_string()
+	
+	total_ticks += 1
+	hour_passed.emit(total_ticks)
+	
+	# If the date string changes after this hour, a day has passed
+	var new_date = get_date_string()
+	if new_date != old_date:
+		day_passed.emit(new_date)
 
-func _tick_hour() -> void:
-	hour += hours_per_tick
-	hour_passed.emit()
-
-	var date_dict_as_unix_time: int = Time.get_unix_time_from_datetime_dict(date_dict)
-	while hour >= 24:
-		hour -= 24
-		date_dict_as_unix_time += (24 * 60 * 60)
-		day_passed.emit()
-
-	date_dict = Time.get_datetime_dict_from_unix_time(date_dict_as_unix_time)
-
-
-func get_time_string() -> String:
-	return "%02d:00" % hour
-
+# --- Helper Functions ---
 
 func get_date_string() -> String:
-	return "%04d-%02d-%02d" % [date_dict.year, date_dict.month, date_dict.day]
+	# Calculate date based ONLY on total_ticks (No drift!)
+	var current_unix = unix_start_time + (total_ticks * 3600)
+	var d = Time.get_date_dict_from_unix_time(current_unix)
+	return "%04d-%02d-%02d" % [d.year, d.month, d.day]
 
+func get_future_date_string(days_from_now: int) -> String:
+	var seconds_to_add = days_from_now * 86400
+	var future_unix = (unix_start_time + (total_ticks * 3600)) + seconds_to_add
+	var d = Time.get_date_dict_from_unix_time(future_unix)
+	return "%04d-%02d-%02d" % [d.year, d.month, d.day]
 
+func get_time_string() -> String:
+	var current_unix = unix_start_time + (total_ticks * 3600)
+	var d = Time.get_datetime_dict_from_unix_time(current_unix)
+	return "%02d:00" % d.hour
+	
 func get_datetime_string() -> String:
-	return "%s %s" % [get_time_string(), get_date_string()]
+	var current_unix = unix_start_time + (total_ticks * 3600)
+	var d = Time.get_datetime_dict_from_unix_time(current_unix)
+	return "%04d-%02d-%02d %02d:00" % [
+		d.year,
+		d.month,
+		d.day,
+		d.hour
+	]
 
+func _get_visual_multiplier() -> float:
+	# Helps total_game_seconds scale roughly with game speed for animations
+	match current_speed_level:
+		1: return 1.0
+		2: return 2.0
+		3: return 10.0
+		4: return 50.0
+		5: return 100.0
+		_: return 0.0
 
-func set_speed(scale: float) -> void:
-	time_scale = clamp(scale, MIN_SPEED, MAX_SPEED)
-	GameState.game_ui.updateProgressBar()
-	if time_scale <= 0:
-		pause()
+# --- Controls ---
 
+func set_speed(level: int) -> void:
+	current_speed_level = clamp(level, 0, 5)
+	paused = (current_speed_level == 0)
+	
+	# Map the Speed Level to a float "time_scale" for your movement logic
+	# Level 1 = 1x, Level 2 = 2x, etc. 
+	# Adjust these numbers to match how fast you want units to move!
+	match current_speed_level:
+		0: time_scale = 0.0
+		1: time_scale = 1.0
+		2: time_scale = 5.0
+		3: time_scale = 20.0
+		4: time_scale = 50.0
+		5: time_scale = 100.0
 
-func decrease_speed():
-	set_speed(time_scale - 8)
+	speed_changed.emit()
 
+func increase_speed() -> void:
+	set_speed(current_speed_level + 1)
 
-func increase_speed():
-	set_speed(time_scale + 8)
-	if paused:
-		resume()
+func decrease_speed() -> void:
+	set_speed(current_speed_level - 1)
 
-
-func pause() -> void:
+func pause():
 	paused = true
-	#GameState.game_ui.updateProgressBar()
-
-
-func resume() -> void:
-	paused = false
-	#GameState.game_ui.updateProgressBar()
-
 
 func toggle_pause() -> void:
-	if time_scale == 0:
-		return
-	if paused:
-		resume()
-	else:
-		pause()
-	GameState.game_ui.updateProgressBar()
+	paused = !paused
+	if GameState.game_ui:
+		GameState.game_ui.updateProgressBar()

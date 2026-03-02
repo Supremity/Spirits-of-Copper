@@ -17,10 +17,13 @@ func _ready() -> void:
 	if CountryManager.player_country != null:
 		CountryManager.set_player_country(CountryManager.player_country.country_name)
 	else:
-		CountryManager.set_player_country("brazil")
+		CountryManager.set_player_country("germany")
 	# Prevent signal double-connection
 	if not GameState.main.clock.hour_passed.is_connected(CountryManager._on_hour_passed):
 		GameState.main.clock.hour_passed.connect(CountryManager._on_hour_passed)
+	
+	if not GameState.main.clock.day_passed.is_connected(EventManager.process_day):
+		GameState.main.clock.day_passed.connect(EventManager.process_day)
 	
 	if not _first_time_setup_done:		
 		await get_tree().process_frame

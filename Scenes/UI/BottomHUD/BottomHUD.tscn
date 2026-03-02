@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://slfig273474k"]
 
-[ext_resource type="Script" uid="uid://dmtaus8agb17q" path="res://Scripts/UI/BottomHUD.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dmtaus8agb17q" path="res://Scenes/UI/BottomHUD/BottomHUD.gd" id="1_tx46y"]
 
 [node name="BottomHUD" type="CanvasLayer" unique_id=1645026149]
-script = ExtResource("1_script")
+script = ExtResource("1_tx46y")
 
 [node name="SubMenuAnchor" type="Control" parent="." unique_id=999999999]
 layout_mode = 3
