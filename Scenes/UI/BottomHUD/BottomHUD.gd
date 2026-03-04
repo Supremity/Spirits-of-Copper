@@ -53,8 +53,8 @@ func _update_ui(country) -> void:
 	if country == CountryManager.player_country:
 		_add_action("Manage Country", open_manage_country, Color(0.08, 0.16, 0.22))  # Dark steel blue
 		_add_action("POLITICS", func(): print("Open Pol"), Color(0.18, 0.08, 0.28))   # Deep royal purple
-		_add_action("INDUSTRY", func(): _toggle_submenu("res://Scenes/UI/IndustryMenu.tscn"), Color(0.08, 0.22, 0.10))    # Dark emerald
-		_add_action("MILITARY", func(): print("Open Mil"), Color(0.30, 0.05, 0.05))   # Blood crimson
+		_add_action("INDUSTRY", func(): _toggle_submenu("res://Scenes/UI/Industry/IndustryMenu.tscn"), Color(0.08, 0.22, 0.10))    # Dark emerald
+		_add_action("MILITARY", func(): _toggle_submenu("res://Scenes/UI/Military/military_menu.tscn"), Color(0.30, 0.05, 0.05))   # Blood crimson
 		_add_action("RESEARCH", func(): print("Open Res"), Color(0.05, 0.18, 0.32))   # Midnight blue
 
 
@@ -138,7 +138,7 @@ func _apply_modern_styling() -> void:
 	main_panel.add_theme_stylebox_override("panel", style)
 	
 @onready var submenu_anchor = $SubMenuAnchor
-var current_submenu: Control = null
+var current_submenu: Node = null
 var current_submenu_path: String = ""
 var submenu_tween: Tween
 
@@ -164,34 +164,23 @@ func _load_new_menu(path: String) -> void:
 	
 	current_submenu = packed.instantiate()
 	current_submenu_path = path
+	
+	# Add it as a child. 
+	# If the submenu scene is set to "Full Rect" or "Bottom Center" 
+	# in its own editor, it will now stay there.
 	add_child(current_submenu) 
 	
-	# 1. Anchor to Bottom-Center (NOT Bottom-Wide)
-	current_submenu.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	
-	# 2. MATCH THE MAIN PANEL SIZE (700px width, 70px height)
-	# We use the same dimensions as your MainPanel for a seamless swap
-	var hud_width = 700
-	var hud_height = 70
-	current_submenu.custom_minimum_size = Vector2(hud_width, hud_height)
-	
-	# 3. Position it exactly where MainPanel sits (-30 to -100 range)
-	# offset_top/bottom relative to the bottom center (0,0)
-	current_submenu.offset_left = -hud_width / 2
-	current_submenu.offset_right = hud_width / 2
-	current_submenu.offset_top = -100 
-	current_submenu.offset_bottom = -30
-	
-	# 4. Animation logic (Slide from slightly lower)
-	var target_y = current_submenu.position.y
-	current_submenu.position.y += 50 
+	# --- ANIMATION ONLY ---
 	current_submenu.modulate.a = 0
-	
 	if submenu_tween: submenu_tween.kill()
-	submenu_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
 	
+	submenu_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
 	submenu_tween.tween_property(current_submenu, "modulate:a", 1.0, 0.4)
-	submenu_tween.tween_property(current_submenu, "position:y", target_y, 0.5)
+	
+	# If you want a slight "pop up" effect without breaking the layout:
+	var original_pos = current_submenu.position
+	current_submenu.position.y += 20
+	submenu_tween.tween_property(current_submenu, "position:y", original_pos.y, 0.4)
 
 func _close_submenu() -> void:
 	if not current_submenu: return

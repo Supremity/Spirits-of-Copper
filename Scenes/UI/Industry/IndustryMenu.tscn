@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c53ckqq2d1iug"]
 
-[ext_resource type="Script" uid="uid://bn2gsawsiiank" path="res://Scripts/UI/IndustryMenu.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bn2gsawsiiank" path="res://Scenes/UI/Industry/IndustryMenu.gd" id="1_ua2sv"]
 
 [node name="IndustryMenu" type="Control" unique_id=1574299277]
 layout_mode = 3
@@ -10,7 +10,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 0
-script = ExtResource("1_script")
+script = ExtResource("1_ua2sv")
 
 [node name="MainPanel" type="PanelContainer" parent="." unique_id=88306506]
 custom_minimum_size = Vector2(800, 70)

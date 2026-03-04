@@ -1,0 +1,75 @@
+[gd_scene format=3 uid="uid://cw5rm2x2pfomr"]
+
+[ext_resource type="Script" uid="uid://dmp6jho3y1j7d" path="res://Scenes/UI/Military/military_menu.gd" id="1_d1rrk"]
+[ext_resource type="Texture2D" uid="uid://une8u7tuv306" path="res://assets/icons/hoi4/infantry.png" id="2_d1rrk"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_icnh8"]
+bg_color = Color(0, 0.083204724, 1.3897754e-06, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(2.7915835e-06, 0.96478707, 0.24031687, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_d1rrk"]
+bg_color = Color(0.24840015, 0.24840018, 0.24840015, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jnu7d"]
+bg_color = Color(0.31801978, 0.3180198, 0.31801972, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+
+[node name="Military_Menu" type="Control" unique_id=2096828904]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_d1rrk")
+
+[node name="TrainingPanel" type="Panel" parent="." unique_id=1841378765]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 64.0
+offset_top = -152.0
+offset_right = -224.0
+offset_bottom = -48.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_icnh8")
+
+[node name="DivisionType" type="Button" parent="TrainingPanel" unique_id=765629568]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 64.0
+offset_top = 16.0
+offset_right = 240.0
+offset_bottom = 88.0
+tooltip_text = "Select type of division"
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_d1rrk")
+theme_override_styles/hover = SubResource("StyleBoxFlat_jnu7d")
+icon = ExtResource("2_d1rrk")
+
+[node name="DivisionPopup" type="PopupMenu" parent="TrainingPanel/DivisionType" unique_id=243087596]
+unique_name_in_owner = true
+
+[node name="DivisionInfo" type="Panel" parent="." unique_id=741952393]
+layout_mode = 0
+offset_left = 64.0
+offset_top = 240.0
+offset_right = 248.0
+offset_bottom = 480.0

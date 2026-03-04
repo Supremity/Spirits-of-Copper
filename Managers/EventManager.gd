@@ -16,6 +16,17 @@ var event_database: Dictionary = {
 	]
 }
 
+var managers: Dictionary
+
+func _ready():
+	managers = _get_autoloads()
+	
+func add_event(date: String, code: String) -> void:
+	if not event_database.has(date):
+		event_database[date] = []
+		
+	event_database[date].append(code)
+
 func process_day(current_date: String) -> void:
 	if event_database.has(current_date):
 		for cmd in event_database[current_date]:
@@ -69,31 +80,28 @@ func _handle_assignment(command: String, op: String) -> void:
 
 func _run_pure_expression(command: String):
 	var expr = Expression.new()
-	
-	# Mapping names to the actual Autoload Singletons
-	var managers = {
-		"MapManager": MapManager,
-		"CountryManager": CountryManager,
-		"EconomyManager": EconomyManager,
-		"GameState": GameState,
-		"TroopManager": TroopManager,
-		"ConsoleManager": ConsoleManager,
-		"PopupManager": PopupManager,
-	}
 
 	var error = expr.parse(command, managers.keys())
 	if error != OK:
-		# Fallback: Maybe it's just a raw string like 'hello'
-		if command.begins_with("'") or command.begins_with("\""):
-			return command.replace("'", "").replace("\"", "")
-		push_error("EventManager Parse Error: " + expr.get_error_text())
+		push_error("Parse Error: " + expr.get_error_text())
 		return null
 
 	var result = expr.execute(managers.values(), self)
-	
+
 	if expr.has_execute_failed():
-		# If it's just a raw number, return it as a float
-		if command.is_valid_float(): return command.to_float()
+		push_error("Execute failed")
 		return null
 
+	return result
+
+func _get_autoloads() -> Dictionary:
+	var result := {}
+	var root := get_tree().root
+	
+	for child in root.get_children():
+		if child == get_tree().current_scene:
+			continue
+		if child.get_script() != null:
+			result[child.name] = child
+	
 	return result

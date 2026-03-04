@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://dqvjehbri1br0" path="res://Scripts/ui_game.gd" id="1_rp7y5"]
 [ext_resource type="Texture2D" uid="uid://dpohmal5pe58k" path="res://assets/flags/abkhazia_flag.png" id="1_xar7q"]
-[ext_resource type="PackedScene" uid="uid://d054r2umstj43" path="res://Scenes/action.tscn" id="2_5phox"]
 [ext_resource type="Texture2D" uid="uid://blu52vb3afbc1" path="res://assets/icons/political_power_icon.png" id="2_xsn6u"]
 [ext_resource type="Texture2D" uid="uid://vmj131bo8hna" path="res://assets/icons/man_power_icon.png" id="3_liin1"]
 [ext_resource type="Texture2D" uid="uid://ckpgpc1x6ceh4" path="res://assets/icons/money_icon.png" id="4_dw8mh"]
@@ -64,10 +63,8 @@ bg_color = Color(0.6313726, 0.6901961, 0.6313726, 1)
 
 [sub_resource type="GDScript" id="GDScript_lpwmk"]
 
-[node name="GameUI" type="CanvasLayer" unique_id=1717249142 node_paths=PackedStringArray("military_access_label")]
+[node name="GameUI" type="CanvasLayer" unique_id=1717249142]
 script = ExtResource("1_rp7y5")
-action_scene = ExtResource("2_5phox")
-military_access_label = NodePath("Control/SidemenuBG/Sidemenu/PanelContainer/VBoxContainer/MilitaryAccess")
 
 [node name="Control" type="Control" parent="." unique_id=1389343336]
 layout_mode = 3

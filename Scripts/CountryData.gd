@@ -43,10 +43,6 @@ var troop_speed_modifier: float = 1.0
 
 # Deployment & Training State
 var allowedCountries: Array[String] = []
-var ongoing_training: Array[TroopTraining] = []
-var ready_troops: Array[ReadyTroop] = []
-
-var troops_country: Array[TroopData] = []
 
 var deploy_pid: int = -1  # ID of province to deploy to
 #endregion
@@ -60,6 +56,9 @@ var dirty_manpower := true
 var enemies = []
 
 
+var ongoing_training: Array[TroopTraining] = []
+var ready_troops: Array[ReadyTroop] = []
+var troops_country: Array[TroopData] = []
 #region --- Inner Classes ---
 class TroopTraining:
 	var divisions_count: int
