@@ -4,12 +4,16 @@
 [ext_resource type="Texture2D" uid="uid://une8u7tuv306" path="res://assets/icons/hoi4/infantry.png" id="2_d1rrk"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_icnh8"]
-bg_color = Color(0, 0.083204724, 1.3897754e-06, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(2.7915835e-06, 0.96478707, 0.24031687, 1)
+bg_color = Color(0, 0.06228075, 0, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_d1rrk"]
 bg_color = Color(0.24840015, 0.24840018, 0.24840015, 1)
@@ -18,6 +22,9 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0, 0, 0, 1)
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jnu7d"]
 bg_color = Color(0.31801978, 0.3180198, 0.31801972, 1)
@@ -26,6 +33,20 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0, 0, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_p35j4"]
+bg_color = Color(0.31310323, 0, 0.016572945, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nvhop"]
+bg_color = Color(0.0022300903, 0.23022714, 4.813075e-08, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
 
 [node name="Military_Menu" type="Control" unique_id=2096828904]
 layout_mode = 3
@@ -37,26 +58,26 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_d1rrk")
 
-[node name="TrainingPanel" type="Panel" parent="." unique_id=1841378765]
+[node name="RecruitmentPanel" type="Panel" parent="." unique_id=1841378765]
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 64.0
-offset_top = -152.0
-offset_right = -224.0
-offset_bottom = -48.0
+offset_top = -144.0
+offset_right = -368.0
+offset_bottom = -40.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_icnh8")
 
-[node name="DivisionType" type="Button" parent="TrainingPanel" unique_id=765629568]
+[node name="DivisionType" type="Button" parent="RecruitmentPanel" unique_id=765629568]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 64.0
+offset_left = 24.0
 offset_top = 16.0
-offset_right = 240.0
+offset_right = 232.0
 offset_bottom = 88.0
 tooltip_text = "Select type of division"
 mouse_default_cursor_shape = 2
@@ -64,12 +85,191 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_d1rrk")
 theme_override_styles/hover = SubResource("StyleBoxFlat_jnu7d")
 icon = ExtResource("2_d1rrk")
 
-[node name="DivisionPopup" type="PopupMenu" parent="TrainingPanel/DivisionType" unique_id=243087596]
+[node name="DivisionPopup" type="PopupMenu" parent="RecruitmentPanel/DivisionType" unique_id=243087596]
 unique_name_in_owner = true
 
-[node name="DivisionInfo" type="Panel" parent="." unique_id=741952393]
+[node name="HBoxContainer" type="HBoxContainer" parent="RecruitmentPanel" unique_id=276178506]
+layout_mode = 0
+offset_left = 304.0
+offset_top = 24.0
+offset_right = 552.0
+offset_bottom = 77.0
+
+[node name="MinusButton" type="Button" parent="RecruitmentPanel/HBoxContainer" unique_id=142627326]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 25
+theme_override_styles/normal = SubResource("StyleBoxFlat_p35j4")
+text = "-"
+
+[node name="DivisionInput" type="LineEdit" parent="RecruitmentPanel/HBoxContainer" unique_id=87783540]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 35
+text = "1"
+alignment = 1
+
+[node name="PlusButton" type="Button" parent="RecruitmentPanel/HBoxContainer" unique_id=1958846735]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 25
+theme_override_styles/normal = SubResource("StyleBoxFlat_nvhop")
+text = "+"
+
+[node name="CloseButton" type="Button" parent="RecruitmentPanel" unique_id=733282290]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 608.0
+offset_top = 56.0
+offset_right = 704.0
+offset_bottom = 96.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_p35j4")
+text = "Close"
+
+[node name="TrainButton" type="Button" parent="RecruitmentPanel" unique_id=2013640344]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 608.0
+offset_top = 7.0
+offset_right = 704.0
+offset_bottom = 47.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_nvhop")
+text = "Train"
+
+[node name="DivisionInfo" type="PanelContainer" parent="." unique_id=1796236401]
 layout_mode = 0
 offset_left = 64.0
-offset_top = 240.0
+offset_top = 224.0
 offset_right = 248.0
 offset_bottom = 480.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_icnh8")
+
+[node name="MarginContainer" type="MarginContainer" parent="DivisionInfo" unique_id=204145484]
+layout_mode = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 6
+
+[node name="VBoxContainer" type="VBoxContainer" parent="DivisionInfo/MarginContainer" unique_id=821261570]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="DivisionInfo/MarginContainer/VBoxContainer" unique_id=492068321]
+layout_mode = 2
+text = "Division Stats"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="DivisionInfo/MarginContainer/VBoxContainer" unique_id=1372131766]
+layout_mode = 2
+
+[node name="GridContainer" type="GridContainer" parent="DivisionInfo/MarginContainer/VBoxContainer" unique_id=1138575766]
+layout_mode = 2
+size_flags_vertical = 3
+columns = 2
+
+[node name="Label" type="Label" parent="DivisionInfo/MarginContainer/VBoxContainer/GridContainer" unique_id=1560825173]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.23811558, 0.96924394, 0.54459435, 1)
+text = "HP"
+horizontal_alignment = 1
+
+[node name="hp_label" type="Label" parent="DivisionInfo/MarginContainer/VBoxContainer/GridContainer" unique_id=85695965]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "0"
+horizontal_alignment = 1
+
+[node name="Label3" type="Label" parent="DivisionInfo/MarginContainer/VBoxContainer/GridContainer" unique_id=1302445774]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.9757624, 0.5584707, 0.4963596, 1)
+text = "Attack"
+horizontal_alignment = 1
+
+[node name="attack_label" type="Label" parent="DivisionInfo/MarginContainer/VBoxContainer/GridContainer" unique_id=1884256974]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "0"
+horizontal_alignment = 1
+
+[node name="Label5" type="Label" parent="DivisionInfo/MarginContainer/VBoxContainer/GridContainer" unique_id=2002928423]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.3768803, 0.708845, 0.9530707, 1)
+text = "Defense"
+horizontal_alignment = 1
+
+[node name="defense_label" type="Label" parent="DivisionInfo/MarginContainer/VBoxContainer/GridContainer" unique_id=1527239297]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "0"
+horizontal_alignment = 1
+
+[node name="Label7" type="Label" parent="DivisionInfo/MarginContainer/VBoxContainer/GridContainer" unique_id=1747499009]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.8434529, 0.69430965, 0.90986735, 1)
+text = "Speed"
+horizontal_alignment = 1
+
+[node name="speed_label" type="Label" parent="DivisionInfo/MarginContainer/VBoxContainer/GridContainer" unique_id=1670689857]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "0"
+horizontal_alignment = 1
+
+[node name="Label9" type="Label" parent="DivisionInfo/MarginContainer/VBoxContainer/GridContainer" unique_id=1402935779]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "Cost"
+horizontal_alignment = 1
+
+[node name="cost_label" type="Label" parent="DivisionInfo/MarginContainer/VBoxContainer/GridContainer" unique_id=2116414568]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "0"
+horizontal_alignment = 1
+
+[node name="Label11" type="Label" parent="DivisionInfo/MarginContainer/VBoxContainer/GridContainer" unique_id=144014523]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.99539155, 0.7857397, 0.6439305, 1)
+text = "Days"
+horizontal_alignment = 1
+
+[node name="days_label" type="Label" parent="DivisionInfo/MarginContainer/VBoxContainer/GridContainer" unique_id=1291472611]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "0"
+horizontal_alignment = 1
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=1288374373]
+layout_mode = 0
+offset_left = 864.0
+offset_top = 256.0
+offset_right = 1112.0
+offset_bottom = 608.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_icnh8")
