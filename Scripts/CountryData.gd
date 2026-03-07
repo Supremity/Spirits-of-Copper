@@ -1,7 +1,7 @@
 extends Resource
 class_name CountryData
 
-signal training_day_complete
+signal process_day_complete
 
 var economy_law_penalty: float = 0.0  # 0.10 means 10% income loss
 var army_composition_cache: Dictionary = {"infantry": 0, "tank": 0, "artillery": 0}
@@ -135,6 +135,7 @@ func process_day() -> void:
 	_process_reinforcements()
 
 	DecisionManager.process_country_day(self)
+	process_day_complete.emit()
 	if not is_player:
 		pass
 
@@ -188,7 +189,6 @@ func _process_training() -> void:
 		if training.days_left <= 0:
 			_graduate_troops(training)
 			ongoing_training.remove_at(i)
-	training_day_complete.emit()
 
 
 func _graduate_troops(training: TroopTraining) -> void:

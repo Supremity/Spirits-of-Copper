@@ -8,7 +8,7 @@ const TEMPLATES = {
 		"hp": 100.0,
 		"manpower": 10000,
 		"cost": 500,
-		"days": 9,
+		"days": 3,
 		"attack": 1,
 		"defense": 1,
 		"speed": 1.0

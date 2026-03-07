@@ -36,7 +36,7 @@ func _on_hour_passed(ticks) -> void:
 	AiManager.run_ai_cycle()
 
 
-func _on_day_passed() -> void:
+func _on_day_passed(date) -> void:
 	if GameState.is_loading_game:
 		return
 

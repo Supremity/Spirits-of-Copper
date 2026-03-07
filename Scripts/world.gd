@@ -22,6 +22,9 @@ func _ready() -> void:
 	if not GameState.main.clock.hour_passed.is_connected(CountryManager._on_hour_passed):
 		GameState.main.clock.hour_passed.connect(CountryManager._on_hour_passed)
 	
+	if not GameState.main.clock.day_passed.is_connected(CountryManager._on_day_passed):
+		GameState.main.clock.day_passed.connect(CountryManager._on_day_passed)
+	
 	if not GameState.main.clock.day_passed.is_connected(EventManager.process_day):
 		GameState.main.clock.day_passed.connect(EventManager.process_day)
 	

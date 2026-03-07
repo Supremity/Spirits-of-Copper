@@ -3,11 +3,8 @@ extends Node
 var event_database: Dictionary = {
 	"2010-01-02": [
 		"print('hello')",
-		"MapManager.show_industry_country(CountryManager.player_country.country_name)"
 	],
 	"2010-01-03": [
-		"MapManager.show_countries_map()",
-		"CountryManager.set_player_country('russia')"
 	],
 	"2010-01-04": [
 		"ConsoleManager._release_country('ottoman_empire')",
