@@ -32,19 +32,19 @@ func _execute_best(actions: Array):
 
 
 func _score_factory() -> float:
-	return 0.0 * personality.economy
+	return 1.0 * personality.economy
 
 
 func _score_train() -> float:
-	return 0.0 * personality.military
+	return 1.0 * personality.military
 
 
 func _score_war() -> float:
-	return 0.0 * personality.aggression
+	return 1.0 * personality.aggression
 
 
 func _score_frontline() -> float:
-	return 0.0
+	return 1.0
 
 
 func _execute_factory():
