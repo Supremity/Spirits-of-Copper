@@ -6,7 +6,6 @@ enum MapMode { POLITICAL, POPULATION, GDP, ETHNICITY }
 signal province_hovered(province_id: int, country_name: String)
 signal country_clicked(country_name: String)
 
-
 # Emitted when a click couldn't be processed (so likely sea or border)
 signal close_sidemenu
 
@@ -43,11 +42,13 @@ const CACHE_FOLDER = "res://map_data/"
 @export var region_texture: Texture2D
 @export var culture_texture: Texture2D
 
+
 func _ready():
 	load_world_data()
 	get_all_cities()
 	_build_global_registry()
 	CountryManager.initialize_countries()
+
 
 func load_world_data() -> void:
 	_load_country_colors()
@@ -97,7 +98,7 @@ func _try_load_cached_data() -> bool:
 	max_province_id = loaded.max_province_id
 	id_map_image = loaded.id_map_image
 	province_objects.assign(loaded.province_objects)
-	
+
 	_province_finishing_touches()
 	_build_lookup_texture()
 	return true
@@ -170,7 +171,7 @@ func _create_province_from_pixel(
 		province.country = _identify_country(c_color)
 
 		var province_data = get_data_for_color(r_color)
-		
+
 		province.r_color = r_color
 		province.population = province_data.population
 		province.gdp = province_data.gdp
@@ -190,8 +191,9 @@ func _finalize_map_processing():
 	_calculate_province_centroids()
 	_build_country_to_provinces()
 	_build_adjacency_list()
-	_province_finishing_touches() # note z21: renamethis to something better
+	_province_finishing_touches()  # note z21: renamethis to something better
 	_build_lookup_texture()
+
 
 func _province_finishing_touches():
 	country_to_provinces_obj.clear()
@@ -211,6 +213,7 @@ func _province_finishing_touches():
 			country_to_provinces_obj[c] = []
 
 		country_to_provinces_obj[c].append(prov)
+
 
 func _build_country_to_provinces():
 	var result: Dictionary = {}
@@ -413,13 +416,12 @@ func handle_click_down(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 	TroopManager.troop_selection.deselect_all()
 
 
-
 func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 	if _is_mouse_over_ui() or Console.is_visible():
 		return
 
 	var pid = get_province_with_radius(global_pos, map_sprite, 5)
-	
+
 	# 1. Handle Clicks on Water or Invalid Areas
 	if pid <= 1 or province_objects[pid].type == 0:  # 0 is SEA
 		if GameState.industry_building != GameState.IndustryType.DEFAULT:
@@ -446,33 +448,40 @@ func handle_click(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 			GameState.reset_industry_building()
 			show_countries_map()
 
-	if TroopManager.troop_selection.selected_troops.is_empty() and GameState.industry_building == GameState.IndustryType.DEFAULT:  # Prevent menu from spawning when selecting troops (annoying)
+	if (
+		TroopManager.troop_selection.selected_troops.is_empty()
+		and GameState.industry_building == GameState.IndustryType.DEFAULT
+	):  # Prevent menu from spawning when selecting troops (annoying)
 		country_clicked.emit(province_objects[pid].country)
 
 
 func highlight_country(country_name: String) -> void:
-	if country_name == "" or country_name == "sea": return
-	
+	if country_name == "" or country_name == "sea":
+		return
+
 	var provinces = country_to_provinces.get(country_name, [])
 	var base_color = country_colors.get(country_name, Color.GRAY)
 	var light_color = base_color.lightened(0.2)
 
 	for pid in provinces:
 		_update_lookup(pid, light_color)
-	
+
 	state_color_texture.update(state_color_image)
+
 
 ## Restores the country to its original data-defined color
 func restore_country_color(country_name: String) -> void:
-	if country_name == "" or country_name == "sea": return
-	
+	if country_name == "" or country_name == "sea":
+		return
+
 	var provinces = country_to_provinces.get(country_name, [])
 	var original_color = country_colors.get(country_name, Color.GRAY)
 
 	for pid in provinces:
 		_update_lookup(pid, original_color)
-	
+
 	state_color_texture.update(state_color_image)
+
 
 func _execute_deployment(pid: int, player_name: String) -> void:
 	country_clicked.emit(player_name)

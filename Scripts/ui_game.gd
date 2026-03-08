@@ -131,6 +131,8 @@ func _ready() -> void:
 	clock.speed_changed.connect(updateProgressBar)
 	plus.pressed.connect(clock.increase_speed)
 	minus.pressed.connect(clock.decrease_speed)
+
+
 #	label_date.text = clock.get_datetime_string()
 
 
@@ -371,7 +373,7 @@ func _on_time_passed(x) -> void:
 
 func updateProgressBar():
 	var clock = GameState.main.clock
-	
+
 	progress_bar.value = clock._get_visual_multiplier()
 	var bg_style = progress_bar.get_theme_stylebox("background")
 	if clock.paused:

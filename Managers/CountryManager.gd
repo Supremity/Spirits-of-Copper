@@ -33,6 +33,7 @@ func _on_hour_passed(ticks) -> void:
 	if _hour_process_index >= total:
 		_hour_process_index = 0
 
+
 func _on_day_passed(date) -> void:
 	if GameState.is_loading_game:
 		return
@@ -55,8 +56,9 @@ func initialize_countries() -> void:
 
 	for country_name in detected_countries:
 		add_country(country_name)
-		
+
 	print("CountryManager: Initialized %d countries." % countries.size())
+
 
 func get_country(c_name: String) -> CountryData:
 	c_name = c_name.to_lower()
@@ -111,7 +113,7 @@ func add_country(country_name: String) -> CountryData:
 		countries[existing_name].set_relation_with(c_name_lower, 50)
 
 	countries[c_name_lower] = new_country
-	
+
 	new_country.border_provinces = get_border_provinces_country(c_name_lower)
 	new_country.enemy_border_provinces = get_neighbor_border_provinces(c_name_lower)
 	new_country.neighbor_countries = get_neighboring_countries(c_name_lower)
@@ -132,11 +134,10 @@ func get_border_provinces_country(country) -> Array[Province]:
 		return []
 	var border_provinces: Array[Province] = []
 	for province in MapManager.country_to_provinces_obj[country]:
-		if province.neighbors_obj.any(func(neighbor):
-			return neighbor.country != country
-		):
+		if province.neighbors_obj.any(func(neighbor): return neighbor.country != country):
 			border_provinces.append(province)
 	return border_provinces
+
 
 func get_neighbor_border_provinces(country) -> Array[Province]:
 	if !MapManager.country_to_provinces_obj.has(country):
@@ -155,6 +156,7 @@ func get_neighbor_border_provinces(country) -> Array[Province]:
 
 	return result
 
+
 func get_neighboring_countries(country) -> Array[String]:
 	if !MapManager.country_to_provinces_obj.has(country):
 		return []
@@ -167,6 +169,7 @@ func get_neighboring_countries(country) -> Array[String]:
 				result.append(neighbor.country)
 
 	return result
+
 
 func update_province_border_status(province: Province) -> void:
 	var country = CountryManager.countries.get(province.country, null)
@@ -196,12 +199,13 @@ func update_province_border_status(province: Province) -> void:
 
 	# Remove old enemy neighbors that no longer border this country
 # Remove old enemy neighbors that no longer border this country
-	country.enemy_border_provinces = country.enemy_border_provinces.filter(func(p):
-		# Determine the country name property safely
-		var c_name = country.country_name if "country_name" in country else country.country
-		
-		# p is a Province object, compare its owner string
-		return p.country != c_name
+	country.enemy_border_provinces = country.enemy_border_provinces.filter(
+		func(p):
+			# Determine the country name property safely
+			var c_name = country.country_name if "country_name" in country else country.country
+
+			# p is a Province object, compare its owner string
+			return p.country != c_name
 	)
 	# --- Neighboring countries ---
 	var neighbor_countries_set := {}
@@ -211,6 +215,7 @@ func update_province_border_status(province: Province) -> void:
 				neighbor_countries_set[neighbor.country] = true
 
 	country.neighbor_countries = neighbor_countries_set.keys()
+
 
 func get_country_population(country_name: String) -> int:
 	if not MapManager.country_to_provinces.has(country_name):

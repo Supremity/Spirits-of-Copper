@@ -53,7 +53,7 @@ func _process(_delta: float) -> void:
 			_last_cam_zoom = cam.zoom
 			_last_cam_pos = cam.global_position
 	elif _screen_rect.size == Vector2.ZERO:
-		# FALLBACK: If the camera is missing for a frame, draw a giant area 
+		# FALLBACK: If the camera is missing for a frame, draw a giant area
 		# so troops don't suddenly vanish or fail `has_point` checks
 		_screen_rect = Rect2(-100000, -100000, 200000, 200000)
 
@@ -61,9 +61,10 @@ func _process(_delta: float) -> void:
 	if is_instance_valid(troop_multimesh) and troop_multimesh.material:
 		var shader_clock = GameState.main.clock.total_game_seconds
 		troop_multimesh.material.set_shader_parameter("game_time", shader_clock)
-		
+
 	_update_multimesh_buffer()
 	queue_redraw()
+
 
 func rebuild_troops():
 	if not map_sprite or map_width <= 0:
@@ -84,6 +85,7 @@ func rebuild_troops():
 
 	_update_multimesh_buffer()
 	queue_redraw()
+
 
 # --- MultiMesh Setup ---
 func _setup_multimesh():
@@ -353,9 +355,11 @@ func _group_troops_by_visual_position(troops: Array) -> Dictionary:
 
 
 func _draw_selection_box() -> void:
-	if not is_instance_valid(TroopManager.troop_selection): return
-	if not TroopManager.troop_selection.dragging: return
-	
+	if not is_instance_valid(TroopManager.troop_selection):
+		return
+	if not TroopManager.troop_selection.dragging:
+		return
+
 	var ts = TroopManager.troop_selection
 	var rect = Rect2(ts.drag_start, ts.drag_end - ts.drag_start).abs()
 	draw_rect(rect, Color(1, 1, 1, 0.3), true)
@@ -363,7 +367,8 @@ func _draw_selection_box() -> void:
 
 
 func _draw_path_preview() -> void:
-	if not is_instance_valid(TroopManager.troop_selection): return
+	if not is_instance_valid(TroopManager.troop_selection):
+		return
 	if not TroopManager.troop_selection.right_dragging:
 		return
 	var path = TroopManager.troop_selection.right_path

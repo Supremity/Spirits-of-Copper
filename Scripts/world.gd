@@ -5,11 +5,14 @@ class_name World
 @onready var camera: Camera2D = $"../../Camera2D"
 @onready var troop_renderer: CustomRenderer = $CustomRenderer as CustomRenderer
 
+
 func _enter_tree() -> void:
 	GameState.current_world = self
 
 
 var _first_time_setup_done := false
+
+
 func _ready() -> void:
 	TroopManager.troop_selection = $TroopSelection as TroopSelection
 
@@ -21,18 +24,19 @@ func _ready() -> void:
 	# Prevent signal double-connection
 	if not GameState.main.clock.hour_passed.is_connected(CountryManager._on_hour_passed):
 		GameState.main.clock.hour_passed.connect(CountryManager._on_hour_passed)
-	
+
 	if not GameState.main.clock.day_passed.is_connected(CountryManager._on_day_passed):
 		GameState.main.clock.day_passed.connect(CountryManager._on_day_passed)
-	
+
 	if not GameState.main.clock.day_passed.is_connected(EventManager.process_day):
 		GameState.main.clock.day_passed.connect(EventManager.process_day)
-	
-	if not _first_time_setup_done:		
+
+	if not _first_time_setup_done:
 		await get_tree().process_frame
 		initialize_world()
-	
+
 	_first_time_setup_done = true
+
 
 func initialize_world():
 	# Safety check for MapManager data
@@ -46,11 +50,10 @@ func initialize_world():
 		# Explicitly tell the renderer to boot up
 		# note z21: This might all not be needed..
 		troop_renderer.rebuild_troops()
-	
+
 	# Reset troop positions for the new map instance
 	for t_obj in TroopManager.troops:
 		t_obj.position = MapManager.province_centers.get(t_obj.province_id, Vector2.ZERO)
-	
 
 
 func _input(event: InputEvent) -> void:

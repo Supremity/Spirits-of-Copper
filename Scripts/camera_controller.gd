@@ -52,15 +52,15 @@ func _perform_zoom(direction: int) -> void:
 
 	var mouse_pos_after := camera.get_global_mouse_position()
 	camera.position += mouse_pos_before - mouse_pos_after
-	
-	
-	
+
+
 var auto_target := Vector2.ZERO
 var auto_change_timer := 0.0
 
 @export var auto_speed := 120.0
 @export var auto_min_time := 3.0
 @export var auto_max_time := 8.0
+
 
 func move_map_around(delta: float) -> void:
 	if not GameState.current_map:

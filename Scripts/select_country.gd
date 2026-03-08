@@ -11,10 +11,12 @@ func _ready() -> void:
 	MapManager.show_countries_map()
 	%PlayButton.pressed.connect(on_play_pressed)
 
+
 func on_play_pressed():
 	if selected_country != "" and CountryManager.countries.has(selected_country):
 		CountryManager.set_player_country(hovered_country)
 		ConsoleManager.switch_scene("world")
+
 
 func _input(event: InputEvent) -> void:
 	# Hover only works if nothing is selected
@@ -32,13 +34,14 @@ func _input(event: InputEvent) -> void:
 # Hover
 # ================================
 
+
 func _handle_hover(screen_pos: Vector2) -> void:
 	if MapManager._is_mouse_over_ui() or Console.is_visible():
 		_clear_hover()
 		return
 
 	var world_pos = get_viewport().get_canvas_transform().affine_inverse() * screen_pos
-	
+
 	var pid = MapManager.get_province_with_radius(world_pos, map_sprite, 5)
 
 	if pid <= 1:
@@ -69,6 +72,7 @@ func _clear_hover() -> void:
 # Click / Selection
 # ================================
 
+
 func _handle_click() -> void:
 	if hovered_country == "":
 		return
@@ -95,11 +99,12 @@ func _unlock_selection() -> void:
 # UI Update
 # ================================
 
+
 func updateCountryDetails() -> void:
 	var country: CountryData = CountryManager.countries.get(hovered_country, null)
 	if country == null:
 		return
-	
+
 	%FlagRect.texture = TroopManager.get_flag(hovered_country)
 	%ValueManpower.text = GameState.format_number(country.manpower)
 	%ValueGDP.text = GameState.format_number(country.gdp)
