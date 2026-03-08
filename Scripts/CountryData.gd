@@ -3,24 +3,36 @@ class_name CountryData
 
 signal process_day_complete
 
+# Constants
+const MANPOWER_RECOVERY_PER_YEAR := 0.10
+const MANPOWER_RECOVERY_PER_DAY := MANPOWER_RECOVERY_PER_YEAR / 365.0
+const BASE_ARMY_COST := 20
+
+# Important
+var country_name: String
+var is_player: bool = false
+var ai_controller: CountryAI = null
+
+var allowedCountries: Array[String] = [] # Countries allowed to have Troop Presence
+
+# Useful for AI and other things in the future
+var border_provinces = []
+var enemy_border_provinces = []
+var neighbor_countries = []
+
+# ------
 var economy_law_penalty: float = 0.0  # 0.10 means 10% income loss
 var army_composition_cache: Dictionary = {"infantry": 0, "tank": 0, "artillery": 0}
 #region --- Configuration & Constants ---
-const MANPOWER_RECOVERY_PER_YEAR := 0.10
-const MANPOWER_RECOVERY_PER_DAY := MANPOWER_RECOVERY_PER_YEAR / 365.0
 var military_size_ratio := 0.005
-const BASE_ARMY_COST := 20
 #endregion
 
 #region --- Properties ---
-var country_name: String
-var is_player: bool = false
-
-var relations: Dictionary = {}
 
 var factory_port_daily_cost = 0.2  # The less the better. It's percentage based
 
-# Economy
+
+#region --- ECONOMY ---
 var money: float = 0.0
 var gdp: int = 0
 var income: float = 0.0
@@ -28,23 +40,22 @@ var factories_amount: int = 0
 var factory_income = 100
 var hourly_money_income: float = 0.0  # Calculated value
 
-# Politics
+#region --- POLITICAL ---
 var political_power: float = 5000.0
 var daily_pp_gain: float = 0.04
 var stability: float = 0.5
 var war_support: float = 0.5
+var relations: Dictionary = {}
+
 
 # Population & Manpower
 var total_population: int = 0
 var manpower: int = 0
 
-# Military Statea
+#region --- MILITARY ---
 var army_level: int = 1
 var army_cost: float = 0.0
 var troop_speed_modifier: float = 1.0
-
-# Deployment & Training State
-var allowedCountries: Array[String] = []
 
 var deploy_pid: int = -1  # ID of province to deploy to
 #endregion
@@ -61,6 +72,7 @@ var enemies = []
 var ongoing_training: Array[TroopTraining] = []
 var ready_troops: Array[ReadyTroop] = []
 var troops_country: Array[TroopData] = []
+
 #region --- Inner Classes ---
 class TroopTraining:
 	var divisions_count: int
@@ -84,6 +96,9 @@ class ReadyTroop:
 
 #endregion
 
+func setup_ai():
+	if not is_player:
+		ai_controller = CountryAI.new(self)
 
 #region --- Lifecycle ---
 func _init(p_country_name: String = "") -> void:
@@ -98,6 +113,8 @@ func _init(p_country_name: String = "") -> void:
 	var manpower_used = CountryManager.get_country_used_manpower(self)
 	manpower = int((total_population * military_size_ratio) - manpower_used)
 	_setup_starting_army()
+	
+	setup_ai()
 
 
 func process_hour() -> void:
@@ -123,7 +140,8 @@ func process_hour() -> void:
 
 	if war_dirty:  # For the AI
 		update_is_at_war()
-
+	
+	ai_controller.think_hour()
 
 func process_day() -> void:
 	if _is_loading:
@@ -138,6 +156,7 @@ func process_day() -> void:
 	process_day_complete.emit()
 	if not is_player:
 		pass
+	ai_controller.think_day()
 
 
 func _refresh_economic_stats() -> void:

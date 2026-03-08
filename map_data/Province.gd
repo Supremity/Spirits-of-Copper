@@ -22,6 +22,7 @@ enum {
 @export var gdp: int = 1000
 @export var center: Vector2
 @export var neighbors: Array[int] = []
+@export var neighbors_obj: Array = []
 @export var claims = []
 @export var troops_here = []
 @export var r_color = null

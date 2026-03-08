@@ -240,7 +240,7 @@ func _update_summary():
 
 	# Calculate percentage for flavor
 	var total_loser_provinces = 0
-	for p in MapManager.province_objects.duplicate():
+	for p in MapManager.province_objects.duplicate().values():
 		if p.country == current_loser.country_name:
 			total_loser_provinces += 1
 
@@ -257,7 +257,6 @@ func _on_confirm_pressed():
 	if game_ui:
 		game_ui.visible = true
 	GameState.in_peace_process = false
-	GameState.main.clock.resume()
 
 	self.hide()
 
