@@ -37,7 +37,6 @@ func _ready() -> void:
 
 	_first_time_setup_done = true
 
-
 func initialize_world():
 	# Safety check for MapManager data
 	if not MapManager.id_map_image:

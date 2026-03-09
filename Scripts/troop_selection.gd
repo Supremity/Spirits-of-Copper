@@ -22,9 +22,7 @@ var right_path: Array = []
 
 # --- Path Length Limit ---
 var max_path_length: int = 0
-
 var selected_troops: Array[TroopData] = []
-
 
 func _input(event) -> void:
 	if not map_sprite or Console.is_visible():

@@ -38,7 +38,6 @@ func _on_day_passed(date) -> void:
 	if GameState.is_loading_game:
 		return
 
-	EconomyManager.process_economy_day()
 	for c_name: String in countries:
 		var country_obj: CountryData = countries[c_name]
 		country_obj.process_day()
@@ -113,6 +112,7 @@ func add_country(country_name: String) -> CountryData:
 		countries[existing_name].set_relation_with(c_name_lower, 50)
 
 	countries[c_name_lower] = new_country
+	
 
 	new_country.border_provinces = get_border_provinces_country(c_name_lower)
 	new_country.enemy_border_provinces = get_neighbor_border_provinces(c_name_lower)

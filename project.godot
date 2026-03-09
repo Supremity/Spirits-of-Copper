@@ -33,7 +33,6 @@ KeyboardManager="*res://Managers/KeyboardManager.gd"
 ConsoleManager="*res://Managers/ConsoleManager.gd"
 Console="*uid://ouiu5xh1cs8n"
 DecisionManager="*res://Managers/DecisionManager.gd"
-EconomyManager="*res://Managers/EconomyManager.gd"
 SceneSwitcher="*uid://d3xe17ngaqbie"
 EventManager="*uid://cyk5vve1r3vr5"
 

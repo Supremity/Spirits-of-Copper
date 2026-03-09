@@ -24,10 +24,6 @@ var army_composition_cache: Dictionary = {"infantry": 0, "tank": 0, "artillery":
 var military_size_ratio := 0.005
 #endregion
 
-#region --- Properties ---
-
-var factory_port_daily_cost = 0.2  # The less the better. It's percentage based
-
 #region --- ECONOMY ---
 var money: float = 10000.0
 var gdp: int = 0
@@ -45,7 +41,7 @@ var relations: Dictionary = {}
 
 # Population & Manpower
 var total_population: int = 0
-var manpower: int = 10000
+var manpower: int = 100
 
 #region --- MILITARY ---
 var army_level: int = 1
@@ -55,36 +51,11 @@ var troop_speed_modifier: float = 1.0
 var deploy_pid: int = -1  # ID of province to deploy to
 #endregion
 
-var _is_loading := false
 var enemies = []
 
-var ongoing_training: Array[TroopTraining] = []
-var ready_troops: Array[ReadyTroop] = []
+var ongoing_training: Array[Training.TroopTraining] = []
+var ready_troops: Array[Training.ReadyTroop] = []
 var troops_country: Array[TroopData] = []
-
-
-#region --- Inner Classes ---
-class TroopTraining:
-	var divisions_count: int
-	var division_type: String
-	var days_left: int
-	var daily_cost: float
-
-	func _init(_count: int, _type: String, _days: int, _cost: float):
-		divisions_count = _count
-		division_type = _type
-		days_left = _days
-		daily_cost = _cost
-
-
-class ReadyTroop:
-	var stored_divisions: Array[DivisionData] = []
-
-	func _init(_divisions_array: Array[DivisionData]):
-		stored_divisions = _divisions_array
-
-
-#endregion
 
 
 func setup_ai():
@@ -96,21 +67,15 @@ func setup_ai():
 func _init(p_country_name: String = "") -> void:
 	if p_country_name != "":
 		country_name = p_country_name
-	if _is_loading:
-		return
-
+		
 	allowedCountries.append_array([p_country_name, "sea"])
 	total_population = CountryManager.get_country_population(self.country_name)
-	# Initial Manpower Calculation
-	#var manpower_used = CountryManager.get_country_used_manpower(self)
-	#manpower = int((total_population * military_size_ratio) - manpower_used)
 
 	setup_ai()
 
 
 func process_hour() -> void:
-	if _is_loading:
-		return
+
 
 	political_power += daily_pp_gain
 	update_manpower_pool()
@@ -127,8 +92,6 @@ func process_hour() -> void:
 
 
 func process_day() -> void:
-	if _is_loading:
-		return
 
 	# Refresh stats that change daily/weekly
 	_process_training()
@@ -160,7 +123,7 @@ func train_troops(count: int, type: String = "infantry") -> bool:
 
 	manpower -= total_manpower_needed
 	# Add to training queue
-	var training_batch = TroopTraining.new(count, type, template["days"], template["cost"])
+	var training_batch = Training.TroopTraining.new(count, type, template["days"], template["cost"])
 	ongoing_training.append(training_batch)
 	return true
 
@@ -180,12 +143,12 @@ func _process_training() -> void:
 			ongoing_training.remove_at(i)
 
 
-func _graduate_troops(training: TroopTraining) -> void:
+func _graduate_troops(training: Training.TroopTraining) -> void:
 	var new_divisions: Array[DivisionData] = []
 	for d in range(training.divisions_count):
 		new_divisions.append(DivisionData.create_division(training.division_type))
 
-	ready_troops.append(ReadyTroop.new(new_divisions))
+	ready_troops.append(Training.ReadyTroop.new(new_divisions))
 
 
 #endregion
@@ -194,13 +157,10 @@ func _graduate_troops(training: TroopTraining) -> void:
 #region --- Stats & Manpower ---
 func update_manpower_pool() -> void:
 	var max_allowed_manpower = int(total_population * military_size_ratio)
-
 	if manpower < max_allowed_manpower:
-		var increase = int(max_allowed_manpower * military_size_ratio)
+		var increase = int(max_allowed_manpower * military_size_ratio * 0.1)
 		manpower += increase
-
 	manpower = min(manpower, max_allowed_manpower)
-
 	manpower = max(0, manpower)
 
 
@@ -212,11 +172,9 @@ func get_army_pressure() -> float:
 	var capacity = max(1.0, (gdp * 0.03) + factories_amount * 5)
 	return army_size / capacity
 
-
 func get_max_morale() -> float:
 	var base = 60.0 + (stability * 40.0) + (army_level * 5.0)
 	return base * 0.5 if money < 0 else base
-
 
 func get_attack_efficiency() -> float:
 	var eff = 0.9 + (war_support * 0.3) + (army_level * 0.05)
@@ -226,13 +184,11 @@ func get_attack_efficiency() -> float:
 func get_defense_efficiency() -> float:
 	var eff = 1.0 + (stability * 0.15) + (army_level * 0.05)
 	return eff * 0.8 if money < 0 else eff
-
-
 #endregion
 
 
 #region --- Deployment Helper ---
-func deploy_ready_troop(troop: ReadyTroop, specific_pid: int = -1) -> bool:
+func deploy_ready_troop(troop: Training.ReadyTroop, specific_pid: int = -1) -> bool:
 	var index = ready_troops.find(troop)
 	if index == -1:
 		return false
@@ -255,25 +211,7 @@ func deploy_ready_troop(troop: ReadyTroop, specific_pid: int = -1) -> bool:
 
 var cached_garrison_hubs: Array = []
 
-
-func demobilize_troop(troop: TroopData, count: int = -1) -> void:
-	if not troop or troop.country_name != country_name:
-		return
-
-	var divs_to_reserve: Array[DivisionData] = []
-
-	if count == -1 or count >= troop.divisions_count:
-		divs_to_reserve = troop.stored_divisions.duplicate()
-		TroopManager.remove_troop(troop)
-	else:
-		for i in range(count):
-			divs_to_reserve.append(troop.stored_divisions.pop_back())
-
-	if not divs_to_reserve.is_empty():
-		var reserve = ReadyTroop.new(divs_to_reserve)
-		ready_troops.append(reserve)
-
-
+# Regenerates Army. Needs Money and Manpower
 func _process_reinforcements():
 	var all_my_troops = TroopManager.get_troops_for_country(country_name)
 

@@ -42,6 +42,7 @@ func _ready() -> void:
 	unix_start_time = Time.get_unix_time_from_datetime_dict(start_dict)
 
 	# Start paused by default or set a speed
+	_perform_tick()
 	set_speed(0)
 
 

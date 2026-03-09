@@ -501,8 +501,11 @@ func _province_build_industry(pid: int, player_name: String) -> void:
 		if province.factory != province.NO_FACTORY:
 			print("Cannot build: Factory slot is busy or full.")
 			return
-
-		EconomyManager.start_construction(pid, "factory", 10, 150.0, country)
+		
+		province.factory = province.FACTORY_BUILDING
+		EventManager.repeat_task_for_days("money -= 500", 5, country)
+		EventManager.add_event_after_days(5, "factory = FACTORY_BUILT", province)
+		
 
 		_cleanup_interaction_state()
 		show_industry_country(player_name)
@@ -514,8 +517,10 @@ func _province_build_industry(pid: int, player_name: String) -> void:
 
 		# 3. Sea check for Ports
 		if pid in get_provinces_near_sea(player_name):
-			EconomyManager.start_construction(pid, "port", 10, 150.0, country)
-
+			province.port = Province.PORT_BUILDING
+			EventManager.repeat_task_for_days("money -= 500", 5, country)
+			EventManager.add_event_after_days(5, "port = PORT_BUILT", province)
+		
 			_cleanup_interaction_state()
 			show_industry_country(player_name)
 		else:

@@ -12,13 +12,14 @@ func _ready() -> void:
 	GameState.game_ui = self
 
 	CountryManager.player_country_changed.connect(_on_player_change)
-	updateProgressBar()
 	var clock = GameState.main.clock
 	clock.hour_passed.connect(_on_time_passed)
 	clock.speed_changed.connect(updateProgressBar)
 	%Plus.pressed.connect(clock.increase_speed)
 	%Minus.pressed.connect(clock.decrease_speed)
 
+	_on_time_passed(0)
+	updateProgressBar()
 
 func _on_player_change() -> void:
 	_update_flag()
@@ -71,7 +72,7 @@ func _on_time_passed(x) -> void:
 func updateProgressBar():
 	var clock = GameState.main.clock
 
-	%ProgressBar.value = clock._get_visual_multiplier()
+	%ProgressBar.value = clock.current_speed_level
 	var bg_style = %ProgressBar.get_theme_stylebox("background")
 	if clock.paused:
 		bg_style.border_color = Color.DARK_RED
