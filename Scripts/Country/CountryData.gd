@@ -17,20 +17,16 @@ var border_provinces = []
 var enemy_border_provinces = []
 var neighbor_countries = []
 
-# ------
 var economy_law_penalty: float = 0.0  # 0.10 means 10% income loss
-var army_composition_cache: Dictionary = {"infantry": 0, "tank": 0, "artillery": 0}
-#region --- Configuration & Constants ---
 var military_size_ratio := 0.005
-#endregion
 
 #region --- ECONOMY ---
 var money: float = 10000.0
-var gdp: int = 0
 var income: float = 0.0
 var factories_amount: int = 0
 var factory_income = 100
 var hourly_money_income: float = 0.0  # Calculated value
+#endregion
 
 #region --- POLITICAL ---
 var political_power: float = 5000.0
@@ -38,6 +34,7 @@ var daily_pp_gain: float = 0.04
 var stability: float = 0.5
 var war_support: float = 0.5
 var relations: Dictionary = {}
+#endregion
 
 # Population & Manpower
 var total_population: int = 0
@@ -47,7 +44,6 @@ var manpower: int = 100
 var army_level: int = 1
 var army_cost: float = 0.0
 var troop_speed_modifier: float = 1.0
-
 var deploy_pid: int = -1  # ID of province to deploy to
 #endregion
 
@@ -70,40 +66,59 @@ func _init(p_country_name: String = "") -> void:
 		
 	allowedCountries.append_array([p_country_name, "sea"])
 	total_population = CountryManager.get_country_population(self.country_name)
-
+	
+	get_income()
 	setup_ai()
 
 
 func process_hour() -> void:
-
-
-	political_power += daily_pp_gain
+	update_political_power()
+	update_money()
 	update_manpower_pool()
-	var base_income = (gdp / 8760.0) * 0.2
-	var factory_income = factories_amount * factory_income
-	var gross_income = base_income + factory_income
-	hourly_money_income = gross_income * (1.0 - economy_law_penalty)
-	income = hourly_money_income - army_cost
-	money += income
-
-	troop_speed_modifier = 1.0 + (army_level * 0.1)
-
-	ai_controller.think_hour()
+	
+	if not is_player:
+		ai_controller.think_hour()
 
 
 func process_day() -> void:
-
-	# Refresh stats that change daily/weekly
 	_process_training()
 	_process_reinforcements()
 
+	# note z21: needs to be replaced by eventmanager
 	DecisionManager.process_country_day(self)
 	process_day_complete.emit()
 	if not is_player:
-		pass
-	ai_controller.think_day()
+		ai_controller.think_day()
 
 
+#endregion
+
+#region --- Stats & Manpower ---
+func update_political_power() -> void:
+	political_power += daily_pp_gain
+
+func update_money():
+	var factories_income = factories_amount * factory_income
+	var gross_income = income + factories_income - army_cost
+	money += gross_income * (1.0 - economy_law_penalty)
+
+# Run only once
+func get_income():
+	income = 0
+	var provinces = MapManager.country_to_provinces_obj.get(country_name)
+	if provinces == null:
+		return
+	for province in provinces:
+		income += province.gdp
+	
+
+func update_manpower_pool() -> void:
+	var max_allowed_manpower = int(total_population * military_size_ratio)
+	if manpower < max_allowed_manpower:
+		var increase = int(max_allowed_manpower * military_size_ratio * 0.5)
+		manpower += increase
+	manpower = min(manpower, max_allowed_manpower)
+	manpower = max(0, manpower)
 #endregion
 
 
@@ -149,28 +164,15 @@ func _graduate_troops(training: Training.TroopTraining) -> void:
 		new_divisions.append(DivisionData.create_division(training.division_type))
 
 	ready_troops.append(Training.ReadyTroop.new(new_divisions))
-
-
 #endregion
-
-
-#region --- Stats & Manpower ---
-func update_manpower_pool() -> void:
-	var max_allowed_manpower = int(total_population * military_size_ratio)
-	if manpower < max_allowed_manpower:
-		var increase = int(max_allowed_manpower * military_size_ratio * 0.1)
-		manpower += increase
-	manpower = min(manpower, max_allowed_manpower)
-	manpower = max(0, manpower)
-
 
 func get_army_pressure() -> float:
 	var army_size = 0
 	for troop in TroopManager.get_troops_for_country(country_name):
 		army_size += troop.divisions  # assuming .divisions property exists on TroopData
 
-	var capacity = max(1.0, (gdp * 0.03) + factories_amount * 5)
-	return army_size / capacity
+	#var capacity = max(1.0, (gdp * 0.03) + factories_amount * 5)
+	return 0.5
 
 func get_max_morale() -> float:
 	var base = 60.0 + (stability * 40.0) + (army_level * 5.0)

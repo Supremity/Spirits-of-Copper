@@ -29,7 +29,7 @@ func add_event_after_days(days: int, code: String, target_obj: Object = null) ->
 	var target_date = _calculate_offset_date(current_game_date, days)
 	add_event(target_date, code, target_obj)
 
-func repeat_task_for_days(code: String, days: int, target_obj: Object = null) -> void:
+func repeat_task_for_days(days:int, code: String, target_obj: Object = null) -> void:
 	for i in range(days):
 		var target_date = _calculate_offset_date(current_game_date, i)
 		add_event(target_date, code, target_obj)

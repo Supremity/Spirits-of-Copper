@@ -42,10 +42,8 @@ func _execute_best(actions: Array, should_log: bool = false):
 				"[%s] Decision: Idle (Best score: %.2f)" % [country.country_name, best.score]
 			)
 
-
 func _score_factory() -> float:
 	return 1.0 * personality.economy
-
 
 func _score_train() -> float:
 	return 1.0 * personality.military

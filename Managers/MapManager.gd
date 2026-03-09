@@ -503,7 +503,7 @@ func _province_build_industry(pid: int, player_name: String) -> void:
 			return
 		
 		province.factory = province.FACTORY_BUILDING
-		EventManager.repeat_task_for_days("money -= 500", 5, country)
+		EventManager.repeat_task_for_days(5, "money -= 500", country)
 		EventManager.add_event_after_days(5, "factory = FACTORY_BUILT", province)
 		
 
@@ -518,9 +518,8 @@ func _province_build_industry(pid: int, player_name: String) -> void:
 		# 3. Sea check for Ports
 		if pid in get_provinces_near_sea(player_name):
 			province.port = Province.PORT_BUILDING
-			EventManager.repeat_task_for_days("money -= 500", 5, country)
+			EventManager.repeat_task_for_days(5, "money -= 500", country)
 			EventManager.add_event_after_days(5, "port = PORT_BUILT", province)
-		
 			_cleanup_interaction_state()
 			show_industry_country(player_name)
 		else:
@@ -971,27 +970,43 @@ func transfer_ownership(pid: int, new_owner_name: String) -> void:
 	if old_owner_name == new_owner_name:
 		return
 
-	# Update province ownership
+	# 1. Update province internal state
 	province.country = new_owner_name
-
-	# Remove from old owner's list
+	
+	var old_country_obj = CountryManager.get_country(old_owner_name)
+	var new_country_obj = CountryManager.get_country(new_owner_name)
+	
+	old_country_obj.income -= province.gdp
+	new_country_obj.income += province.gdp
+	old_country_obj.total_population -= province.population
+	new_country_obj.total_population += province.population
+	
+	# 2. Handle Old Owner Removal (IDs and Objects)
 	if country_to_provinces.has(old_owner_name):
 		country_to_provinces[old_owner_name].erase(pid)
+	
+	if country_to_provinces_obj.has(old_owner_name):
+		country_to_provinces_obj[old_owner_name].erase(province)
 
-	# Add to new owner's list
+	# 3. Handle New Owner Addition (IDs and Objects)
 	if not country_to_provinces.has(new_owner_name):
 		country_to_provinces[new_owner_name] = []
+	if not country_to_provinces_obj.has(new_owner_name):
+		country_to_provinces_obj[new_owner_name] = []
 
 	if pid not in country_to_provinces[new_owner_name]:
 		country_to_provinces[new_owner_name].append(pid)
+	
+	# We use 'not in' check for safety, though technically erase() should have handled it
+	if province not in country_to_provinces_obj[new_owner_name]:
+		country_to_provinces_obj[new_owner_name].append(province)
 
-	# Update map color
+	# 4. Update Visuals
 	var new_color = country_colors.get(new_owner_name, Color.GRAY)
 	_update_lookup(pid, new_color)
 
-	# --- Localized border updates ---
+	# 5. Localized border updates
 	CountryManager.update_province_border_status(province)
-
 	for neighbor in province.neighbors_obj:
 		CountryManager.update_province_border_status(neighbor)
 
@@ -1188,7 +1203,6 @@ func release_country(country_name: String) -> void:
 			for neighbor in province.neighbors_obj:
 				CountryManager.update_province_border_status(neighbor)
 
-	# 3️⃣ Clean up any old empty countries
 	CountryManager._cleanup_empty_countries()
 
 

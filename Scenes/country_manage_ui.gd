@@ -416,8 +416,8 @@ func _refresh_army_counts() -> void:
 	# Detailed Income String using BBCode
 	var txt = ""
 	txt += (
-		"[color=#cccccc]Base Income:[/color] [color=#88ff88]+$%.1f[/color]\n"
-		% (current_country.gdp / 8760.0 * 0.2)
+		"[color=#cccccc]Income:[/color] [color=#88ff88]+$%.1f[/color]\n"
+		% (current_country.income)
 	)
 	txt += (
 		"[color=#cccccc]Factories:[/color] [color=#88ff88]+$%.1f[/color]\n"
