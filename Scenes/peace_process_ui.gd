@@ -226,9 +226,6 @@ func open_menu(winner: CountryData, loser: CountryData):
 	current_winner = winner
 	current_loser = loser
 	provinces_to_take.clear()
-	var game_ui = get_tree().root.find_child("ui_game", true, false)
-	if game_ui:
-		game_ui.visible = false
 	GameState.main.clock.pause()
 	loser_label.text = "Negotations: %s" % loser.country_name
 	GameState.in_peace_process = true
@@ -254,8 +251,6 @@ func _on_confirm_pressed():
 		MapManager.transfer_ownership(pid, current_winner.country_name)
 
 	var game_ui = get_tree().root.find_child("ui_game", true, false)
-	if game_ui:
-		game_ui.visible = true
 	GameState.in_peace_process = false
 
 	self.hide()

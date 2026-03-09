@@ -120,14 +120,6 @@ func add_country(country_name: String) -> CountryData:
 	return new_country
 
 
-func mark_country_dirty(country_name: String) -> void:
-	if country_name == "" or country_name == "sea":
-		return
-	var c = get_country(country_name)
-	if c:
-		c.dirty = true
-
-
 # HELPER FUNCTIONS ==========================================
 func get_border_provinces_country(country) -> Array[Province]:
 	if !MapManager.country_to_provinces_obj.has(country):
@@ -251,32 +243,6 @@ func get_factories_amount(country_name: String) -> int:
 	return count
 
 
-# NOTE(pol): We should keep track of the manpower used instead of recalculating
-# In CountryManager.gd (or wherever this static function lives)
-static func get_country_used_manpower(country_obj: CountryData) -> int:
-	var total_used: int = 0
-
-	# 1. Active Troops on the field
-	var active_troops = TroopManager.get_troops_for_country(country_obj.country_name)
-	for troop in active_troops:
-		for div in troop.stored_divisions:
-			total_used += _get_manpower_from_template(div.type)
-
-	# 2. Ongoing Training (Already using templates, but cleaned up)
-	for training in country_obj.ongoing_training:
-		total_used += (
-			training.divisions_count * _get_manpower_from_template(training.division_type)
-		)
-
-	# 3. Troops in the "Ready" queue (deployment pool)
-	for batch in country_obj.ready_troops:
-		for div in batch.stored_divisions:
-			total_used += _get_manpower_from_template(div.type)
-
-	return total_used
-
-
-# Helper to keep the code DRY (Don't Repeat Yourself)
 static func _get_manpower_from_template(type: String) -> int:
 	var stats = DivisionData.TEMPLATES.get(type, DivisionData.TEMPLATES["infantry"])
 	return stats["manpower"]

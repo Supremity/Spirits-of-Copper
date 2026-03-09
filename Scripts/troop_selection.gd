@@ -42,7 +42,6 @@ func _input(event) -> void:
 
 func deselect_all() -> void:
 	selected_troops.clear()
-	GameState.game_ui.close_troop_container()
 
 
 func _handle_mouse_motion() -> void:
@@ -74,11 +73,6 @@ func _handle_left_mouse(event: InputEventMouseButton) -> void:
 
 		if selected_troops.size() > 0:
 			MusicManager.play_sfx(MusicManager.SFX.TROOP_SELECTED)
-			# Call your new function
-			GameState.game_ui.make_troop_container(selected_troops)
-		else:
-			# If we clicked empty ground, hide the container
-			GameState.game_ui.close_troop_container()
 
 
 func _handle_right_mouse(event: InputEventMouseButton) -> void:
@@ -212,14 +206,10 @@ func _perform_path_assignment() -> void:
 	# =========================================================
 
 	# 1. Cast the moving pool correctly
-	var ui_selected = GameState.game_ui.selected_division_objects.duplicate()
 	var moving_pool: Array[DivisionData] = []
 
-	if not ui_selected.is_empty():
-		moving_pool = ui_selected
-	else:
-		for t in selected_troops:
-			moving_pool.append_array(t.stored_divisions)
+	for t in selected_troops:
+		moving_pool.append_array(t.stored_divisions)
 
 	# 2. Ensure the Dictionary values are typed arrays
 	var pool_by_origin = {}
@@ -286,8 +276,6 @@ func _perform_path_assignment() -> void:
 	TroopManager.command_move_assigned(all_assignments)
 	_cleanup_empty_troops()
 
-	GameState.game_ui.selected_division_objects.clear()
-	GameState.game_ui.close_troop_container()
 	selected_troops.clear()
 	right_path.clear()
 

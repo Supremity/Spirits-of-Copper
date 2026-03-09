@@ -984,10 +984,6 @@ func transfer_ownership(pid: int, new_owner_name: String) -> void:
 	var new_color = country_colors.get(new_owner_name, Color.GRAY)
 	_update_lookup(pid, new_color)
 
-	# Mark countries dirty (existing system)
-	CountryManager.mark_country_dirty(old_owner_name)
-	CountryManager.mark_country_dirty(new_owner_name)
-
 	# --- Localized border updates ---
 	CountryManager.update_province_border_status(province)
 

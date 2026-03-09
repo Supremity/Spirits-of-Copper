@@ -3,9 +3,6 @@ class_name CountryData
 
 signal process_day_complete
 
-# Constants
-const MANPOWER_RECOVERY_PER_YEAR := 0.10
-const MANPOWER_RECOVERY_PER_DAY := MANPOWER_RECOVERY_PER_YEAR / 365.0
 const BASE_ARMY_COST := 20
 
 # Important
@@ -32,7 +29,7 @@ var military_size_ratio := 0.005
 var factory_port_daily_cost = 0.2  # The less the better. It's percentage based
 
 #region --- ECONOMY ---
-var money: float = 0.0
+var money: float = 10000.0
 var gdp: int = 0
 var income: float = 0.0
 var factories_amount: int = 0
@@ -48,7 +45,7 @@ var relations: Dictionary = {}
 
 # Population & Manpower
 var total_population: int = 0
-var manpower: int = 0
+var manpower: int = 10000
 
 #region --- MILITARY ---
 var army_level: int = 1
@@ -58,12 +55,7 @@ var troop_speed_modifier: float = 1.0
 var deploy_pid: int = -1  # ID of province to deploy to
 #endregion
 
-# for optimization
-var is_at_war = false
-var war_dirty = true
 var _is_loading := false
-var dirty := true
-var dirty_manpower := true
 var enemies = []
 
 var ongoing_training: Array[TroopTraining] = []
@@ -106,13 +98,12 @@ func _init(p_country_name: String = "") -> void:
 		country_name = p_country_name
 	if _is_loading:
 		return
-	allowedCountries.append_array([p_country_name, "sea"])
-	_refresh_economic_stats()
 
+	allowedCountries.append_array([p_country_name, "sea"])
+	total_population = CountryManager.get_country_population(self.country_name)
 	# Initial Manpower Calculation
-	var manpower_used = CountryManager.get_country_used_manpower(self)
-	manpower = int((total_population * military_size_ratio) - manpower_used)
-	_setup_starting_army()
+	#var manpower_used = CountryManager.get_country_used_manpower(self)
+	#manpower = int((total_population * military_size_ratio) - manpower_used)
 
 	setup_ai()
 
@@ -122,24 +113,15 @@ func process_hour() -> void:
 		return
 
 	political_power += daily_pp_gain
-	# Economic Cycle
-	# (GDP / Hours in a year) * Tax Rate + Factory Output
 	update_manpower_pool()
 	var base_income = (gdp / 8760.0) * 0.2
 	var factory_income = factories_amount * factory_income
 	var gross_income = base_income + factory_income
 	hourly_money_income = gross_income * (1.0 - economy_law_penalty)
-	army_cost = calculate_army_upkeep()
 	income = hourly_money_income - army_cost
 	money += income
 
 	troop_speed_modifier = 1.0 + (army_level * 0.1)
-
-	if dirty_manpower and !dirty:  # Because if dirty. refresh_economic_stats will do it anyways
-		update_manpower_pool()
-
-	if war_dirty:  # For the AI
-		update_is_at_war()
 
 	ai_controller.think_hour()
 
@@ -149,7 +131,6 @@ func process_day() -> void:
 		return
 
 	# Refresh stats that change daily/weekly
-	_refresh_economic_stats()
 	_process_training()
 	_process_reinforcements()
 
@@ -158,17 +139,6 @@ func process_day() -> void:
 	if not is_player:
 		pass
 	ai_controller.think_day()
-
-
-func _refresh_economic_stats() -> void:
-	if not dirty:
-		return  # Already up to date
-
-	total_population = CountryManager.get_country_population(country_name)
-	factories_amount = CountryManager.get_factories_amount(country_name)
-	gdp = int(CountryManager.get_country_gdp(country_name) * total_population * 0.000001)
-	update_manpower_pool()
-	self.dirty = false
 
 
 #endregion
@@ -189,7 +159,6 @@ func train_troops(count: int, type: String = "infantry") -> bool:
 		return false
 
 	manpower -= total_manpower_needed
-	dirty_manpower = true
 	# Add to training queue
 	var training_batch = TroopTraining.new(count, type, template["days"], template["cost"])
 	ongoing_training.append(training_batch)
@@ -217,7 +186,6 @@ func _graduate_troops(training: TroopTraining) -> void:
 		new_divisions.append(DivisionData.create_division(training.division_type))
 
 	ready_troops.append(ReadyTroop.new(new_divisions))
-	dirty_manpower = true
 
 
 #endregion
@@ -227,20 +195,13 @@ func _graduate_troops(training: TroopTraining) -> void:
 func update_manpower_pool() -> void:
 	var max_allowed_manpower = int(total_population * military_size_ratio)
 
-	var used_manpower = CountryManager.get_country_used_manpower(self)
+	if manpower < max_allowed_manpower:
+		var increase = int(max_allowed_manpower * military_size_ratio)
+		manpower += increase
 
-	var total_mobilized = manpower + used_manpower
+	manpower = min(manpower, max_allowed_manpower)
 
-	if total_mobilized < max_allowed_manpower:
-		var daily_growth = max(1, int(total_population * 0.0001))
-		manpower += daily_growth
-
-	if (manpower + used_manpower) > max_allowed_manpower:
-		manpower = max(0, max_allowed_manpower - used_manpower)
-
-	# HARD SAFETY: Never let the variable itself be negative
 	manpower = max(0, manpower)
-	dirty_manpower = false
 
 
 func get_army_pressure() -> float:
@@ -287,7 +248,6 @@ func deploy_ready_troop(troop: ReadyTroop, specific_pid: int = -1) -> bool:
 
 	TroopManager.deploy_specific_divisions(country_name, troop.stored_divisions, target_pid)
 	ready_troops.remove_at(index)
-	dirty_manpower = true
 	return true
 
 
@@ -303,105 +263,15 @@ func demobilize_troop(troop: TroopData, count: int = -1) -> void:
 	var divs_to_reserve: Array[DivisionData] = []
 
 	if count == -1 or count >= troop.divisions_count:
-		# Full Demobilization
 		divs_to_reserve = troop.stored_divisions.duplicate()
 		TroopManager.remove_troop(troop)
 	else:
-		# Partial Demobilization (Peel off the surplus)
 		for i in range(count):
 			divs_to_reserve.append(troop.stored_divisions.pop_back())
-		# Update the TroopManager's view of this troop (re-calculate strength)
-		# No need to remove from map, just update the existing object.
 
 	if not divs_to_reserve.is_empty():
 		var reserve = ReadyTroop.new(divs_to_reserve)
 		ready_troops.append(reserve)
-	dirty_manpower = true
-
-
-## Enhanced upkeep: Reserves cost 25% of active troops
-func calculate_army_upkeep() -> float:
-	var active_divisions = 0
-	for troop in TroopManager.get_troops_for_country(country_name):
-		active_divisions += troop.divisions_count
-
-	var reserve_divisions = 0
-	for rt in ready_troops:
-		reserve_divisions += rt.stored_divisions.size()
-
-	var active_cost = active_divisions * (army_level * BASE_ARMY_COST)
-	var reserve_cost = reserve_divisions * (army_level * BASE_ARMY_COST * 0.25)
-
-	return active_cost + reserve_cost
-
-
-func _setup_starting_army() -> void:
-	# 1. Economic Safety: Calculate what we can actually afford
-	# We use the same math as process_hour to see our projected income
-	var base_income = (gdp / 8760.0) * 0.2
-	var factory_income = factories_amount * factory_income
-	var total_hourly_income = base_income + factory_income
-
-	# Don't spend more than 25% of hourly income on starting upkeep
-	var upkeep_budget = total_hourly_income * 0.25
-	var individual_cost = army_level * BASE_ARMY_COST
-
-	# 2. Determine count (Strictly capped to prevent icon spam)
-	var affordable_count = int(upkeep_budget / max(1.0, individual_cost))
-	var final_count = clampi(affordable_count, 1, 6)  # Start very small (1-6 divs)
-
-	# 3. Manpower Check
-	var template = DivisionData.TEMPLATES.get("infantry")
-	var needed_manpower = final_count * template["manpower"]
-
-	if manpower < needed_manpower:
-		final_count = int(manpower / max(1, template["manpower"]))
-
-	if final_count <= 0:
-		return
-
-	# 4. Create the DivisionData objects
-	var starting_divisions: Array[DivisionData] = []
-	for i in range(final_count):
-		starting_divisions.append(DivisionData.create_division("infantry"))
-
-	# 5. Safety: Deduct manpower now
-	manpower -= (final_count * template["manpower"])
-
-	# 6. Deploy via a safe call
-	# Using 'call_deferred' ensures that MapManager/TroopManager are fully loaded
-	# before we try to place troops in provinces.
-	_deploy_initial_force.call_deferred(starting_divisions)
-
-
-func _deploy_initial_force(divisions: Array[DivisionData]) -> void:
-	var provinces = MapManager.country_to_provinces.get(country_name, [])
-	if provinces.is_empty():
-		return
-
-	# Get cities specifically to look more "organized"
-	var cities = MapManager.get_cities_province_country(country_name)
-	var deploy_targets = cities if not cities.is_empty() else provinces
-
-	# If we have a lot of divisions, split them into small stacks (e.g., 5 per stack)
-	var stack_size = 5
-	var current_batch: Array[DivisionData] = []
-
-	for i in range(divisions.size()):
-		current_batch.append(divisions[i])
-
-		# Once batch is full OR it's the last division
-		if current_batch.size() >= stack_size or i == divisions.size() - 1:
-			var target_pid = deploy_targets.pick_random()
-			TroopManager.deploy_specific_divisions(country_name, current_batch, target_pid)
-			MapManager.update_province_troop_state(target_pid)
-			current_batch = []  # Reset for next stack
-
-
-func update_is_at_war():
-	is_at_war = not WarManager.get_enemies_of(self.country_name).is_empty()
-	enemies = WarManager.get_enemies_of(self.country_name)
-	war_dirty = false
 
 
 func _process_reinforcements():
@@ -431,42 +301,3 @@ func set_relation_with(other_country_name: String, value: int) -> void:
 func get_relation_with(other_country_name: String) -> int:
 	other_country_name = other_country_name.to_lower()
 	return relations.get(other_country_name, 50)
-
-
-func get_raw_state() -> Dictionary:
-	var data = {}
-	for prop in get_property_list():
-		# Only save variables you created
-		if prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
-			var val = get(prop.name)
-
-			# DO NOT save actual Objects that belong to other Managers
-			# Instead, we just save their names/IDs to re-link later
-			if prop.name == "country_obj":
-				continue
-
-			# Recursive save for nested "owned" objects (like Divisions)
-			if val is Object and val.has_method("get_raw_state"):
-				data[prop.name] = val.get_raw_state()
-			elif val is Array:
-				data[prop.name] = _serialize_array(val)
-			else:
-				data[prop.name] = val
-
-	# Metadata is essential for your visual positions
-	var meta_dict = {}
-	for m_key in get_meta_list():
-		meta_dict[m_key] = get_meta(m_key)
-	data["_metadata"] = meta_dict
-
-	return data
-
-
-func _serialize_array(arr: Array) -> Array:
-	var new_arr = []
-	for item in arr:
-		if item is Object and item.has_method("get_raw_state"):
-			new_arr.append(item.get_raw_state())
-		else:
-			new_arr.append(item)
-	return new_arr

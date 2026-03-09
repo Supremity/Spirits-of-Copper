@@ -164,5 +164,3 @@ func pause():
 
 func toggle_pause() -> void:
 	paused = !paused
-	if GameState.game_ui:
-		GameState.game_ui.updateProgressBar()
