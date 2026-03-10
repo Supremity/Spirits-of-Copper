@@ -427,48 +427,22 @@ func _draw_cities() -> void:
 	if not MapManager.id_map_image:
 		return
 
-	var hovered_pid = MapManager.current_hovered_pid
-	var base_dot_radius := 4.0
-	var base_font_size := 24
 	var s := _current_inv_zoom
+	var dot_radius := 4.0 * s
 
-	for city_data in MapManager.all_cities:
-		var pid = city_data[0]
-		var city_name = city_data[1]
+	for city in MapManager.all_cities:
+		var pid: int = city.id
 
 		var base_pos: Vector2 = MapManager.province_centers.get(pid, Vector2.ZERO)
 		if base_pos == Vector2.ZERO:
 			continue
 
-		var world_pos := base_pos + map_sprite.position
-		if not _screen_rect.has_point(world_pos):
+		var draw_pos := (base_pos * map_sprite.scale) + map_sprite.position
+
+		if not _screen_rect.has_point(draw_pos):
 			continue
 
-		var t := Transform2D(0, Vector2(s, s), 0, world_pos)
-		draw_set_transform_matrix(t)
-
-		draw_circle(Vector2.ZERO, base_dot_radius, Color.WHITE)
-
-		if pid == hovered_pid:
-			var offset := Vector2(10, base_font_size * 0.3)
-
-			draw_string_outline(
-				_font,
-				offset,
-				city_name,
-				HORIZONTAL_ALIGNMENT_LEFT,
-				-1,
-				base_font_size,
-				4,
-				Color(0, 0, 0, 0.8)
-			)
-
-			draw_string(
-				_font, offset, city_name, HORIZONTAL_ALIGNMENT_LEFT, -1, base_font_size, Color.WHITE
-			)
-
-	draw_set_transform_matrix(Transform2D())
-
+		draw_circle(draw_pos, dot_radius, Color.WHITE)
 
 func draw_battles():
 	var player_country = CountryManager.player_country.country_name

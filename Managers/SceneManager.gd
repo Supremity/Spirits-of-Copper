@@ -12,6 +12,27 @@ const SCENE_MAP = {
 var _world_cache: Node = null  # We only care about saving this one
 var _current_type: int = -1
 
+func _ready() -> void:
+	var main := get_tree().current_scene
+	if not main:
+		return
+		
+	var container := main.get_node("CurrentScene")
+	if container.get_child_count() == 0:
+		return
+
+	var current_scene := container.get_child(0)
+
+	for type in SCENE_MAP:
+		var path = SCENE_MAP[type]
+		if current_scene.scene_file_path == path:
+			_current_type = type
+			
+			if type == Type.WORLD:
+				_world_cache = current_scene
+				
+			break
+
 
 func has_active_world() -> bool:
 	return is_instance_valid(_world_cache)

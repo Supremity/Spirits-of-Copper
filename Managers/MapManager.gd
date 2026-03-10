@@ -3,7 +3,7 @@ var DEBUG_MODE = false
 
 enum MapMode { POLITICAL, POPULATION, GDP, ETHNICITY }
 
-signal province_hovered(province_id: int, country_name: String)
+signal province_hovered(province_id: int)
 signal country_clicked(country_name: String)
 
 # Emitted when a click couldn't be processed (so likely sea or border)
@@ -45,8 +45,8 @@ const CACHE_FOLDER = "res://map_data/"
 
 func _ready():
 	load_world_data()
-	get_all_cities()
 	_build_global_registry()
+	all_cities = get_all_cities()
 	CountryManager.initialize_countries()
 
 
@@ -357,19 +357,19 @@ func handle_hover(global_pos: Vector2, map_sprite: Sprite2D) -> void:
 
 	var pid = get_province_at_pos(global_pos, map_sprite)
 	current_hovered_pid = pid
-
+	
 	var highlight_color = _get_contextual_highlight(pid)
+	province_hovered.emit(pid)
 
 	if pid != last_hovered_pid:
 		_reset_last_hover()  # Clean up the old one
-
+		
 		if pid > 1 and highlight_color != Color.TRANSPARENT:
 			original_hover_color = state_color_image.get_pixel(pid, 0)
 			_update_lookup(pid, highlight_color)
 
 			last_hovered_pid = pid
 			Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
-			province_hovered.emit(pid, CountryManager.player_country.country_name)
 		else:
 			Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 			province_hovered.emit(-1, "")
@@ -502,10 +502,7 @@ func _province_build_industry(pid: int, player_name: String) -> void:
 			print("Cannot build: Factory slot is busy or full.")
 			return
 		
-		province.factory = province.FACTORY_BUILDING
-		EventManager.repeat_task_for_days(5, "money -= 500", country)
-		EventManager.add_event_after_days(5, "factory = FACTORY_BUILT", province)
-		
+		country.build_factory(province)
 
 		_cleanup_interaction_state()
 		show_industry_country(player_name)
@@ -517,9 +514,7 @@ func _province_build_industry(pid: int, player_name: String) -> void:
 
 		# 3. Sea check for Ports
 		if pid in get_provinces_near_sea(player_name):
-			province.port = Province.PORT_BUILDING
-			EventManager.repeat_task_for_days(5, "money -= 500", country)
-			EventManager.add_event_after_days(5, "port = PORT_BUILT", province)
+			country.build_port(province)
 			_cleanup_interaction_state()
 			show_industry_country(player_name)
 		else:
@@ -1207,12 +1202,11 @@ func release_country(country_name: String) -> void:
 
 
 func get_all_cities() -> Array:
-	var pids = []
-	for obj in province_objects.values():
-		if len(obj.city) > 0:
-			pids.append([obj.id, obj.city])
-	return pids
-
+	var cities := []
+	for province in province_objects.values():
+		if not province.city.is_empty():
+			cities.append({"id": province.id, "name": province.city})
+	return cities
 
 func get_cities_province_country(country_name) -> Array:
 	var provinces = []

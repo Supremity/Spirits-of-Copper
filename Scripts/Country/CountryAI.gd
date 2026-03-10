@@ -9,7 +9,6 @@ var ai_logs = []
 func _init(_country: CountryData):
 	country = _country
 
-
 func think_hour():
 	var actions = [{"id": "move_troops", "score": _score_frontline(), "action": _execute_frontline}]
 	_execute_best(actions)
@@ -43,8 +42,15 @@ func _execute_best(actions: Array, should_log: bool = false):
 			)
 
 func _score_factory() -> float:
-	return 1.0 * personality.economy
-
+	var score := 0.0
+	if country.factories_available <= 0:
+		return 0.0
+	score += 0.5
+	
+	if country.money >= 5000:
+		score += 0.5
+	return score * personality.economy
+	
 func _score_train() -> float:
 	return 1.0 * personality.military
 
@@ -58,16 +64,20 @@ func _score_frontline() -> float:
 
 
 func _execute_factory():
-	pass
+	if not MapManager.country_to_provinces_obj.has(country.country_name):
+		return
 
+	for province in MapManager.country_to_provinces_obj[country.country_name]:
+		if province.factory > 0:
+			continue
+		country.build_factory(province)
+		break
 
 func _execute_train():
 	pass
 
-
 func _execute_war():
 	pass
-
-
+	
 func _execute_frontline():
 	pass

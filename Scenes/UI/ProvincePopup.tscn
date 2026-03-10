@@ -1,0 +1,54 @@
+[gd_scene format=3 uid="uid://ch5xuf2odeb0m"]
+
+[ext_resource type="Script" uid="uid://ddhgjkb5ivtl" path="res://Scenes/UI/province_popup.gd" id="1_km5pb"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_km5pb"]
+bg_color = Color(0, 0.21176471, 0.07450981, 0.8509804)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[node name="ProvincePopup" type="Control" unique_id=1039902479]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_km5pb")
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=237679742]
+layout_mode = 0
+offset_top = -139.0
+offset_right = 127.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_km5pb")
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer" unique_id=445928022]
+layout_mode = 2
+theme_override_constants/margin_left = 3
+theme_override_constants/margin_top = 1
+theme_override_constants/margin_right = 3
+theme_override_constants/margin_bottom = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer" unique_id=1912392796]
+layout_mode = 2
+
+[node name="LabelCountry" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer" unique_id=1025850827]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Netherlands"
+horizontal_alignment = 1
+
+[node name="LabelMoney" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer" unique_id=2085221888]
+unique_name_in_owner = true
+layout_mode = 2
+text = "$401"
+horizontal_alignment = 1
+
+[node name="LabelCity" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer" unique_id=806616057]
+unique_name_in_owner = true
+layout_mode = 2
+text = "City"
+horizontal_alignment = 1

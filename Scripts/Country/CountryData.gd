@@ -24,6 +24,7 @@ var military_size_ratio := 0.005
 var money: float = 10000.0
 var income: float = 0.0
 var factories_amount: int = 0
+var factories_available: int = 0
 var factory_income = 100
 var hourly_money_income: float = 0.0  # Calculated value
 #endregion
@@ -39,6 +40,7 @@ var relations: Dictionary = {}
 # Population & Manpower
 var total_population: int = 0
 var manpower: int = 100
+var troops_in_field = 0
 
 #region --- MILITARY ---
 var army_level: int = 1
@@ -69,6 +71,7 @@ func _init(p_country_name: String = "") -> void:
 	
 	get_income()
 	setup_ai()
+	ai_controller.think_day()
 
 
 func process_hour() -> void:
@@ -76,8 +79,8 @@ func process_hour() -> void:
 	update_money()
 	update_manpower_pool()
 	
-	if not is_player:
-		ai_controller.think_hour()
+	#if not is_player:
+	ai_controller.think_hour()
 
 
 func process_day() -> void:
@@ -85,13 +88,23 @@ func process_day() -> void:
 	_process_reinforcements()
 
 	# note z21: needs to be replaced by eventmanager
-	DecisionManager.process_country_day(self)
+	#DecisionManager.process_country_day(self)
 	process_day_complete.emit()
-	if not is_player:
-		ai_controller.think_day()
+	#if not is_player:
+	ai_controller.think_day()
 
 
 #endregion
+
+func build_factory(province):
+	province.factory = province.FACTORY_BUILDING
+	EventManager.repeat_task_for_days(5, "money -= 5000", self)
+	EventManager.add_event_after_days(5, "factory = FACTORY_BUILT", province)
+
+func build_port(province):
+	province.port = Province.PORT_BUILDING
+	EventManager.repeat_task_for_days(5, "money -= 500", self)
+	EventManager.add_event_after_days(5, "port = PORT_BUILT", province)
 
 #region --- Stats & Manpower ---
 func update_political_power() -> void:
