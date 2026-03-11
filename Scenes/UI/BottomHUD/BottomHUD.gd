@@ -202,10 +202,11 @@ func _load_new_menu(path: String) -> void:
 	submenu_tween.tween_property(current_submenu, "modulate:a", 1.0, 0.4)
 
 	# If you want a slight "pop up" effect without breaking the layout:
-	var original_pos = current_submenu.position
-	current_submenu.position.y += 20
-	submenu_tween.tween_property(current_submenu, "position:y", original_pos.y, 0.4)
+	current_submenu.modulate.a = 0
+	current_submenu.scale = Vector2(1, 0.95)
 
+	submenu_tween.tween_property(current_submenu, "modulate:a", 1.0, 0.3)
+	submenu_tween.parallel().tween_property(current_submenu, "scale", Vector2.ONE, 0.35)
 
 func _close_submenu() -> void:
 	if not current_submenu:

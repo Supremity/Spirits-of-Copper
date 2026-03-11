@@ -21,10 +21,10 @@ var economy_law_penalty: float = 0.0  # 0.10 means 10% income loss
 var military_size_ratio := 0.005
 
 #region --- ECONOMY ---
-var money: float = 10000.0
+var money: float = 0.0
 var income: float = 0.0
-var factories_amount: int = 0
-var factories_available: int = 0
+var factories_amount: int = 1
+var factories_available: int = 1
 var factory_income = 100
 var hourly_money_income: float = 0.0  # Calculated value
 #endregion
@@ -70,6 +70,7 @@ func _init(p_country_name: String = "") -> void:
 	total_population = CountryManager.get_country_population(self.country_name)
 	
 	get_income()
+	setup_factories()
 	setup_ai()
 	ai_controller.think_day()
 
@@ -95,6 +96,12 @@ func process_day() -> void:
 
 
 #endregion
+func setup_factories():
+	if MapManager.country_to_provinces_obj.has(self.country_name):
+		for province in MapManager.country_to_provinces_obj[self.country_name]:
+			if province.city.length() > 0 or province.factory == province.FACTORY_BUILT:
+				factories_amount += 1
+				factories_available += 1
 
 func build_factory(province):
 	province.factory = province.FACTORY_BUILDING

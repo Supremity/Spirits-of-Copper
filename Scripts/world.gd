@@ -46,8 +46,6 @@ func initialize_world():
 	if troop_renderer:
 		troop_renderer.map_sprite = map_sprite
 		troop_renderer.map_width = MapManager.id_map_image.get_width()
-		# Explicitly tell the renderer to boot up
-		# note z21: This might all not be needed..
 		troop_renderer.rebuild_troops()
 
 	# Reset troop positions for the new map instance
