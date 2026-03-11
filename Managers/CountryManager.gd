@@ -86,39 +86,49 @@ func set_player_country(country_name: String) -> void:
 
 
 func add_country(country_name: String) -> CountryData:
-	if country_name == "sea":
-		return
+	if country_name == "" or country_name.to_lower() == "sea":
+		return null
+		
 	var c_name_lower = country_name.to_lower()
 
 	# 1. Check if it already exists
 	if countries.has(c_name_lower):
-		push_warning("CountryManager: Country '%s' already exists!" % country_name)
 		return countries[c_name_lower]
 
-	# 2. Check if the flag exists before proceeding
+	# 2. Check if the flag exists
 	var flag = TroopManager.get_flag(c_name_lower)
 	if flag == null:
-		push_error(
-			"CountryManager: Cannot add '%s'. No flag found at res://assets/flags/" % country_name
-		)
+		push_error("CountryManager: No flag for '%s'. Skipping." % country_name)
 		return null
 
-	# 3. If flag exists, create and store the country
-	var new_country := CountryData.new(country_name)
-
-	# NOTE Z21: Relations should be based on political affinity and stuff
-	for existing_name in countries.keys():
-		new_country.set_relation_with(existing_name, 50)
-		countries[existing_name].set_relation_with(c_name_lower, 50)
-
-	countries[c_name_lower] = new_country
+	# 3. Create the instance
+	var new_country = CountryData.new(country_name)
 	
+	# 4. Initialize Relations Safely
+	# We add to the dictionary BEFORE setting relations to prevent lookup errors
+	countries[c_name_lower] = new_country
 
-	new_country.border_provinces = get_border_provinces_country(c_name_lower)
-	new_country.enemy_border_provinces = get_neighbor_border_provinces(c_name_lower)
-	new_country.neighbor_countries = get_neighboring_countries(c_name_lower)
+	for existing_name in countries.keys():
+		if existing_name == c_name_lower: 
+			continue # Don't set relations with yourself
+			
+		var other_country = countries[existing_name]
+		if is_instance_valid(other_country):
+			var start_rel = randi_range(0, 100)
+			new_country.set_relation_with(existing_name, start_rel)
+			other_country.set_relation_with(c_name_lower, start_rel)
+
+	# 5. Geography Setup (Use safety checks for methods)
+	if has_method("get_border_provinces_country"):
+		new_country.border_provinces = get_border_provinces_country(c_name_lower)
+	
+	if has_method("get_neighbor_border_provinces"):
+		new_country.enemy_border_provinces = get_neighbor_border_provinces(c_name_lower)
+		
+	if has_method("get_neighboring_countries"):
+		new_country.neighbor_countries = get_neighboring_countries(c_name_lower)
+		
 	return new_country
-
 
 # HELPER FUNCTIONS ==========================================
 func get_border_provinces_country(country) -> Array[Province]:

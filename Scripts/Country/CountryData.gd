@@ -16,6 +16,8 @@ var allowedCountries: Array[String] = []  # Countries allowed to have Troop Pres
 var border_provinces = []
 var enemy_border_provinces = []
 var neighbor_countries = []
+var provinces_with_city = []
+var provinces = []
 
 var economy_law_penalty: float = 0.0  # 0.10 means 10% income loss
 var military_size_ratio := 0.005
@@ -70,7 +72,8 @@ func _init(p_country_name: String = "") -> void:
 	total_population = CountryManager.get_country_population(self.country_name)
 	
 	get_income()
-	setup_factories()
+	reset_factories()
+	reset_cities()
 	setup_ai()
 
 
@@ -95,15 +98,24 @@ func process_day() -> void:
 
 
 #endregion
-func setup_factories():
+func reset_factories():
+	# In case a country doesn't have cities
+	factories_amount = 1
+	factories_available = 1
 	if MapManager.country_to_provinces_obj.has(self.country_name):
 		for province in MapManager.country_to_provinces_obj[self.country_name]:
 			if province.city.length() > 0 or province.factory == province.FACTORY_BUILT:
 				factories_amount += 1
 				factories_available += 1
+func reset_cities():
+	provinces_with_city.clear()
+	if MapManager.country_to_provinces_obj.has(self.country_name):
+		for province in MapManager.country_to_provinces_obj[self.country_name]:
+			if province.city.length() > 0:
+				provinces_with_city.append(province)
 
 func build_factory(province):
-	if factories_available == 0: return
+	if factories_available <= 0: return
 	province.factory = province.FACTORY_BUILDING
 	factories_available -= 1
 	EventManager.repeat_task_for_days(5, "money -= 5000", self)
@@ -114,7 +126,7 @@ func build_factory(province):
 	])
 
 func build_port(province):
-	if factories_available == 0: return
+	if factories_available <= 0: return
 	province.port = Province.PORT_BUILDING
 	factories_available -= 1
 	EventManager.repeat_task_for_days(5, "money -= 500", self)

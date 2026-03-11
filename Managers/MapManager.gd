@@ -976,6 +976,11 @@ func transfer_ownership(pid: int, new_owner_name: String) -> void:
 	old_country_obj.total_population -= province.population
 	new_country_obj.total_population += province.population
 	
+	if province.city.length() > 0:
+		if not new_country_obj.provinces_with_city.has(province):
+			new_country_obj.provinces_with_city.append(province)
+		old_country_obj.provinces_with_city.erase(province)
+	
 	# 2. Handle Old Owner Removal (IDs and Objects)
 	if country_to_provinces.has(old_owner_name):
 		country_to_provinces[old_owner_name].erase(pid)
@@ -996,7 +1001,11 @@ func transfer_ownership(pid: int, new_owner_name: String) -> void:
 	if province not in country_to_provinces_obj[new_owner_name]:
 		country_to_provinces_obj[new_owner_name].append(province)
 
-	# 4. Update Visuals
+	# Also update the provinces array in Country
+	if not new_country_obj.provinces.has(province):
+		new_country_obj.provinces.append(province)
+	old_country_obj.provinces.erase(province)
+	
 	var new_color = country_colors.get(new_owner_name, Color.GRAY)
 	_update_lookup(pid, new_color)
 
@@ -1177,26 +1186,33 @@ func _country_exists_on_map(c_name: String) -> bool:
 
 
 func release_country(country_name: String) -> void:
-	# 1️⃣ Make sure the country exists
+	# 1. Create/Get the country object
 	var new_country = CountryManager.add_country(country_name)
 	if new_country == null:
-		push_error("Failed to add country: %s" % country_name)
 		return
 
-	# 2️⃣ Transfer all claimed provinces
+	# 2. Collect provinces first (don't modify while iterating)
+	var provinces_to_transfer = []
 	for obj in province_objects.values():
 		if obj.claims.has(country_name):
-			var troops = obj.troops_here
-			for troop in troops.duplicate():
-				if is_instance_valid(troop):
-					TroopManager.remove_troop(troop)
+			provinces_to_transfer.append(obj)
 
-			transfer_ownership(obj.id, country_name)
+	# 3. Perform the transfer
+	for obj in provinces_to_transfer:
+		# Clear existing troops safely
+		for troop in obj.troops_here.duplicate():
+			if is_instance_valid(troop):
+				TroopManager.remove_troop(troop)
 
-			var province = province_objects[obj.id]
-			CountryManager.update_province_border_status(province)
-			for neighbor in province.neighbors_obj:
-				CountryManager.update_province_border_status(neighbor)
+		# Transfer ownership
+		transfer_ownership(obj.id, country_name)
+
+	
+	# Update neighbors affected by the new country
+	for obj in provinces_to_transfer:
+		CountryManager.update_province_border_status(obj)
+		for neighbor in obj.neighbors_obj:
+			CountryManager.update_province_border_status(neighbor)
 
 	CountryManager._cleanup_empty_countries()
 
