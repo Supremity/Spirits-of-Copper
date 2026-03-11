@@ -20,14 +20,15 @@ var managers: Dictionary
 func _ready():
 	managers = _get_autoloads()
 	
-func add_event(date: String, code: String, target_obj: Object = null) -> void:
+func add_event(date: String, tasks: Variant, target_obj: Object = null) -> void:
 	if not event_database.has(date):
 		event_database[date] = []
-	event_database[date].append({"code": code, "obj": target_obj})
+	
+	event_database[date].append({"code": tasks, "obj": target_obj})
 
-func add_event_after_days(days: int, code: String, target_obj: Object = null) -> void:
+func add_event_after_days(days: int, tasks: Variant, target_obj: Object = null) -> void:
 	var target_date = _calculate_offset_date(current_game_date, days)
-	add_event(target_date, code, target_obj)
+	add_event(target_date, tasks, target_obj)
 
 func repeat_task_for_days(days:int, code: String, target_obj: Object = null) -> void:
 	for i in range(days):
@@ -37,17 +38,40 @@ func repeat_task_for_days(days:int, code: String, target_obj: Object = null) -> 
 func process_day(today: String) -> void:
 	current_game_date = today
 	if event_database.has(today):
-		var tasks = event_database[today].duplicate()
+		# Create a copy so we can safely erase the original later
+		var raw_tasks = event_database[today].duplicate()
 		
-		for task in tasks:
+		for task in raw_tasks:
 			if task is Dictionary:
-				_execute_command(task["code"], task.get("obj", null))
-			elif task is String:
-				_execute_command(task, null)
+				# This handles items added via add_event() 
+				# OR your custom {object: "code"} syntax
+				if task.has("code"):
+					_unpack_and_execute(task["code"], task.get("obj", null))
+				else:
+					# This handles the {self: "command"} syntax
+					_unpack_and_execute(task, null)
+			else:
+				# This handles raw strings like "print('hello')" from your hardcoded dict
+				_unpack_and_execute(task, null)
 		
-		# Clear the day so it doesn't run again
 		event_database.erase(today)
 
+func _unpack_and_execute(content: Variant, default_obj: Object) -> void:
+	if content is String:
+		_execute_command(content, default_obj)
+		
+	elif content is Array:
+		for item in content:
+			# Recursively unpack arrays (supports nested lists)
+			_unpack_and_execute(item, default_obj)
+			
+	elif content is Dictionary:
+		# If it's a Dictionary but NOT a system task (no "code" key),
+		# treat it as {Object: "Command"}
+		for obj in content.keys():
+			var code = content[obj]
+			if obj is Object and code is String:
+				_execute_command(code, obj)
 func _execute_command(command: String, target_obj: Object = null) -> void:
 	var op = ""
 	for test_op in ["+=", "-=", "="]:

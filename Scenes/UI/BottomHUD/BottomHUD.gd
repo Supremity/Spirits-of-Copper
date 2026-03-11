@@ -53,7 +53,7 @@ func _update_ui(country) -> void:
 
 	# Clear old buttons
 	for child in action_container.get_children():
-		child.queue_free()
+		child.free()
 
 	# Add context-specific buttons
 	if country == CountryManager.player_country:

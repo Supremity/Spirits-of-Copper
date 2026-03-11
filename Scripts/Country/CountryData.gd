@@ -72,7 +72,6 @@ func _init(p_country_name: String = "") -> void:
 	get_income()
 	setup_factories()
 	setup_ai()
-	ai_controller.think_day()
 
 
 func process_hour() -> void:
@@ -80,8 +79,8 @@ func process_hour() -> void:
 	update_money()
 	update_manpower_pool()
 	
-	#if not is_player:
-	ai_controller.think_hour()
+	if not is_player:
+		ai_controller.think_hour()
 
 
 func process_day() -> void:
@@ -91,8 +90,8 @@ func process_day() -> void:
 	# note z21: needs to be replaced by eventmanager
 	#DecisionManager.process_country_day(self)
 	process_day_complete.emit()
-	#if not is_player:
-	ai_controller.think_day()
+	if not is_player:
+		ai_controller.think_day()
 
 
 #endregion
@@ -104,14 +103,25 @@ func setup_factories():
 				factories_available += 1
 
 func build_factory(province):
+	if factories_available == 0: return
 	province.factory = province.FACTORY_BUILDING
+	factories_available -= 1
 	EventManager.repeat_task_for_days(5, "money -= 5000", self)
-	EventManager.add_event_after_days(5, "factory = FACTORY_BUILT", province)
+	EventManager.add_event_after_days(5, [
+		{province: "factory = FACTORY_BUILT"},
+		{self: "factories_amount += 1"},
+		{self: "factories_available += 2"}
+	])
 
 func build_port(province):
+	if factories_available == 0: return
 	province.port = Province.PORT_BUILDING
+	factories_available -= 1
 	EventManager.repeat_task_for_days(5, "money -= 500", self)
-	EventManager.add_event_after_days(5, "port = PORT_BUILT", province)
+	EventManager.add_event_after_days(5, [ 
+		{province: "port = PORT_BUILT"},
+		{self: "factories_available += 1"}
+	])
 
 #region --- Stats & Manpower ---
 func update_political_power() -> void:
