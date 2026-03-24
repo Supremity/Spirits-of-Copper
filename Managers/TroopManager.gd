@@ -314,6 +314,8 @@ func move_to_garrison(troop: TroopData) -> void:
 func _add_troop_to_indexes(troop: TroopData) -> void:
 	var pid = troop.province_id
 	var country = troop.country_name
+	if not CountryManager.countries.has(country):
+		return
 
 	# Province Index
 	if not MapManager.province_objects.has(pid):

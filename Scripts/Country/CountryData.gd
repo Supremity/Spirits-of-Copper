@@ -75,7 +75,7 @@ func _init(p_country_name: String = "") -> void:
 	reset_factories()
 	reset_cities()
 	setup_ai()
-
+	create_and_deploy_instant_troops(2)
 
 func process_hour() -> void:
 	update_political_power()
@@ -283,3 +283,19 @@ func set_relation_with(other_country_name: String, value: int) -> void:
 func get_relation_with(other_country_name: String) -> int:
 	other_country_name = other_country_name.to_lower()
 	return relations.get(other_country_name, 50)
+	
+	
+func create_and_deploy_instant_troops(count: int, type: String = "infantry") -> void:
+	var new_divisions: Array[DivisionData] = []
+	for d in range(count):
+		new_divisions.append(DivisionData.create_division(type))
+	
+	var instant_troop = Training.ReadyTroop.new(new_divisions)
+	ready_troops.append(instant_troop)
+	var success = deploy_ready_troop(instant_troop)
+	if success:
+		print("Successfully instant-deployed %d %s divisions." % [count, type])
+	else:
+		# If it failed (no provinces), you might want to remove it from the array
+		ready_troops.erase(instant_troop)
+		push_warning("Instant deployment failed: No valid provinces found for %s" % country_name)

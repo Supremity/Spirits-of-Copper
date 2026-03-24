@@ -36,6 +36,8 @@ func _ready() -> void:
 	_setup_multimesh()
 
 
+var _is_zoomed_out = 0.0
+
 func _process(_delta: float) -> void:
 	# Use is_instance_valid in case the map sprite is from the deleted scene
 	if !is_instance_valid(map_sprite) or map_width <= 0:
@@ -45,13 +47,14 @@ func _process(_delta: float) -> void:
 	if cam:
 		var zoom_changed := cam.zoom != _last_cam_zoom
 		var pos_changed := cam.global_position != _last_cam_pos
-
 		if zoom_changed or pos_changed:
 			var raw_scale := 1.0 / cam.zoom.x
 			_current_inv_zoom = clamp(raw_scale, ZOOM_LIMITS.min_scale, ZOOM_LIMITS.max_scale)
 			_update_screen_rect()
 			_last_cam_zoom = cam.zoom
+			_is_zoomed_out = cam.zoom.x <= 2.0
 			_last_cam_pos = cam.global_position
+			
 	elif _screen_rect.size == Vector2.ZERO:
 		# FALLBACK: If the camera is missing for a frame, draw a giant area
 		# so troops don't suddenly vanish or fail `has_point` checks
@@ -195,29 +198,28 @@ func _hide_unused_instances(start_idx: int, mm: MultiMesh) -> void:
 		mm.set_instance_transform_2d(i, Transform2D().scaled(Vector2.ZERO))
 
 
-func _write_stack_to_multimesh(
-	stack: Array, base_pos: Vector2, idx: int, player: String, selected: Array
-) -> int:
+func _write_stack_to_multimesh(stack: Array, base_pos: Vector2, idx: int, player: String, selected: Array) -> int:
 	var mm = troop_multimesh.multimesh
 	var scaled_offset := STACKING_OFFSET_Y * _current_inv_zoom
 	var start_y = (stack.size() - 1) * scaled_offset * 0.5
+	
 	var mm_scale := Vector2(_current_inv_zoom, _current_inv_zoom)
+	if _is_zoomed_out:
+		mm_scale = Vector2.ZERO 
 
 	for i in range(stack.size()):
 		var troop = stack[i]
 		var vertical_pos = base_pos + Vector2(0, start_y - (i * scaled_offset))
-
+		
 		var col = COLORS.border_other
 		if troop.country_name == player:
 			col = COLORS.border_selected if selected.has(troop) else COLORS.border_default
 
-		for m in [0]:
-			var final_pos = vertical_pos + Vector2(map_width * m, 0) + map_sprite.position
-			mm.set_instance_transform_2d(idx, Transform2D(0, mm_scale, 0, final_pos))
-			mm.set_instance_color(idx, col)
-			idx += 1
+		var final_pos = vertical_pos + map_sprite.position
+		mm.set_instance_transform_2d(idx, Transform2D(0, mm_scale, 0, final_pos))
+		mm.set_instance_color(idx, col)
+		idx += 1
 	return idx
-
 
 func _draw() -> void:
 	if !map_sprite or map_width <= 0:
@@ -280,6 +282,8 @@ var show_division_icon: bool = false
 
 
 func _draw_troop(troop: TroopData, pos: Vector2) -> void:
+	# 1.0 / 2.0 = 0.5. So if _current_inv_zoom > 0.5, we simplify.
+
 	var t := Transform2D(0, Vector2(_current_inv_zoom, _current_inv_zoom), 0, pos)
 	draw_set_transform_matrix(t)
 
@@ -288,56 +292,57 @@ func _draw_troop(troop: TroopData, pos: Vector2) -> void:
 	var hp_h = LAYOUT.hp_bar_h
 	var top_left = Vector2(-w / 2.0, -h / 2.0)
 
-	# --- 1. THE MAIN PLATE ---
-	# Solid dark background
-	var plate_rect = Rect2(top_left, Vector2(w, h - hp_h))
-	draw_rect(plate_rect, Color(0.08, 0.08, 0.08, 0.95), true)
-
-	# --- 2. LEFT SLOT (Flag OR Icon) ---
-	var slot_size = (h - hp_h) - 4.0  # Padding of 2px top/bottom
-	var slot_pos = top_left + Vector2(3, 2)
-	var slot_rect = Rect2(slot_pos, Vector2(slot_size, slot_size))
-
-	if show_division_icon:
-		# MODE A: Division Icon
-		var type = troop.get_main_type()
-		var icon_tex = load("res://assets/icons/hoi4/%s.png" % type)
-		if icon_tex:
-			draw_texture_rect(icon_tex, slot_rect, false)
-	else:
-		# MODE B: Country Flag
+	if _is_zoomed_out:
+		# --- MODE: MINIMAL FLAG ---
+		# We draw a larger flag centered on the unit position with a small border
+		var flag_size = Vector2(h * 1.5, h) # Aspect ratio roughly 3:2
+		var flag_rect = Rect2(-flag_size / 2.0, flag_size)
+		
+		# Optional: Small black outline so flag is visible on all terrain
+		draw_rect(flag_rect.grow(1.5), Color.BLACK, true)
+		
 		var flag_tex = TroopManager.get_flag(troop.country_name)
 		if flag_tex:
-			draw_texture_rect(flag_tex, slot_rect, false)
+			draw_texture_rect(flag_tex, flag_rect, false)
+	else:
+		# --- MODE: FULL PLATE (Original Logic) ---
+		# 1. THE MAIN PLATE
+		var plate_rect = Rect2(top_left, Vector2(w, h - hp_h))
+		draw_rect(plate_rect, Color(0.08, 0.08, 0.08, 0.95), true)
 
-	# --- 3. THE NUMBER (Right Side) ---
-	var label = str(troop.divisions_count)
-	var font_size = 18
-	var text_size = _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+		# 2. LEFT SLOT
+		var slot_size = (h - hp_h) - 4.0
+		var slot_pos = top_left + Vector2(3, 2)
+		var slot_rect = Rect2(slot_pos, Vector2(slot_size, slot_size))
 
-	# Position the number centered in the remaining space on the right
-	var text_pos = Vector2(
-		top_left.x + slot_size + (w - slot_size - text_size.x) / 2.0 + 2,
-		top_left.y + (h - hp_h + text_size.y * 0.35) / 2.0
-	)
+		if show_division_icon:
+			var type = troop.get_main_type()
+			var icon_tex = load("res://assets/icons/hoi4/%s.png" % type)
+			if icon_tex: draw_texture_rect(icon_tex, slot_rect, false)
+		else:
+			var flag_tex = TroopManager.get_flag(troop.country_name)
+			if flag_tex: draw_texture_rect(flag_tex, slot_rect, false)
 
-	draw_string_outline(
-		_font, text_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 3, Color.BLACK
-	)
-	draw_string(_font, text_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)
+		# 3. THE NUMBER
+		var label = str(troop.divisions_count)
+		var font_size = 18
+		var text_size = _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+		var text_pos = Vector2(
+			top_left.x + slot_size + (w - slot_size - text_size.x) / 2.0 + 2,
+			top_left.y + (h - hp_h + text_size.y * 0.35) / 2.0
+		)
+		draw_string_outline(_font, text_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 3, Color.BLACK)
+		draw_string(_font, text_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)
 
-	# --- 4. THE HP BAR ---
-	var hp_pct = troop.get_average_hp_percent()
-	var hp_bg_rect = Rect2(top_left + Vector2(0, h - hp_h), Vector2(w, hp_h))
-	draw_rect(hp_bg_rect, Color(0, 0, 0, 1.0), true)
-
-	if hp_pct > 0:
-		# Use your HP_COLORS constant if available, otherwise fallback
-		var hp_col = HP_COLORS.healthy if hp_pct > 0.5 else HP_COLORS.critical
-		draw_rect(Rect2(hp_bg_rect.position, Vector2(w * hp_pct, hp_h)), hp_col, true)
+		# 4. THE HP BAR
+		var hp_pct = troop.get_average_hp_percent()
+		var hp_bg_rect = Rect2(top_left + Vector2(0, h - hp_h), Vector2(w, hp_h))
+		draw_rect(hp_bg_rect, Color(0, 0, 0, 1.0), true)
+		if hp_pct > 0:
+			var hp_col = HP_COLORS.healthy if hp_pct > 0.5 else HP_COLORS.critical
+			draw_rect(Rect2(hp_bg_rect.position, Vector2(w * hp_pct, hp_h)), hp_col, true)
 
 	draw_set_transform_matrix(Transform2D())
-
 
 func _group_troops_by_visual_position(troops: Array) -> Dictionary:
 	var g = {}
