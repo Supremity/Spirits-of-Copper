@@ -227,7 +227,7 @@ func _draw() -> void:
 	_draw_path_preview()
 	_draw_active_movements()
 	_draw_selection_box()
-	_draw_cities()
+	#_draw_cities()
 	_draw_troops()
 	draw_battles()
 

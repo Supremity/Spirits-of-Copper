@@ -1,0 +1,21 @@
+{
+  "0,70,0": ["Tropical Rainforest", 0.15],
+  "0,87,78": ["Taiga", 0.35],
+  "124,96,134": ["Mediterranean", 0.20],
+  "126,142,158": ["Ocean", 0.0],
+  "129,66,41": ["Arid Desert", 0.10],
+  "136,111,51": ["Dry Steppe", 0.25],
+  "140,204,189": ["Tundra", 0.30],
+  "146,216,71": ["Temperate Forest", 0.20],
+  "149,174,210": ["Alpines", 0.85],
+  "155,149,14": ["Tree Savanna", 0.15],
+  "170,95,61": ["Xeric Shrubland", 0.20],
+  "178,178,178": ["Ice Sheet", 0.40],
+  "193,189,62": ["Grass Savanna", 0.15],
+  "214,169,114": ["Semiarid Desert", 0.15],
+  "245,231,89": ["Temperate Savanna", 0.20],
+  "41,131,132": ["Mountains", 0.70],
+  "6,104,6": ["Evergreen Forest", 0.40],
+  "89,129,89": ["Monsoon Forest", 0.15],
+  "96,122,34": ["Dry Forest", 0.25]
+}

@@ -3,8 +3,9 @@
 [ext_resource type="Script" uid="uid://bjvlgraecimcy" path="res://Scenes/main.gd" id="1_kry3j"]
 [ext_resource type="Script" uid="uid://dfiom5fy34v8q" path="res://Scenes/map_container.gd" id="2_21xkr"]
 [ext_resource type="Shader" uid="uid://bnmv2hv80mfw5" path="res://shaders/map_shader.gdshader" id="3_6bp64"]
-[ext_resource type="Script" uid="uid://cvkc8n0kgyk3c" path="res://Scripts/camera_controller.gd" id="4_344ge"]
+[ext_resource type="Script" uid="uid://vl25gwkfvfkq" path="res://Scripts/Camera3D.gd" id="6_6bp64"]
 [ext_resource type="Script" uid="uid://cnm2s5owh7ec3" path="res://Scripts/game_clock.gd" id="6_21xkr"]
+[ext_resource type="Texture2D" uid="uid://cxfuinxarfwgw" path="res://maps/heightmap.png" id="6_344ge"]
 [ext_resource type="PackedScene" uid="uid://dl045g47lsfkx" path="res://Scenes/world.tscn" id="7_6bp64"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_fo5ed"]
@@ -13,33 +14,121 @@ load_path = "res://.godot/imported/cultures.png-f9255a05eddadc8a9aa0dedbe091def9
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_5ukr8"]
 load_path = "res://.godot/imported/regions.png-75b8193867ba7ee4418b242a7a7efe49.ctex"
 
-[node name="Main" type="Node2D" unique_id=393637971 node_paths=PackedStringArray("clock")]
+[sub_resource type="PlaneMesh" id="PlaneMesh_kry3j"]
+size = Vector2(12.75, 6.25)
+subdivide_width = 40
+subdivide_depth = 40
+
+[sub_resource type="Shader" id="Shader_21xkr"]
+code = "// NOTE: Shader automatically converted from Godot Engine 4.6.1.stable's StandardMaterial3D.
+
+shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx, unshaded;
+
+uniform sampler2D height_map; // Drag your heightmap.png here in Shader Params
+uniform float height_range = 0.5; // Adjust this to make mountains taller
+
+uniform vec4 albedo : source_color;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap_anisotropic;
+uniform ivec2 albedo_texture_size;
+uniform float point_size : hint_range(0.1, 128.0, 0.1);
+
+uniform float roughness : hint_range(0.0, 1.0);
+uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec4 metallic_texture_channel;
+uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
+
+uniform float specular : hint_range(0.0, 1.0, 0.01);
+uniform float metallic : hint_range(0.0, 1.0, 0.01);
+
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
+
+void vertex() {
+    // This actually moves the vertices in 3D space
+    float h = texture(height_map, UV).r;
+    VERTEX.y += h * height_range;
+}
+void fragment() {
+	vec2 base_uv = UV;
+
+	vec4 albedo_tex = texture(texture_albedo, base_uv);
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+
+	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
+	METALLIC = metallic_tex * metallic;
+	SPECULAR = specular;
+
+	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
+	float roughness_tex = dot(texture(texture_roughness, base_uv), roughness_texture_channel);
+	ROUGHNESS = roughness_tex * roughness;
+}
+"
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_21xkr"]
+viewport_path = NodePath("MapViewport")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_6bp64"]
+resource_local_to_scene = true
+render_priority = 0
+shader = SubResource("Shader_21xkr")
+shader_parameter/height_map = ExtResource("6_344ge")
+shader_parameter/height_range = 0.5
+shader_parameter/albedo = Color(1, 1, 1, 1)
+shader_parameter/texture_albedo = SubResource("ViewportTexture_21xkr")
+shader_parameter/albedo_texture_size = Vector2i(0, 0)
+shader_parameter/point_size = 1.0
+shader_parameter/roughness = 1.0
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/specular = 0.5
+shader_parameter/metallic = 0.0
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
+
+[node name="Main" type="Node3D" unique_id=38136281 node_paths=PackedStringArray("clock")]
 script = ExtResource("1_kry3j")
 clock = NodePath("Clock")
-
-[node name="MapContainer" type="Node2D" parent="." unique_id=1905968874]
-script = ExtResource("2_21xkr")
-map_shader = ExtResource("3_6bp64")
-
-[node name="CultureSprite" type="Sprite2D" parent="MapContainer" unique_id=889536622]
-texture = SubResource("CompressedTexture2D_fo5ed")
-centered = false
-
-[node name="RegionSprite" type="Sprite2D" parent="MapContainer" unique_id=282385221]
-visible = false
-texture = SubResource("CompressedTexture2D_5ukr8")
-centered = false
-
-[node name="Camera2D" type="Camera2D" parent="." unique_id=988399146]
-anchor_mode = 0
-
-[node name="CameraController" type="Node" parent="Camera2D" unique_id=1370763233 node_paths=PackedStringArray("camera")]
-script = ExtResource("4_344ge")
-camera = NodePath("..")
-
-[node name="Clock" type="Node" parent="." unique_id=266522924]
-script = ExtResource("6_21xkr")
 
 [node name="CurrentScene" type="Node2D" parent="." unique_id=1375684834]
 
 [node name="World" parent="CurrentScene" unique_id=1557365676 instance=ExtResource("7_6bp64")]
+
+[node name="MapViewport" type="SubViewport" parent="." unique_id=1400109201]
+transparent_bg = true
+gui_snap_controls_to_pixels = false
+size = Vector2i(1275, 625)
+
+[node name="MapContainer" type="Node2D" parent="MapViewport" unique_id=1905968874 node_paths=PackedStringArray("clock")]
+script = ExtResource("2_21xkr")
+map_shader = ExtResource("3_6bp64")
+clock = NodePath("../../Clock")
+
+[node name="CultureSprite" type="Sprite2D" parent="MapViewport/MapContainer" unique_id=889536622]
+texture = SubResource("CompressedTexture2D_fo5ed")
+centered = false
+
+[node name="RegionSprite" type="Sprite2D" parent="MapViewport/MapContainer" unique_id=282385221]
+visible = false
+texture = SubResource("CompressedTexture2D_5ukr8")
+centered = false
+
+[node name="Clock" type="Node" parent="." unique_id=266522924]
+script = ExtResource("6_21xkr")
+
+[node name="GameBoard" type="MeshInstance3D" parent="." unique_id=779904413]
+gi_mode = 0
+mesh = SubResource("PlaneMesh_kry3j")
+surface_material_override/0 = SubResource("ShaderMaterial_6bp64")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=842292323 node_paths=PackedStringArray("map_plane")]
+transform = Transform3D(1, 0, 0, 0, -5.9604645e-08, 1, 0, -1, -5.9604645e-08, 0, 2, 0)
+script = ExtResource("6_6bp64")
+map_plane = NodePath("../GameBoard")
+max_height = 12.0
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1420053785]
+transform = Transform3D(1, 0, 0, 0, 0.026630577, 0.99964535, 0, -0.99964535, 0.026630575, 0, 4.6124916, 0)

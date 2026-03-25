@@ -17,8 +17,7 @@ var drag_end: Vector2 = Vector2.ZERO
 
 var right_dragging: bool = false
 var right_path: Array = []
-
-@onready var map_sprite: Sprite2D = $"../../../MapContainer/CultureSprite"
+@onready var map_sprite: Sprite2D = $"../../../MapViewport/MapContainer/CultureSprite"
 
 # --- Path Length Limit ---
 var max_path_length: int = 0

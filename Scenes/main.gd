@@ -1,8 +1,8 @@
-extends Node2D
+extends Node3D
 class_name Main
-@onready var culture_sprite: Sprite2D = $MapContainer/CultureSprite
+@onready var culture_sprite: Sprite2D = $MapViewport/MapContainer/CultureSprite
 @export var clock: GameClock
-@onready var camera_controller: Node = $Camera2D/CameraController
+@onready var camera_controller: Node = $Camera3D/CameraController
 
 
 func _enter_tree() -> void:

@@ -29,6 +29,20 @@ uniform vec2 ocean_offset;
 // --- BORDER SETTINGS (From Old Version) ---
 uniform float internal_border_darkness : hint_range(0.0, 1.0) = 0.2;
 
+uniform sampler2D height_map : filter_linear;
+uniform float height_scale : hint_range(0.0, 20.0) = 5.0;
+
+void vertex() {
+    // 1. Sample the heightmap
+    float h = texture(height_map, UV).r;
+    
+    // 2. Move the vertex up (Y axis in Godot 3D)
+    // We multiply by height_scale so you can control mountain height
+    VERTEX.y += h * height_scale;
+    
+    // 3. Optional: Pass the height to the fragment shader for shading
+    // (This helps you make mountain tops look snowy or darker)
+}
 // 8 constant directions for scanning neighbors
 const vec2 DIRS[8] = vec2[8](
     vec2(0.0, -1.0), vec2(0.0,  1.0),
