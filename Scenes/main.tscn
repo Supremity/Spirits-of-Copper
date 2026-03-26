@@ -16,6 +16,8 @@ load_path = "res://.godot/imported/regions.png-75b8193867ba7ee4418b242a7a7efe49.
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_6bp64"]
 size = Vector2(12.75, 6.25)
+subdivide_width = 150
+subdivide_depth = 150
 
 [sub_resource type="Shader" id="Shader_21xkr"]
 code = "// NOTE: Shader automatically converted from Godot Engine 4.6.1.stable's StandardMaterial3D.
@@ -74,7 +76,7 @@ resource_local_to_scene = true
 render_priority = 0
 shader = SubResource("Shader_21xkr")
 shader_parameter/height_map = ExtResource("6_344ge")
-shader_parameter/height_range = 0.1
+shader_parameter/height_range = 0.4
 shader_parameter/albedo = Color(1, 1, 1, 1)
 shader_parameter/texture_albedo = SubResource("ViewportTexture_21xkr")
 shader_parameter/albedo_texture_size = Vector2i(0, 0)
