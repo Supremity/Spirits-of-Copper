@@ -6,7 +6,18 @@
 [ext_resource type="Script" uid="uid://vl25gwkfvfkq" path="res://Scripts/Camera3D.gd" id="6_6bp64"]
 [ext_resource type="Script" uid="uid://cnm2s5owh7ec3" path="res://Scripts/game_clock.gd" id="6_21xkr"]
 [ext_resource type="Texture2D" uid="uid://cxfuinxarfwgw" path="res://maps/heightmap.png" id="6_344ge"]
+[ext_resource type="Texture2D" uid="uid://c7hgswlamwot0" path="res://maps/biomes_id.png" id="6_wsu2k"]
 [ext_resource type="PackedScene" uid="uid://dl045g47lsfkx" path="res://Scenes/world.tscn" id="7_6bp64"]
+[ext_resource type="Script" uid="uid://cljdk1kcyxe5y" path="res://Scripts/game_board.gd" id="7_344ge"]
+[ext_resource type="Texture2D" uid="uid://cfhel7pag6qud" path="res://textures/grass.png" id="8_fdnlq"]
+[ext_resource type="Texture2DArray" path="res://textures/biome_texture_array.res" id="8_wsu2k"]
+[ext_resource type="Texture2D" uid="uid://bxq7acxqvne5y" path="res://textures/forest.png" id="9_jkdf5"]
+[ext_resource type="Texture2D" uid="uid://dtt2bhphfcgqj" path="res://textures/sand.png" id="10_wsu2k"]
+[ext_resource type="Texture2D" uid="uid://bcoa4fh70f6ps" path="res://textures/rock.png" id="11_k12tt"]
+[ext_resource type="Texture2D" uid="uid://dreq6vwclvj1r" path="res://textures/ice.png" id="12_h1bgf"]
+[ext_resource type="ArrayMesh" uid="uid://rig2ab4f6bn3" path="res://Free Forest Nature Pack/Trees/Birch/Flat_Tree_Birch_small_green_Cube_005.res" id="15_k12tt"]
+[ext_resource type="ArrayMesh" uid="uid://do6cw737fk7dm" path="res://Free Forest Nature Pack/Grass/Flat_Grass_small_Cylinder_040.res" id="16_h1bgf"]
+[ext_resource type="ArrayMesh" uid="uid://dqa1wao2g70sm" path="res://Free Forest Nature Pack/Rocks/Flat_Rock_06_Icosphere_078.res" id="17_b3802"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_fo5ed"]
 load_path = "res://.godot/imported/cultures.png-f9255a05eddadc8a9aa0dedbe091def9.ctex"
@@ -20,53 +31,58 @@ subdivide_width = 150
 subdivide_depth = 150
 
 [sub_resource type="Shader" id="Shader_21xkr"]
-code = "// NOTE: Shader automatically converted from Godot Engine 4.6.1.stable's StandardMaterial3D.
+code = "shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back, unshaded;
 
-shader_type spatial;
-render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx, unshaded;
+uniform sampler2D height_map;
+uniform float height_range = 0.5;
 
-uniform sampler2D height_map; // Drag your heightmap.png here in Shader Params
-uniform float height_range = 0.5; // Adjust this to make mountains taller
+uniform sampler2D biomes_png : source_color, filter_nearest;
+// ADDED repeat_enable HERE:
+uniform sampler2DArray terrain_textures : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_disable;
+uniform float tiling = 20.0;
 
-uniform vec4 albedo : source_color;
-uniform sampler2D texture_albedo : source_color, filter_nearest_mipmap;
-uniform ivec2 albedo_texture_size;
-uniform float point_size : hint_range(0.1, 128.0, 0.1);
-
-uniform float roughness : hint_range(0.0, 1.0);
-uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
-uniform vec4 metallic_texture_channel;
-uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
-
-uniform float specular : hint_range(0.0, 1.0, 0.01);
-uniform float metallic : hint_range(0.0, 1.0, 0.01);
-
-uniform vec3 uv1_scale;
-uniform vec3 uv1_offset;
-uniform vec3 uv2_scale;
-uniform vec3 uv2_offset;
+// Controls how much the 2D map shows over the 3D textures (0.0 to 1.0)
+uniform float land_blend_strength = 0.45; 
 
 void vertex() {
-    // This actually moves the vertices in 3D space
     float h = texture(height_map, UV).r;
     VERTEX.y += h * height_range;
 }
-void fragment() {
-	vec2 base_uv = UV;
 
-	vec4 albedo_tex = texture(texture_albedo, base_uv);
-	ALBEDO = albedo.rgb * albedo_tex.rgb;
-
-	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
-	METALLIC = metallic_tex * metallic;
-	SPECULAR = specular;
-
-	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
-	float roughness_tex = dot(texture(texture_roughness, base_uv), roughness_texture_channel);
-	ROUGHNESS = roughness_tex * roughness;
-	
+bool is_color(vec3 c1, vec3 c2) {
+    return distance(c1, c2) < 0.1; 
 }
-"
+
+void fragment() {
+    // 1. Get the Raw Red (0.0 to 1.0) and convert to 0-255
+    float raw_r = texture(biomes_png, UV).r * 255.0;
+    
+    // 2. Convert your Scale of 30 into an Index
+    // 0 / 30 = 0 (Ocean)
+    // 30 / 30 = 1 (Grass)
+    // 60 / 30 = 2 (Forest)
+    // We use round() to make sure 29.8 or 30.1 both become 1.0
+    int biome_id = int(round(raw_r / 30.0));
+    
+    vec4 overlay = texture(texture_albedo, UV);
+
+    if (biome_id == 0) {
+        // PURE OCEAN (Red was 0)
+        ALBEDO = overlay.rgb;
+    } 
+    else {
+        // LAND: ID 1 (Red 30) becomes Index 0
+        // ID 2 (Red 60) becomes Index 1...
+        float texture_index = float(biome_id - 1);
+        
+        vec3 terrain_tex = texture(terrain_textures, vec3(UV * tiling, texture_index)).rgb;
+        
+        // Final blend between the 3D texture and your 2D Viewport
+        ALBEDO = mix(terrain_tex, overlay.rgb, land_blend_strength);
+    }
+}"
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_21xkr"]
 viewport_path = NodePath("MapViewport")
@@ -77,18 +93,23 @@ render_priority = 0
 shader = SubResource("Shader_21xkr")
 shader_parameter/height_map = ExtResource("6_344ge")
 shader_parameter/height_range = 0.4
-shader_parameter/albedo = Color(1, 1, 1, 1)
+shader_parameter/biomes_png = ExtResource("6_wsu2k")
+shader_parameter/terrain_textures = ExtResource("8_wsu2k")
 shader_parameter/texture_albedo = SubResource("ViewportTexture_21xkr")
-shader_parameter/albedo_texture_size = Vector2i(0, 0)
-shader_parameter/point_size = 1.0
-shader_parameter/roughness = 1.0
-shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
-shader_parameter/specular = 0.5
-shader_parameter/metallic = 0.66999998502416
-shader_parameter/uv1_scale = Vector3(1, 1, 1)
-shader_parameter/uv1_offset = Vector3(0, 0, 0)
-shader_parameter/uv2_scale = Vector3(1, 1, 1)
-shader_parameter/uv2_offset = Vector3(0, 0, 0)
+shader_parameter/tiling = 30.0
+shader_parameter/land_blend_strength = 0.5
+
+[sub_resource type="MultiMesh" id="MultiMesh_wsu2k"]
+transform_format = 1
+mesh = ExtResource("15_k12tt")
+
+[sub_resource type="MultiMesh" id="MultiMesh_b3802"]
+transform_format = 1
+mesh = ExtResource("16_h1bgf")
+
+[sub_resource type="MultiMesh" id="MultiMesh_fevyy"]
+transform_format = 1
+mesh = ExtResource("17_b3802")
 
 [node name="Main" type="Node3D" unique_id=38136281 node_paths=PackedStringArray("clock")]
 script = ExtResource("1_kry3j")
@@ -122,9 +143,31 @@ centered = false
 script = ExtResource("6_21xkr")
 
 [node name="GameBoard" type="MeshInstance3D" parent="." unique_id=779904413]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0014295578, 0, -0.00023013353)
 gi_mode = 0
 mesh = SubResource("PlaneMesh_6bp64")
 surface_material_override/0 = SubResource("ShaderMaterial_6bp64")
+script = ExtResource("7_344ge")
+grass_tex = ExtResource("8_fdnlq")
+forest_tex = ExtResource("9_jkdf5")
+sand_tex = ExtResource("10_wsu2k")
+rock_tex = ExtResource("11_k12tt")
+ice_tex = ExtResource("12_h1bgf")
+tree_density = 10000
+biome_map = ExtResource("6_wsu2k")
+height_map = ExtResource("6_344ge")
+
+[node name="ForestMultiMesh" type="MultiMeshInstance3D" parent="GameBoard" unique_id=955407837]
+unique_name_in_owner = true
+multimesh = SubResource("MultiMesh_wsu2k")
+
+[node name="GrassMultiMesh" type="MultiMeshInstance3D" parent="GameBoard" unique_id=1980964591]
+unique_name_in_owner = true
+multimesh = SubResource("MultiMesh_b3802")
+
+[node name="MountainMultiMesh" type="MultiMeshInstance3D" parent="GameBoard" unique_id=709974007]
+unique_name_in_owner = true
+multimesh = SubResource("MultiMesh_fevyy")
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=842292323 node_paths=PackedStringArray("map_plane")]
 transform = Transform3D(1, 0, 0, 0, -5.9604645e-08, 1, 0, -1, -5.9604645e-08, 0, 3, 0)

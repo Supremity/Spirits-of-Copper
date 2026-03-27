@@ -15,7 +15,7 @@ extends Camera3D # Changed from Node3D to Camera3D for direct control
 @export var zoom_speed: float = 0.4        # Amount to move per scroll
 @export var min_height: float = 0.5        # Closest you can get
 @export var max_height: float = 10.0       # Furthest you can pull back
-@export var tilt_near: float = -50.0    
+@export var tilt_near: float = -75.0    
 @export var tilt_far: float = -90.0 
 
 # --- Internal Variables ---
