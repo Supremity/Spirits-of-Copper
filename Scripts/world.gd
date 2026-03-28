@@ -37,17 +37,6 @@ func _ready() -> void:
 	_first_time_setup_done = true
 
 func initialize_world():
-	if not MapManager.id_map_image:
-		push_error("MapManager image is null during initialization!")
-		return
-
-	# Setup the troop renderer
-	if troop_renderer:
-		troop_renderer.map_sprite = map_sprite
-		troop_renderer.map_width = MapManager.id_map_image.get_width()
-		troop_renderer.rebuild_troops()
-
-	# Sync troop positions to province centers
 	for t_obj in TroopManager.troops:
 		t_obj.position = MapManager.province_centers.get(t_obj.province_id, Vector2.ZERO)
 

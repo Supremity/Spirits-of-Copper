@@ -14,11 +14,11 @@ extends MeshInstance3D
 @export var height_map: Texture2D    # Drag res://maps/heightmap.png here
 
 func _ready():
+	GameState.game_board = self
 	setup_texture_array()
 	
 	#MultiMeshInstance3D, target_id: float, density: int, chance: float, min_scale: float, max_scale: float
 	spawn_objects(%ForestMultiMesh, 60, 3000, 0.7, 0.005, 0.01)
-	spawn_grid(%GrassMultiMesh, 30, 100, 0.9, 0.009, 0.01) 
 	spawn_grid(%MountainMultiMesh, 120, 150, 0.7, 0.009, 0.01) 
 
 func setup_texture_array():

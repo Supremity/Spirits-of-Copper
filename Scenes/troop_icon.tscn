@@ -1,0 +1,55 @@
+[gd_scene format=3 uid="uid://uhxem8j52txd"]
+
+[ext_resource type="Script" uid="uid://dvoq41hmwec70" path="res://Scripts/troop_icon.gd" id="1_px3x0"]
+[ext_resource type="Texture2D" uid="uid://dpohmal5pe58k" path="res://assets/flags/abkhazia_flag.png" id="2_rj5vd"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6tdxt"]
+bg_color = Color(0, 0, 0, 0.54901963)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7avxc"]
+bg_color = Color(0, 0.723614, 0.2548695, 1)
+
+[node name="TroopIcon" type="Control" unique_id=972071384]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_px3x0")
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=817853620]
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 32.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_6tdxt")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer" unique_id=2136227264]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/VBoxContainer" unique_id=923145146]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="PanelContainer/VBoxContainer/HBoxContainer" unique_id=1882646072]
+custom_minimum_size = Vector2(40, 20)
+layout_mode = 2
+texture = ExtResource("2_rj5vd")
+expand_mode = 1
+
+[node name="Label" type="Label" parent="PanelContainer/VBoxContainer/HBoxContainer" unique_id=1736831363]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "4"
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer/VBoxContainer" unique_id=1254679756]
+layout_mode = 2
+theme_override_constants/margin_left = 3
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 3
+theme_override_constants/margin_bottom = 0
+
+[node name="ProgressBar" type="ProgressBar" parent="PanelContainer/VBoxContainer/MarginContainer" unique_id=203032526]
+layout_mode = 2
+theme_override_styles/fill = SubResource("StyleBoxFlat_7avxc")
+value = 47.0
+show_percentage = false

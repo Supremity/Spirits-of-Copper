@@ -10,6 +10,7 @@ var choosing_deploy_city := false
 var industry_building := IndustryType.DEFAULT
 
 var game_ui: GameUI
+var game_board = null
 
 var decision_menu_open: bool = false
 var in_peace_process: bool = false

@@ -15,9 +15,9 @@
 [ext_resource type="Texture2D" uid="uid://dtt2bhphfcgqj" path="res://textures/sand.png" id="10_wsu2k"]
 [ext_resource type="Texture2D" uid="uid://bcoa4fh70f6ps" path="res://textures/rock.png" id="11_k12tt"]
 [ext_resource type="Texture2D" uid="uid://dreq6vwclvj1r" path="res://textures/ice.png" id="12_h1bgf"]
-[ext_resource type="ArrayMesh" uid="uid://rig2ab4f6bn3" path="res://Free Forest Nature Pack/Trees/Birch/Flat_Tree_Birch_small_green_Cube_005.res" id="15_k12tt"]
-[ext_resource type="ArrayMesh" uid="uid://do6cw737fk7dm" path="res://Free Forest Nature Pack/Grass/Flat_Grass_small_Cylinder_040.res" id="16_h1bgf"]
-[ext_resource type="ArrayMesh" uid="uid://dqa1wao2g70sm" path="res://Free Forest Nature Pack/Rocks/Flat_Rock_06_Icosphere_078.res" id="17_b3802"]
+[ext_resource type="ArrayMesh" uid="uid://bhvrw08t7akwm" path="res://Free Forest Nature Pack/Trees/Birch/Flat_Tree_Birch_small_green_Cube_005.res" id="15_k12tt"]
+[ext_resource type="ArrayMesh" uid="uid://bewkiocyphxeb" path="res://Free Forest Nature Pack/Grass/Flat_Grass_small_Cylinder_040.res" id="16_h1bgf"]
+[ext_resource type="ArrayMesh" uid="uid://b0wxkjnvmr7ym" path="res://Free Forest Nature Pack/Rocks/Flat_Rock_06_Icosphere_078.res" id="17_b3802"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_fo5ed"]
 load_path = "res://.godot/imported/cultures.png-f9255a05eddadc8a9aa0dedbe091def9.ctex"

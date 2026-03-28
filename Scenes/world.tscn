@@ -11,20 +11,11 @@
 [ext_resource type="Script" uid="uid://dgg5vvwt2yua6" path="res://Scenes/menu.gd" id="9_pcjer"]
 [ext_resource type="PackedScene" uid="uid://slfig273474k" path="res://Scenes/UI/BottomHUD/BottomHUD.tscn" id="10_0fj1v"]
 
-[sub_resource type="QuadMesh" id="QuadMesh_o06y3"]
-
-[sub_resource type="MultiMesh" id="MultiMesh_k7acu"]
-custom_aabb = AABB(30, 20, 0, 0, 0, 0)
-mesh = SubResource("QuadMesh_o06y3")
-
 [node name="World" type="Node2D" unique_id=1557365676]
 script = ExtResource("1_i23d3")
 
-[node name="CustomRenderer" type="Node2D" parent="." unique_id=1363807819]
+[node name="CustomRenderer" type="CanvasLayer" parent="." unique_id=1532206092]
 script = ExtResource("2_l60jn")
-
-[node name="TroopMultiMesh" type="MultiMeshInstance2D" parent="CustomRenderer" unique_id=905881183]
-multimesh = SubResource("MultiMesh_k7acu")
 
 [node name="Clock" type="Node" parent="." unique_id=529298281]
 script = ExtResource("3_t5n76")

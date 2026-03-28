@@ -39,6 +39,24 @@ func _init(
 		div.name = "Division %d" % (i + 1)
 		stored_divisions.append(div)
 
+func get_visual_position() -> Vector3:
+	# 1. Map Pixel -> UV (0.0 to 1.0)
+	# Ensure these match your actual map image size exactly
+	var map_res = Vector2(1275, 625)
+	var uv = Vector2(position.x / map_res.x, position.y / map_res.y)
+	
+	# 2. UV -> Local 3D Space
+	# Your PlaneMesh is 12.75 x 6.25. 
+	# Since meshes are centered, (0,0) pixel is at (-6.375, -3.125)
+	var plane_size = Vector2(12.75, 6.25)
+	var local_x = (uv.x - 0.5) * plane_size.x
+	var local_z = (uv.y - 0.5) * plane_size.y
+	
+	# 3. Return the point in GLOBAL 3D space
+	# We use 0.1 to keep it just above the ground
+	# We use GameState.main.game_board (or wherever your GameBoard node is)
+	var board_global_pos = GameState.game_board.global_position
+	return board_global_pos + Vector3(local_x, 0.1, local_z)
 
 func _adjust_divisions_to_match_count(target_count: int):
 	var current = stored_divisions.size()
@@ -64,42 +82,3 @@ func get_main_type() -> String:
 	if stored_divisions.is_empty():
 		return "infantry"
 	return stored_divisions[0].type
-
-
-func get_raw_state() -> Dictionary:
-	var data = {}
-	for prop in get_property_list():
-		# Only save variables you created
-		if prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
-			var val = get(prop.name)
-
-			# DO NOT save actual Objects that belong to other Managers
-			# Instead, we just save their names/IDs to re-link later
-			if prop.name == "country_obj":
-				continue
-
-			# Recursive save for nested "owned" objects (like Divisions)
-			if val is Object and val.has_method("get_raw_state"):
-				data[prop.name] = val.get_raw_state()
-			elif val is Array:
-				data[prop.name] = _serialize_array(val)
-			else:
-				data[prop.name] = val
-
-	# Metadata is essential for your visual positions
-	var meta_dict = {}
-	for m_key in get_meta_list():
-		meta_dict[m_key] = get_meta(m_key)
-	data["_metadata"] = meta_dict
-
-	return data
-
-
-func _serialize_array(arr: Array) -> Array:
-	var new_arr = []
-	for item in arr:
-		if item is Object and item.has_method("get_raw_state"):
-			new_arr.append(item.get_raw_state())
-		else:
-			new_arr.append(item)
-	return new_arr
