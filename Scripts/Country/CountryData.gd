@@ -75,7 +75,7 @@ func _init(p_country_name: String = "") -> void:
 	reset_factories()
 	reset_cities()
 	setup_ai()
-	#create_and_deploy_instant_troops(2)
+	create_and_deploy_instant_troops(2)
 
 func process_hour() -> void:
 	update_political_power()

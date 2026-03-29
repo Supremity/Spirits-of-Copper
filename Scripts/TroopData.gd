@@ -40,23 +40,22 @@ func _init(
 		stored_divisions.append(div)
 
 func get_visual_position() -> Vector3:
-	# 1. Map Pixel -> UV (0.0 to 1.0)
-	# Ensure these match your actual map image size exactly
 	var map_res = Vector2(1275, 625)
 	var uv = Vector2(position.x / map_res.x, position.y / map_res.y)
 	
-	# 2. UV -> Local 3D Space
-	# Your PlaneMesh is 12.75 x 6.25. 
-	# Since meshes are centered, (0,0) pixel is at (-6.375, -3.125)
 	var plane_size = Vector2(12.75, 6.25)
 	var local_x = (uv.x - 0.5) * plane_size.x
 	var local_z = (uv.y - 0.5) * plane_size.y
 	
-	# 3. Return the point in GLOBAL 3D space
-	# We use 0.1 to keep it just above the ground
-	# We use GameState.main.game_board (or wherever your GameBoard node is)
 	var board_global_pos = GameState.game_board.global_position
-	return board_global_pos + Vector3(local_x, 0.1, local_z)
+	var global_pos = board_global_pos + Vector3(local_x, 0, local_z)
+	
+	# --- NEW: SAMPLE HEIGHTMAP ---
+	var y_height = 0.01  # fallback in case height_map is missing
+	if GameState.game_board:
+		y_height += GameState.game_board.get_height_at_pos(global_pos)
+	
+	return global_pos + Vector3(0, y_height, 0)
 
 func _adjust_divisions_to_match_count(target_count: int):
 	var current = stored_divisions.size()

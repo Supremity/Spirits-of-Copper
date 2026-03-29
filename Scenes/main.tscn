@@ -18,6 +18,9 @@
 [ext_resource type="ArrayMesh" uid="uid://bhvrw08t7akwm" path="res://Free Forest Nature Pack/Trees/Birch/Flat_Tree_Birch_small_green_Cube_005.res" id="15_k12tt"]
 [ext_resource type="ArrayMesh" uid="uid://bewkiocyphxeb" path="res://Free Forest Nature Pack/Grass/Flat_Grass_small_Cylinder_040.res" id="16_h1bgf"]
 [ext_resource type="ArrayMesh" uid="uid://b0wxkjnvmr7ym" path="res://Free Forest Nature Pack/Rocks/Flat_Rock_06_Icosphere_078.res" id="17_b3802"]
+[ext_resource type="Shader" uid="uid://croo0jbjeteh7" path="res://shaders/troop.gdshader" id="18_fevyy"]
+[ext_resource type="Script" uid="uid://cvyn1emkeukag" path="res://Scripts/troop_renderer_3d.gd" id="19_hibaj"]
+[ext_resource type="Texture2D" uid="uid://buaidqt3ib1oy" path="res://assets/numbers_atlas.png" id="20_ee4r6"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_fo5ed"]
 load_path = "res://.godot/imported/cultures.png-f9255a05eddadc8a9aa0dedbe091def9.ctex"
@@ -111,6 +114,26 @@ mesh = ExtResource("16_h1bgf")
 transform_format = 1
 mesh = ExtResource("17_b3802")
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hibaj"]
+render_priority = 0
+shader = ExtResource("18_fevyy")
+shader_parameter/numbers_atlas = ExtResource("20_ee4r6")
+shader_parameter/plate_color = Color(0.08, 0.08, 0.08, 0.9)
+shader_parameter/border_color = Color(0.18, 0.18, 0.18, 1)
+shader_parameter/hp_green = Color(0.15, 0.85, 0.25, 1)
+shader_parameter/hp_red = Color(0.85, 0.15, 0.15, 1)
+shader_parameter/text_color = Color(1, 1, 1, 1)
+shader_parameter/corner_radius = 0.1
+shader_parameter/border_size = 0.02
+
+[sub_resource type="QuadMesh" id="QuadMesh_pdsj5"]
+material = SubResource("ShaderMaterial_hibaj")
+
+[sub_resource type="MultiMesh" id="MultiMesh_ee4r6"]
+transform_format = 1
+use_custom_data = true
+mesh = SubResource("QuadMesh_pdsj5")
+
 [node name="Main" type="Node3D" unique_id=38136281 node_paths=PackedStringArray("clock")]
 script = ExtResource("1_kry3j")
 clock = NodePath("Clock")
@@ -168,6 +191,11 @@ multimesh = SubResource("MultiMesh_b3802")
 [node name="MountainMultiMesh" type="MultiMeshInstance3D" parent="GameBoard" unique_id=709974007]
 unique_name_in_owner = true
 multimesh = SubResource("MultiMesh_fevyy")
+
+[node name="TroopRenderer3D" type="MultiMeshInstance3D" parent="GameBoard" unique_id=1286485625]
+unique_name_in_owner = true
+multimesh = SubResource("MultiMesh_ee4r6")
+script = ExtResource("19_hibaj")
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=842292323 node_paths=PackedStringArray("map_plane")]
 transform = Transform3D(1, 0, 0, 0, -5.9604645e-08, 1, 0, -1, -5.9604645e-08, 0, 3, 0)

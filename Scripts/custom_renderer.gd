@@ -6,6 +6,7 @@ var icons = {}
 @onready var camera = get_viewport().get_camera_3d()
 
 func _process(_delta):
+	return
 	sync_icons()
 	update_icon_positions()
 
